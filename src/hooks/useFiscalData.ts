@@ -1089,6 +1089,87 @@ export const useAutoAssignRegimes = () => {
   });
 };
 
+// Hook para buscar segmentos
+export const useSegments = () => {
+  return useQuery({
+    queryKey: ['segments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('segments')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+};
+
+// Hook para criar segmento
+export const useCreateSegment = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const { data, error } = await supabase
+        .from('segments')
+        .insert([{ name: name.trim() }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['segments'] });
+      toast({
+        title: "Sucesso",
+        description: "Segmento criado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar segmento.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Hook para atualizar empresa com segmento
+export const useUpdateCompanySegment = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ companyId, segmento }: { companyId: string; segmento: string }) => {
+      const { data, error } = await supabase
+        .from('companies')
+        .update({ segmento })
+        .eq('id', companyId)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      toast({
+        title: "Sucesso",
+        description: "Segmento da empresa atualizado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar segmento da empresa.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 export const useImportExcel = () => {
   const queryClient = useQueryClient();
 

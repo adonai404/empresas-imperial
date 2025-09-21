@@ -10,8 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime } from '@/hooks/useFiscalData';
-import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime, useSegments, useCreateSegment, useUpdateCompanySegment } from '@/hooks/useFiscalData';
+import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet, Tag } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -56,13 +56,21 @@ export const Settings = ({}: SettingsProps) => {
   const [isOperationAuthModalOpen, setIsOperationAuthModalOpen] = useState(false);
   const [passwordChangeAuthCompany, setPasswordChangeAuthCompany] = useState<{ id: string; name: string; operation: 'change' | 'remove' } | null>(null);
   const [isPasswordChangeAuthModalOpen, setIsPasswordChangeAuthModalOpen] = useState(false);
+
+  // Estados para gerenciamento de segmentos
+  const [selectedCompanyForSegment, setSelectedCompanyForSegment] = useState<string>('');
+  const [newSegmentName, setNewSegmentName] = useState('');
+  const [isCreateSegmentDialogOpen, setIsCreateSegmentDialogOpen] = useState(false);
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: cnpjRegimes = [] } = useCnpjRegimes();
+  const { data: segments = [] } = useSegments();
   const setPasswordMutation = useSetCompanyPassword();
   const removePasswordMutation = useRemoveCompanyPassword();
   const saveCnpjRegimeMutation = useSaveCnpjRegime();
   const removeCnpjRegimeMutation = useRemoveCnpjRegime();
+  const createSegmentMutation = useCreateSegment();
+  const updateCompanySegmentMutation = useUpdateCompanySegment();
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PasswordForm>();
   const password = watch('password');
@@ -355,6 +363,27 @@ export const Settings = ({}: SettingsProps) => {
     setIsPasswordChangeAuthModalOpen(false);
   };
 
+  // Função para criar novo segmento
+  const handleCreateSegment = () => {
+    if (!newSegmentName.trim()) return;
+    
+    createSegmentMutation.mutate(newSegmentName, {
+      onSuccess: (data) => {
+        // Se havia uma empresa selecionada, atribuir o novo segmento a ela
+        if (selectedCompanyForSegment) {
+          updateCompanySegmentMutation.mutate({
+            companyId: selectedCompanyForSegment,
+            segmento: data.name
+          });
+        }
+        
+        setIsCreateSegmentDialogOpen(false);
+        setNewSegmentName('');
+        setSelectedCompanyForSegment('');
+      }
+    });
+  };
+
 
   const hasPassword = (company: any) => {
     return company.company_passwords && company.company_passwords.id !== null;
@@ -412,7 +441,7 @@ export const Settings = ({}: SettingsProps) => {
 
       {/* Tabs para as subseções */}
       <Tabs defaultValue="security" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Segurança
@@ -420,6 +449,10 @@ export const Settings = ({}: SettingsProps) => {
           <TabsTrigger value="regimes" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Definir Regime das Empresas
+          </TabsTrigger>
+          <TabsTrigger value="segments" className="flex items-center gap-2">
+            <Tag className="h-4 w-4" />
+            Segmentos das Empresas
           </TabsTrigger>
         </TabsList>
 
@@ -938,6 +971,220 @@ export const Settings = ({}: SettingsProps) => {
                   className="min-w-[120px]"
                 >
                   Adicionar
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
+        {/* Subseção Segmentos das Empresas */}
+        <TabsContent value="segments" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tag className="h-5 w-5" />
+                Segmentos das Empresas
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Gerencie os segmentos das empresas. Você pode selecionar segmentos existentes ou criar novos segmentos conforme necessário.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Lista de Empresas com Segmentos */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Atribuir Segmentos às Empresas</h3>
+                
+                {companies && companies.length > 0 ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {companies.map((company) => (
+                      <Card key={company.id} className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-primary" />
+                            <h4 className="font-medium">{company.name}</h4>
+                          </div>
+                          
+                          {company.cnpj && (
+                            <p className="text-sm text-muted-foreground">
+                              CNPJ: {company.cnpj}
+                            </p>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={company.segmento || ''}
+                              onValueChange={(value) => {
+                                if (value === 'new_segment') {
+                                  setSelectedCompanyForSegment(company.id);
+                                  setIsCreateSegmentDialogOpen(true);
+                                } else {
+                                  updateCompanySegmentMutation.mutate({
+                                    companyId: company.id,
+                                    segmento: value || ''
+                                  });
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="flex-1">
+                                <SelectValue placeholder="Selecionar segmento" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">Sem segmento</SelectItem>
+                                {segments.map((segment) => (
+                                  <SelectItem key={segment.id} value={segment.name}>
+                                    {segment.name}
+                                  </SelectItem>
+                                ))}
+                                <Separator />
+                                <SelectItem value="new_segment" className="text-primary">
+                                  <div className="flex items-center gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    Criar novo segmento
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {company.segmento && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline">
+                                {company.segmento}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhuma empresa encontrada</h3>
+                    <p className="text-muted-foreground">
+                      Não há empresas cadastradas no sistema.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Lista de Segmentos Existentes */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Segmentos Cadastrados</h3>
+                  <Button
+                    onClick={() => {
+                      setSelectedCompanyForSegment('');
+                      setIsCreateSegmentDialogOpen(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Segmento
+                  </Button>
+                </div>
+                
+                {segments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {segments.map((segment) => {
+                      const companiesInSegment = companies?.filter(c => c.segmento === segment.name) || [];
+                      
+                      return (
+                        <Card key={segment.id} className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium flex items-center gap-2">
+                                <Tag className="h-4 w-4" />
+                                {segment.name}
+                              </h4>
+                              <Badge variant="secondary">
+                                {companiesInSegment.length}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {companiesInSegment.length === 0 
+                                ? 'Nenhuma empresa neste segmento'
+                                : `${companiesInSegment.length} empresa(s) neste segmento`
+                              }
+                            </p>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum segmento cadastrado</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Crie segmentos para organizar suas empresas por categoria.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setSelectedCompanyForSegment('');
+                        setIsCreateSegmentDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Segmento
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dialog para criar novo segmento */}
+          <Dialog open={isCreateSegmentDialogOpen} onOpenChange={setIsCreateSegmentDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Plus className="h-5 w-5" />
+                  Criar Novo Segmento
+                </DialogTitle>
+                <DialogDescription>
+                  Digite o nome do novo segmento para sua empresa.
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newSegmentName">Nome do Segmento</Label>
+                  <Input
+                    id="newSegmentName"
+                    placeholder="Ex: Varejo, Indústria, Serviços..."
+                    value={newSegmentName}
+                    onChange={(e) => setNewSegmentName(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && newSegmentName.trim()) {
+                        handleCreateSegment();
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsCreateSegmentDialogOpen(false);
+                    setNewSegmentName('');
+                    setSelectedCompanyForSegment('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleCreateSegment}
+                  disabled={!newSegmentName.trim() || createSegmentMutation.isPending}
+                  className="min-w-[120px]"
+                >
+                  {createSegmentMutation.isPending ? 'Criando...' : 'Criar Segmento'}
                 </Button>
               </DialogFooter>
             </DialogContent>
