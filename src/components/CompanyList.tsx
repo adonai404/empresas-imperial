@@ -635,14 +635,14 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                      if (value === 'create_new_segment') {
                        setIsCreateSegmentFromAddOpen(true);
                      } else {
-                       setValue('segmento', value);
+                       setValue('segmento', value === 'none' ? '' : value);
                      }
                    }}>
                      <SelectTrigger>
                        <SelectValue placeholder="Selecionar segmento" />
                      </SelectTrigger>
                      <SelectContent>
-                       <SelectItem value="">Sem segmento</SelectItem>
+                       <SelectItem value="none">Sem segmento</SelectItem>
                        {segments.map((segment) => (
                          <SelectItem key={segment.id} value={segment.name}>
                            {segment.name}
@@ -1156,12 +1156,12 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
           <div className="space-y-2">
             <Label htmlFor="edit-segmento">Segmento</Label>
             <Select
-              value={editingCompany?.segmento || ''}
+              value={editingCompany?.segmento || 'none'}
               onValueChange={(value) => {
                 if (value === 'create_new_segment') {
                   setIsCreateSegmentFromEditOpen(true);
                 } else {
-                  setValueEdit('segmento', value);
+                  setValueEdit('segmento', value === 'none' ? '' : value);
                 }
               }}
             >
@@ -1169,7 +1169,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                 <SelectValue placeholder="Selecionar segmento" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem segmento</SelectItem>
+                <SelectItem value="none">Sem segmento</SelectItem>
                 {segments.map((segment) => (
                   <SelectItem key={segment.id} value={segment.name}>
                     {segment.name}

@@ -1012,7 +1012,7 @@ export const Settings = ({}: SettingsProps) => {
                           
                           <div className="flex items-center gap-2">
                             <Select
-                              value={company.segmento || ''}
+                              value={company.segmento || 'none'}
                               onValueChange={(value) => {
                                 if (value === 'new_segment') {
                                   setSelectedCompanyForSegment(company.id);
@@ -1020,7 +1020,7 @@ export const Settings = ({}: SettingsProps) => {
                                 } else {
                                   updateCompanySegmentMutation.mutate({
                                     companyId: company.id,
-                                    segmento: value || ''
+                                    segmento: value === 'none' ? '' : value
                                   });
                                 }
                               }}
@@ -1029,7 +1029,7 @@ export const Settings = ({}: SettingsProps) => {
                                 <SelectValue placeholder="Selecionar segmento" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">Sem segmento</SelectItem>
+                                <SelectItem value="none">Sem segmento</SelectItem>
                                 {segments.map((segment) => (
                                   <SelectItem key={segment.id} value={segment.name}>
                                     {segment.name}
