@@ -1137,6 +1137,37 @@ export const useCreateSegment = () => {
   });
 };
 
+// Hook para deletar segmento
+export const useDeleteSegment = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (segmentId: string) => {
+      const { error } = await supabase
+        .from('segments')
+        .delete()
+        .eq('id', segmentId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['segments'] });
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      toast({
+        title: "Sucesso",
+        description: "Segmento excluído com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir segmento.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
 // Hook para atualizar empresa com segmento
 export const useUpdateCompanySegment = () => {
   const queryClient = useQueryClient();

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime, useSegments, useCreateSegment, useUpdateCompanySegment } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime, useSegments, useCreateSegment, useUpdateCompanySegment, useDeleteSegment } from '@/hooks/useFiscalData';
 import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet, Tag } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
@@ -61,6 +61,7 @@ export const Settings = ({}: SettingsProps) => {
   const [selectedCompanyForSegment, setSelectedCompanyForSegment] = useState<string>('');
   const [newSegmentName, setNewSegmentName] = useState('');
   const [isCreateSegmentDialogOpen, setIsCreateSegmentDialogOpen] = useState(false);
+  const [deleteSegmentConfirm, setDeleteSegmentConfirm] = useState<{ id: string; name: string } | null>(null);
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: cnpjRegimes = [] } = useCnpjRegimes();
@@ -71,6 +72,7 @@ export const Settings = ({}: SettingsProps) => {
   const removeCnpjRegimeMutation = useRemoveCnpjRegime();
   const createSegmentMutation = useCreateSegment();
   const updateCompanySegmentMutation = useUpdateCompanySegment();
+  const deleteSegmentMutation = useDeleteSegment();
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PasswordForm>();
   const password = watch('password');
@@ -380,6 +382,15 @@ export const Settings = ({}: SettingsProps) => {
         setIsCreateSegmentDialogOpen(false);
         setNewSegmentName('');
         setSelectedCompanyForSegment('');
+      }
+    });
+  };
+
+  // Função para deletar segmento
+  const handleDeleteSegment = (segmentId: string) => {
+    deleteSegmentMutation.mutate(segmentId, {
+      onSuccess: () => {
+        setDeleteSegmentConfirm(null);
       }
     });
   };
@@ -990,6 +1001,90 @@ export const Settings = ({}: SettingsProps) => {
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Lista de Segmentos Existentes - MOVIDO PARA O TOPO */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Segmentos Cadastrados</h3>
+                  <Button
+                    onClick={() => {
+                      setSelectedCompanyForSegment('');
+                      setIsCreateSegmentDialogOpen(true);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Novo Segmento
+                  </Button>
+                </div>
+                
+                {segments.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {segments.map((segment) => {
+                      const companiesInSegment = companies?.filter(c => c.segmento === segment.name) || [];
+                      
+                      return (
+                        <Card key={segment.id} className="p-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-medium flex items-center gap-2">
+                                <Tag className="h-4 w-4" />
+                                {segment.name}
+                              </h4>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary">
+                                  {companiesInSegment.length}
+                                </Badge>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setDeleteSegmentConfirm({ id: segment.id, name: segment.name })}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 p-0"
+                                  title="Excluir segmento"
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {companiesInSegment.length === 0 
+                                ? 'Nenhuma empresa neste segmento'
+                                : `${companiesInSegment.length} empresa(s) neste segmento`
+                              }
+                            </p>
+                            {companiesInSegment.length > 0 && (
+                              <div className="text-xs text-muted-foreground">
+                                {companiesInSegment.slice(0, 3).map(c => c.name).join(', ')}
+                                {companiesInSegment.length > 3 && `... e mais ${companiesInSegment.length - 3}`}
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-lg font-medium mb-2">Nenhum segmento cadastrado</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Crie segmentos para organizar suas empresas por categoria.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setSelectedCompanyForSegment('');
+                        setIsCreateSegmentDialogOpen(true);
+                      }}
+                      className="flex items-center gap-2"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Criar Primeiro Segmento
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <Separator />
+
               {/* Lista de Empresas com Segmentos */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Atribuir Segmentos às Empresas</h3>
@@ -1067,73 +1162,6 @@ export const Settings = ({}: SettingsProps) => {
                   </div>
                 )}
               </div>
-
-              <Separator />
-
-              {/* Lista de Segmentos Existentes */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-medium">Segmentos Cadastrados</h3>
-                  <Button
-                    onClick={() => {
-                      setSelectedCompanyForSegment('');
-                      setIsCreateSegmentDialogOpen(true);
-                    }}
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Novo Segmento
-                  </Button>
-                </div>
-                
-                {segments.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {segments.map((segment) => {
-                      const companiesInSegment = companies?.filter(c => c.segmento === segment.name) || [];
-                      
-                      return (
-                        <Card key={segment.id} className="p-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <h4 className="font-medium flex items-center gap-2">
-                                <Tag className="h-4 w-4" />
-                                {segment.name}
-                              </h4>
-                              <Badge variant="secondary">
-                                {companiesInSegment.length}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {companiesInSegment.length === 0 
-                                ? 'Nenhuma empresa neste segmento'
-                                : `${companiesInSegment.length} empresa(s) neste segmento`
-                              }
-                            </p>
-                          </div>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Nenhum segmento cadastrado</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Crie segmentos para organizar suas empresas por categoria.
-                    </p>
-                    <Button
-                      onClick={() => {
-                        setSelectedCompanyForSegment('');
-                        setIsCreateSegmentDialogOpen(true);
-                      }}
-                      className="flex items-center gap-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Criar Primeiro Segmento
-                    </Button>
-                  </div>
-                )}
-              </div>
             </CardContent>
           </Card>
 
@@ -1189,6 +1217,47 @@ export const Settings = ({}: SettingsProps) => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {/* Dialog de confirmação para excluir segmento */}
+          <AlertDialog open={!!deleteSegmentConfirm} onOpenChange={() => setDeleteSegmentConfirm(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                  Excluir Segmento
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  Tem certeza que deseja excluir o segmento "{deleteSegmentConfirm?.name}"?
+                  {deleteSegmentConfirm && (
+                    (() => {
+                      const companiesInSegment = companies?.filter(c => c.segmento === deleteSegmentConfirm.name) || [];
+                      return companiesInSegment.length > 0 ? (
+                        <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                          <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                            Atenção: {companiesInSegment.length} empresa(s) estão neste segmento.
+                          </p>
+                          <p className="text-sm text-orange-700 dark:text-orange-300">
+                            Elas ficarão sem segmento após a exclusão.
+                          </p>
+                        </div>
+                      ) : null;
+                    })()
+                  )}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setDeleteSegmentConfirm(null)}>
+                  Cancelar
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleteSegmentConfirm && handleDeleteSegment(deleteSegmentConfirm.id)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Excluir Segmento
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </TabsContent>
       </Tabs>
 
