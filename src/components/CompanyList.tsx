@@ -13,6 +13,7 @@ import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useU
 import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
+import { CompanyOperationAuth } from './CompanyOperationAuth';
 
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
@@ -62,6 +63,10 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [passwordAuthCompany, setPasswordAuthCompany] = useState<{ id: string; name: string } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [operationAuthCompany, setOperationAuthCompany] = useState<{ id: string; name: string; operation: 'edit' | 'delete' } | null>(null);
+  const [isOperationAuthModalOpen, setIsOperationAuthModalOpen] = useState(false);
+  const [deleteConfirmCompany, setDeleteConfirmCompany] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const deleteCompanyMutation = useDeleteCompany();
   const addCompanyMutation = useAddCompany();
@@ -179,7 +184,19 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   });
 
   const handleDeleteCompany = (companyId: string, companyName: string) => {
-    deleteCompanyMutation.mutate(companyId);
+    // Encontrar a empresa para verificar se tem senha
+    const company = companies?.find(c => c.id === companyId);
+    
+    // Se a empresa tem senha, exigir autenticação primeiro
+    if (company && hasPassword(company)) {
+      setOperationAuthCompany({ id: companyId, name: companyName, operation: 'delete' });
+      setIsOperationAuthModalOpen(true);
+      return;
+    }
+    
+    // Empresa sem senha - abrir modal de confirmação
+    setDeleteConfirmCompany({ id: companyId, name: companyName });
+    setIsDeleteConfirmModalOpen(true);
   };
 
   const handleAddCompany = (data: AddCompanyForm) => {
@@ -216,6 +233,14 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   };
 
   const openEditDialog = (company: any) => {
+    // Se a empresa tem senha, exigir autenticação primeiro
+    if (hasPassword(company)) {
+      setOperationAuthCompany({ id: company.id, name: company.name, operation: 'edit' });
+      setIsOperationAuthModalOpen(true);
+      return;
+    }
+    
+    // Empresa sem senha - abrir diretamente
     setEditingCompany({ id: company.id, name: company.name, cnpj: company.cnpj || '', segmento: company.segmento || '', regime_tributario: company.regime_tributario || '' });
     setValueEdit('name', company.name);
     setValueEdit('cnpj', company.cnpj || '');
@@ -321,6 +346,54 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   const handlePasswordCancel = () => {
     setPasswordAuthCompany(null);
     setIsAuthModalOpen(false);
+  };
+
+  const handleOperationAuthSuccess = () => {
+    if (!operationAuthCompany) return;
+    
+    if (operationAuthCompany.operation === 'edit') {
+      // Abrir modal de edição
+      const company = companies?.find(c => c.id === operationAuthCompany.id);
+      if (company) {
+        setEditingCompany({ 
+          id: company.id, 
+          name: company.name, 
+          cnpj: company.cnpj || '', 
+          segmento: company.segmento || '', 
+          regime_tributario: company.regime_tributario || '' 
+        });
+        setValueEdit('name', company.name);
+        setValueEdit('cnpj', company.cnpj || '');
+        setValueEdit('segmento', company.segmento || '');
+        setValueEdit('regime_tributario', company.regime_tributario || '');
+        setIsEditDialogOpen(true);
+      }
+    } else if (operationAuthCompany.operation === 'delete') {
+      // Abrir modal de confirmação de exclusão
+      setDeleteConfirmCompany({ id: operationAuthCompany.id, name: operationAuthCompany.name });
+      setIsDeleteConfirmModalOpen(true);
+    }
+    
+    setOperationAuthCompany(null);
+    setIsOperationAuthModalOpen(false);
+  };
+
+  const handleOperationAuthCancel = () => {
+    setOperationAuthCompany(null);
+    setIsOperationAuthModalOpen(false);
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirmCompany) {
+      deleteCompanyMutation.mutate(deleteConfirmCompany.id);
+      setDeleteConfirmCompany(null);
+      setIsDeleteConfirmModalOpen(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirmCompany(null);
+    setIsDeleteConfirmModalOpen(false);
   };
 
   const clearAuthentication = (companyName: string) => {
@@ -874,36 +947,18 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                       >
                         <Edit3 className="h-3 w-3" />
                       </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Tem certeza que deseja excluir a empresa "{company.name}"? 
-                              Esta ação também removerá todos os dados fiscais associados e não pode ser desfeita.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteCompany(company.id, company.name)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Excluir
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCompany(company.id, company.name);
+                        }}
+                        title="Excluir empresa"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -1110,6 +1165,66 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
         )}
       </DialogContent>
     </Dialog>
+
+    {/* Modal de autenticação para operações sensíveis */}
+    <Dialog open={isOperationAuthModalOpen} onOpenChange={setIsOperationAuthModalOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Lock className="h-5 w-5" />
+            Operação Protegida
+          </DialogTitle>
+          <DialogDescription>
+            Esta operação requer confirmação de senha
+          </DialogDescription>
+        </DialogHeader>
+        {operationAuthCompany && (
+          <CompanyOperationAuth
+            companyName={operationAuthCompany.name}
+            companyId={operationAuthCompany.id}
+            operation={operationAuthCompany.operation}
+            onSuccess={handleOperationAuthSuccess}
+            onCancel={handleOperationAuthCancel}
+          />
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* Modal de confirmação de exclusão */}
+    <AlertDialog open={isDeleteConfirmModalOpen} onOpenChange={setIsDeleteConfirmModalOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Trash2 className="h-5 w-5 text-destructive" />
+            Confirmar Exclusão
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            Tem certeza que deseja excluir a empresa <strong>"{deleteConfirmCompany?.name}"</strong>?
+            <br /><br />
+            Esta ação também removerá:
+            <ul className="list-disc list-inside mt-2 space-y-1">
+              <li>Todos os dados fiscais associados</li>
+              <li>Histórico de períodos</li>
+              <li>Configurações de senha (se houver)</li>
+            </ul>
+            <br />
+            <strong className="text-destructive">Esta ação não pode ser desfeita.</strong>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleCancelDelete}>
+            Cancelar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleConfirmDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={deleteCompanyMutation.isPending}
+          >
+            {deleteCompanyMutation.isPending ? 'Excluindo...' : 'Excluir Empresa'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
   );
 };

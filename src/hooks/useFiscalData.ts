@@ -325,6 +325,42 @@ export const useAddCompany = () => {
       segmento?: string;
       regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
     }) => {
+      let finalRegime = companyData.regime_tributario;
+
+      // Se não foi especificado um regime e há um CNPJ, verificar se existe regime definido para este CNPJ
+      if (!finalRegime && companyData.cnpj) {
+        // Remover formatação do CNPJ (pontos, traços, espaços) para comparar apenas números
+        const cnpjToSearch = companyData.cnpj.replace(/\D/g, '');
+        console.log('🔍 Procurando regime para CNPJ (sem formatação):', cnpjToSearch);
+        
+        // Debug: listar todos os CNPJs na tabela de regimes
+        const { data: allRegimes } = await supabase
+          .from('cnpj_regimes')
+          .select('cnpj, regime_tributario');
+        console.log('📊 Todos os regimes cadastrados:', allRegimes);
+        
+        const { data: cnpjRegime, error: regimeError } = await supabase
+          .from('cnpj_regimes')
+          .select('regime_tributario')
+          .eq('cnpj', cnpjToSearch)
+          .maybeSingle();
+
+        console.log('📋 Resultado da busca:', { cnpjRegime, regimeError });
+
+        if (cnpjRegime) {
+          finalRegime = cnpjRegime.regime_tributario;
+          console.log('✅ Regime encontrado e aplicado:', finalRegime);
+        } else {
+          console.log('❌ Nenhum regime encontrado para o CNPJ');
+        }
+      }
+
+      console.log('💾 Salvando empresa com dados:', {
+        name: companyData.name.trim(),
+        cnpj: companyData.cnpj?.trim() || null,
+        regime_tributario: finalRegime || null
+      });
+
       const { data, error } = await supabase
         .from('companies')
         .insert({
@@ -332,12 +368,13 @@ export const useAddCompany = () => {
           cnpj: companyData.cnpj?.trim() || null,
           sem_movimento: companyData.sem_movimento || false,
           segmento: companyData.segmento?.trim() || null,
-          regime_tributario: companyData.regime_tributario || null,
+          regime_tributario: finalRegime || null,
         })
         .select()
         .single();
 
       if (error) throw error;
+      console.log('✅ Empresa salva com sucesso:', data);
       return data;
     },
     onSuccess: () => {
@@ -873,16 +910,15 @@ export const useCnpjRegimes = () => {
     queryKey: ['cnpj-regimes'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('companies')
+        .from('cnpj_regimes')
         .select('cnpj, regime_tributario')
-        .not('cnpj', 'is', null)
-        .not('regime_tributario', 'is', null);
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
       return data?.map(item => ({
-        cnpj: item.cnpj!,
-        regime: item.regime_tributario!
+        cnpj: item.cnpj,
+        regime: item.regime_tributario
       })) || [];
     },
   });
@@ -896,33 +932,31 @@ export const useSaveCnpjRegime = () => {
       cnpj: string;
       regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
     }) => {
-      // Verificar se já existe uma empresa com este CNPJ
-      const { data: existingCompany } = await supabase
-        .from('companies')
-        .select('id, name')
+      // Verificar se já existe um regime para este CNPJ
+      const { data: existingRegime } = await supabase
+        .from('cnpj_regimes')
+        .select('id, regime_tributario')
         .eq('cnpj', cnpj)
         .maybeSingle();
 
-      if (existingCompany) {
-        // Atualizar empresa existente
+      if (existingRegime) {
+        // Atualizar regime existente
         const { data, error } = await supabase
-          .from('companies')
+          .from('cnpj_regimes')
           .update({ regime_tributario: regime })
-          .eq('id', existingCompany.id)
+          .eq('id', existingRegime.id)
           .select()
           .single();
 
         if (error) throw error;
         return { type: 'updated', data };
       } else {
-        // Criar nova empresa apenas com CNPJ e regime
+        // Criar novo regime para o CNPJ
         const { data, error } = await supabase
-          .from('companies')
+          .from('cnpj_regimes')
           .insert({
-            name: `Empresa ${cnpj}`, // Nome temporário
             cnpj,
-            regime_tributario: regime,
-            sem_movimento: false
+            regime_tributario: regime
           })
           .select()
           .single();
@@ -956,54 +990,14 @@ export const useRemoveCnpjRegime = () => {
 
   return useMutation({
     mutationFn: async (cnpj: string) => {
-      // Encontrar a empresa pelo CNPJ
-      const { data: company } = await supabase
-        .from('companies')
-        .select('id, name')
-        .eq('cnpj', cnpj)
-        .single();
+      // Remover regime da tabela cnpj_regimes
+      const { error } = await supabase
+        .from('cnpj_regimes')
+        .delete()
+        .eq('cnpj', cnpj);
 
-      if (!company) {
-        throw new Error('Empresa não encontrada');
-      }
-
-      // Verificar se tem dados fiscais
-      const { data: fiscalData } = await supabase
-        .from('fiscal_data')
-        .select('id')
-        .eq('company_id', company.id)
-        .limit(1);
-
-      if (fiscalData && fiscalData.length > 0) {
-        // Se tem dados fiscais, apenas remover o regime
-        const { error } = await supabase
-          .from('companies')
-          .update({ regime_tributario: null })
-          .eq('id', company.id);
-
-        if (error) throw error;
-        return { type: 'regime_removed' };
-      } else {
-        // Se não tem dados fiscais e o nome é genérico, remover a empresa completamente
-        if (company.name.startsWith('Empresa ')) {
-          const { error } = await supabase
-            .from('companies')
-            .delete()
-            .eq('id', company.id);
-
-          if (error) throw error;
-          return { type: 'company_deleted' };
-        } else {
-          // Apenas remover o regime
-          const { error } = await supabase
-            .from('companies')
-            .update({ regime_tributario: null })
-            .eq('id', company.id);
-
-          if (error) throw error;
-          return { type: 'regime_removed' };
-        }
-      }
+      if (error) throw error;
+      return { type: 'regime_removed' };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['cnpj-regimes'] });
@@ -1041,12 +1035,10 @@ export const useAutoAssignRegimes = () => {
         return { updated: 0 };
       }
 
-      // Buscar regimes definidos para CNPJs
+      // Buscar regimes definidos para CNPJs na nova tabela
       const { data: cnpjRegimes } = await supabase
-        .from('companies')
-        .select('cnpj, regime_tributario')
-        .not('cnpj', 'is', null)
-        .not('regime_tributario', 'is', null);
+        .from('cnpj_regimes')
+        .select('cnpj, regime_tributario');
 
       if (!cnpjRegimes || cnpjRegimes.length === 0) {
         return { updated: 0 };
@@ -1175,9 +1167,28 @@ export const useImportExcel = () => {
           if (updateError) throw updateError;
           companies.push(updatedCompany);
         } else {
+          // Verificar se existe regime definido para este CNPJ
+          let regime = company.regime_tributario;
+          if (!regime && company.cnpj) {
+            // Remover formatação do CNPJ para comparar apenas números
+            const cnpjToSearch = company.cnpj.replace(/\D/g, '');
+            const { data: cnpjRegime } = await supabase
+              .from('cnpj_regimes')
+              .select('regime_tributario')
+              .eq('cnpj', cnpjToSearch)
+              .maybeSingle();
+
+            if (cnpjRegime) {
+              regime = cnpjRegime.regime_tributario;
+            }
+          }
+
           const { data: newCompany, error: insertError } = await supabase
             .from('companies')
-            .insert(company)
+            .insert({
+              ...company,
+              regime_tributario: regime
+            })
             .select()
             .single();
 

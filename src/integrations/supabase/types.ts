@@ -85,6 +85,30 @@ export type Database = {
           },
         ]
       }
+      cnpj_regimes: {
+        Row: {
+          cnpj: string
+          created_at: string
+          id: string
+          regime_tributario: Database["public"]["Enums"]["regime_tributario_type"]
+          updated_at: string
+        }
+        Insert: {
+          cnpj: string
+          created_at?: string
+          id?: string
+          regime_tributario: Database["public"]["Enums"]["regime_tributario_type"]
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string
+          created_at?: string
+          id?: string
+          regime_tributario?: Database["public"]["Enums"]["regime_tributario_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fiscal_data: {
         Row: {
           company_id: string

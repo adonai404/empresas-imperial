@@ -15,6 +15,8 @@ import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search,
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
+import { CompanyOperationAuth } from './CompanyOperationAuth';
+import { PasswordChangeAuth } from './PasswordChangeAuth';
 
 interface SettingsProps {}
 
@@ -50,6 +52,10 @@ export const Settings = ({}: SettingsProps) => {
   const [currentRegimeForAdd, setCurrentRegimeForAdd] = useState<'lucro_real' | 'lucro_presumido' | 'simples_nacional'>('lucro_real');
   const [tempCnpj, setTempCnpj] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [operationAuthCompany, setOperationAuthCompany] = useState<{ id: string; name: string; operation: 'remove_password' } | null>(null);
+  const [isOperationAuthModalOpen, setIsOperationAuthModalOpen] = useState(false);
+  const [passwordChangeAuthCompany, setPasswordChangeAuthCompany] = useState<{ id: string; name: string; operation: 'change' | 'remove' } | null>(null);
+  const [isPasswordChangeAuthModalOpen, setIsPasswordChangeAuthModalOpen] = useState(false);
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: cnpjRegimes = [] } = useCnpjRegimes();
@@ -62,12 +68,22 @@ export const Settings = ({}: SettingsProps) => {
   const password = watch('password');
 
   const handleSetPassword = (company: any) => {
+    // Se a empresa já tem senha, exigir autenticação para alterar
+    if (hasPassword(company)) {
+      setPasswordChangeAuthCompany({ id: company.id, name: company.name, operation: 'change' });
+      setIsPasswordChangeAuthModalOpen(true);
+      return;
+    }
+    
+    // Empresa sem senha - definir senha diretamente
     setSelectedCompany({ id: company.id, name: company.name });
     setIsPasswordDialogOpen(true);
   };
 
   const handleRemovePassword = (company: any) => {
-    removePasswordMutation.mutate(company.id);
+    // Exigir autenticação para remover senha
+    setPasswordChangeAuthCompany({ id: company.id, name: company.name, operation: 'remove' });
+    setIsPasswordChangeAuthModalOpen(true);
   };
 
   // Funções para gerenciar regimes
@@ -299,6 +315,44 @@ export const Settings = ({}: SettingsProps) => {
         reset();
       }
     });
+  };
+
+  const handleOperationAuthSuccess = () => {
+    if (!operationAuthCompany) return;
+    
+    if (operationAuthCompany.operation === 'remove_password') {
+      // Remover senha
+      removePasswordMutation.mutate(operationAuthCompany.id);
+    }
+    
+    setOperationAuthCompany(null);
+    setIsOperationAuthModalOpen(false);
+  };
+
+  const handleOperationAuthCancel = () => {
+    setOperationAuthCompany(null);
+    setIsOperationAuthModalOpen(false);
+  };
+
+  const handlePasswordChangeAuthSuccess = () => {
+    if (!passwordChangeAuthCompany) return;
+    
+    if (passwordChangeAuthCompany.operation === 'change') {
+      // Abrir modal de alteração de senha
+      setSelectedCompany({ id: passwordChangeAuthCompany.id, name: passwordChangeAuthCompany.name });
+      setIsPasswordDialogOpen(true);
+    } else if (passwordChangeAuthCompany.operation === 'remove') {
+      // Remover senha diretamente
+      removePasswordMutation.mutate(passwordChangeAuthCompany.id);
+    }
+    
+    setPasswordChangeAuthCompany(null);
+    setIsPasswordChangeAuthModalOpen(false);
+  };
+
+  const handlePasswordChangeAuthCancel = () => {
+    setPasswordChangeAuthCompany(null);
+    setIsPasswordChangeAuthModalOpen(false);
   };
 
 
@@ -890,6 +944,54 @@ export const Settings = ({}: SettingsProps) => {
           </Dialog>
         </TabsContent>
       </Tabs>
+
+      {/* Modal de autenticação para operações sensíveis */}
+      <Dialog open={isOperationAuthModalOpen} onOpenChange={setIsOperationAuthModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Operação Protegida
+            </DialogTitle>
+            <DialogDescription>
+              Esta operação requer confirmação de senha
+            </DialogDescription>
+          </DialogHeader>
+          {operationAuthCompany && (
+            <CompanyOperationAuth
+              companyName={operationAuthCompany.name}
+              companyId={operationAuthCompany.id}
+              operation={operationAuthCompany.operation}
+              onSuccess={handleOperationAuthSuccess}
+              onCancel={handleOperationAuthCancel}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de autenticação para alteração/remoção de senha */}
+      <Dialog open={isPasswordChangeAuthModalOpen} onOpenChange={setIsPasswordChangeAuthModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Confirmação de Senha
+            </DialogTitle>
+            <DialogDescription>
+              Confirme sua senha atual para continuar
+            </DialogDescription>
+          </DialogHeader>
+          {passwordChangeAuthCompany && (
+            <PasswordChangeAuth
+              companyName={passwordChangeAuthCompany.name}
+              companyId={passwordChangeAuthCompany.id}
+              operation={passwordChangeAuthCompany.operation}
+              onSuccess={handlePasswordChangeAuthSuccess}
+              onCancel={handlePasswordChangeAuthCancel}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

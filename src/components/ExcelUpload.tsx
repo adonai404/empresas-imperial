@@ -99,6 +99,47 @@ export const ExcelUpload = () => {
     window.open('https://extracao.streamlit.app/', '_blank');
   };
 
+  const downloadTemplate = () => {
+    const templateData = [
+      { 
+        Empresa: 'Empresa Exemplo Ltda', 
+        CNPJ: '12345678000195', 
+        Período: '2024-01', 
+        RBT12: 1000000, 
+        entrada: 50000, 
+        saída: 30000, 
+        imposto: 5000, 
+        situação: 'Ativa' 
+      },
+      { 
+        Empresa: 'Outra Empresa S.A.', 
+        CNPJ: '98765432000123', 
+        Período: '2024-01', 
+        RBT12: 2000000, 
+        entrada: 80000, 
+        saída: 60000, 
+        imposto: 8000, 
+        situação: 'Ativa' 
+      },
+      { 
+        Empresa: 'Empresa Paralisada Ltda', 
+        CNPJ: '11111111000111', 
+        Período: '2024-01', 
+        RBT12: 0, 
+        entrada: 0, 
+        saída: 0, 
+        imposto: 0, 
+        situação: 'Paralizada' 
+      }
+    ];
+
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Dados Fiscais');
+    
+    XLSX.writeFile(wb, 'template_importacao_dados_fiscais.xlsx');
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -109,37 +150,52 @@ export const ExcelUpload = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-        <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            isDragging
-              ? 'border-primary bg-primary/5'
-              : 'border-muted-foreground/25 hover:border-primary/50'
-          }`}
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-        >
-          <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-medium mb-2">
-            Arraste e solte seu arquivo Excel aqui
-          </p>
-          <p className="text-sm text-muted-foreground mb-4">
-            ou clique para selecionar um arquivo (.xlsx, .xls)
-          </p>
-          <Button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importMutation.isPending}
+          {/* Botão para baixar template */}
+          <div className="mb-6">
+            <Button
+              variant="outline"
+              onClick={downloadTemplate}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Baixar Template XLSX
+            </Button>
+            <p className="text-sm text-muted-foreground mt-2">
+              Baixe o template com o formato correto para importar seus dados
+            </p>
+          </div>
+
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              isDragging
+                ? 'border-primary bg-primary/5'
+                : 'border-muted-foreground/25 hover:border-primary/50'
+            }`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
           >
-            {importMutation.isPending ? 'Importando...' : 'Selecionar Arquivo'}
-          </Button>
-          <Input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls"
-            onChange={handleInputChange}
-            className="hidden"
-          />
-        </div>
+            <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-lg font-medium mb-2">
+              Arraste e solte seu arquivo Excel aqui
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              ou clique para selecionar um arquivo (.xlsx, .xls)
+            </p>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importMutation.isPending}
+            >
+              {importMutation.isPending ? 'Importando...' : 'Selecionar Arquivo'}
+            </Button>
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleInputChange}
+              className="hidden"
+            />
+          </div>
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <h4 className="font-semibold mb-2">Formato aceito:</h4>
           <div className="text-sm text-muted-foreground space-y-1">
