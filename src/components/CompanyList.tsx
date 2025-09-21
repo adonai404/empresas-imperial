@@ -738,7 +738,6 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
-                <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Regime</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
@@ -780,18 +779,6 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                   <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
                     <span className="truncate block text-xs">
                       {company.segmento || 'N/A'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="border-r border-border text-foreground w-20 hidden lg:table-cell">
-                    <span className="truncate block text-xs">
-                      {company.regime_tributario ? (
-                        <Badge variant="outline" className="text-xs">
-                          {company.regime_tributario === 'lucro_real' ? 'LR' :
-                           company.regime_tributario === 'lucro_presumido' ? 'LP' :
-                           company.regime_tributario === 'simples_nacional' ? 'SN' :
-                           company.regime_tributario === 'mei' ? 'MEI' : 'N/A'}
-                        </Badge>
-                      ) : 'N/A'}
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
@@ -923,7 +910,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
               ))}
               {filteredAndSortedCompanies?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground border-b border-border">
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground border-b border-border">
                     <FileText className="h-12 w-12 mx-auto mb-4" />
                     <p>Nenhuma empresa encontrada</p>
                   </TableCell>
