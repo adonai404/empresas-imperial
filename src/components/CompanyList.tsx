@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes } from '@/hooks/useFiscalData';
-import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { CompanyPasswordAuth } from './CompanyPasswordAuth';
+import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment } from '@/hooks/useFiscalData';
+import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
+import { CompanyPasswordAuth } from './CompanyPasswordAuth';
+import { useForm } from 'react-hook-form';
 
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
@@ -67,12 +68,21 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   const [isOperationAuthModalOpen, setIsOperationAuthModalOpen] = useState(false);
   const [deleteConfirmCompany, setDeleteConfirmCompany] = useState<{ id: string; name: string } | null>(null);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
+  
+  // Estados para gerenciamento de segmentos na adição e edição
+  const [isCreateSegmentFromEditOpen, setIsCreateSegmentFromEditOpen] = useState(false);
+  const [newSegmentNameFromEdit, setNewSegmentNameFromEdit] = useState('');
+  const [isCreateSegmentFromAddOpen, setIsCreateSegmentFromAddOpen] = useState(false);
+  const [newSegmentNameFromAdd, setNewSegmentNameFromAdd] = useState('');
+  
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
+  const { data: segments = [] } = useSegments();
   const deleteCompanyMutation = useDeleteCompany();
   const addCompanyMutation = useAddCompany();
   const updateCompanyMutation = useUpdateCompany();
   const updateStatusMutation = useUpdateCompanyStatus();
   const autoAssignRegimesMutation = useAutoAssignRegimes();
+  const createSegmentMutation = useCreateSegment();
 
   // Aplicar regimes automaticamente quando as empresas carregarem
   React.useEffect(() => {
@@ -383,6 +393,34 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
     setIsOperationAuthModalOpen(false);
   };
 
+  // Função para criar segmento durante edição
+  const handleCreateSegmentFromEdit = () => {
+    if (!newSegmentNameFromEdit.trim()) return;
+    
+    createSegmentMutation.mutate(newSegmentNameFromEdit, {
+      onSuccess: (data) => {
+        // Atribuir o novo segmento à empresa que está sendo editada
+        setValueEdit('segmento', data.name);
+        setIsCreateSegmentFromEditOpen(false);
+        setNewSegmentNameFromEdit('');
+      }
+    });
+  };
+
+  // Função para criar segmento durante adição
+  const handleCreateSegmentFromAdd = () => {
+    if (!newSegmentNameFromAdd.trim()) return;
+    
+    createSegmentMutation.mutate(newSegmentNameFromAdd, {
+      onSuccess: (data) => {
+        // Atribuir o novo segmento à empresa que está sendo adicionada
+        setValue('segmento', data.name);
+        setIsCreateSegmentFromAddOpen(false);
+        setNewSegmentNameFromAdd('');
+      }
+    });
+  };
+
   const handleConfirmDelete = () => {
     if (deleteConfirmCompany) {
       deleteCompanyMutation.mutate(deleteConfirmCompany.id);
@@ -591,14 +629,35 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                     maxLength={18}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="segmento">Segmento</Label>
-                  <Input
-                    id="segmento"
-                    {...register('segmento')}
-                    placeholder="Ex: Comércio, Serviços, Indústria (opcional)"
-                  />
-                </div>
+                 <div className="space-y-2">
+                   <Label htmlFor="segmento">Segmento</Label>
+                   <Select onValueChange={(value) => {
+                     if (value === 'create_new_segment') {
+                       setIsCreateSegmentFromAddOpen(true);
+                     } else {
+                       setValue('segmento', value);
+                     }
+                   }}>
+                     <SelectTrigger>
+                       <SelectValue placeholder="Selecionar segmento" />
+                     </SelectTrigger>
+                     <SelectContent>
+                       <SelectItem value="">Sem segmento</SelectItem>
+                       {segments.map((segment) => (
+                         <SelectItem key={segment.id} value={segment.name}>
+                           {segment.name}
+                         </SelectItem>
+                       ))}
+                       <Separator />
+                       <SelectItem value="create_new_segment" className="text-primary">
+                         <div className="flex items-center gap-2">
+                           <Plus className="h-4 w-4" />
+                           Criar novo segmento
+                         </div>
+                       </SelectItem>
+                     </SelectContent>
+                   </Select>
+                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="regime_tributario">Regime Tributário</Label>
                   <Select onValueChange={(value) => setValue('regime_tributario', value)}>
@@ -1096,11 +1155,35 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-segmento">Segmento</Label>
-            <Input
-              id="edit-segmento"
-              {...registerEdit('segmento')}
-              placeholder="Ex: Comércio, Serviços, Indústria (opcional)"
-            />
+            <Select
+              value={editingCompany?.segmento || ''}
+              onValueChange={(value) => {
+                if (value === 'create_new_segment') {
+                  setIsCreateSegmentFromEditOpen(true);
+                } else {
+                  setValueEdit('segmento', value);
+                }
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecionar segmento" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Sem segmento</SelectItem>
+                {segments.map((segment) => (
+                  <SelectItem key={segment.id} value={segment.name}>
+                    {segment.name}
+                  </SelectItem>
+                ))}
+                <Separator />
+                <SelectItem value="create_new_segment" className="text-primary">
+                  <div className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Criar novo segmento
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-regime">Regime Tributário</Label>
@@ -1225,6 +1308,110 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    
+    {/* Dialog para criar novo segmento durante edição */}
+    <Dialog open={isCreateSegmentFromEditOpen} onOpenChange={setIsCreateSegmentFromEditOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            Criar Novo Segmento
+          </DialogTitle>
+          <DialogDescription>
+            Digite o nome do novo segmento que será atribuído à empresa.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="newSegmentNameFromEdit">Nome do Segmento</Label>
+            <Input
+              id="newSegmentNameFromEdit"
+              placeholder="Ex: Varejo, Indústria, Serviços..."
+              value={newSegmentNameFromEdit}
+              onChange={(e) => setNewSegmentNameFromEdit(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newSegmentNameFromEdit.trim()) {
+                  handleCreateSegmentFromEdit();
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsCreateSegmentFromEditOpen(false);
+              setNewSegmentNameFromEdit('');
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleCreateSegmentFromEdit}
+            disabled={!newSegmentNameFromEdit.trim() || createSegmentMutation.isPending}
+            className="min-w-[120px]"
+          >
+            {createSegmentMutation.isPending ? 'Criando...' : 'Criar e Atribuir'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    
+    {/* Dialog para criar novo segmento durante adição */}
+    <Dialog open={isCreateSegmentFromAddOpen} onOpenChange={setIsCreateSegmentFromAddOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Tag className="h-5 w-5" />
+            Criar Novo Segmento
+          </DialogTitle>
+          <DialogDescription>
+            Digite o nome do novo segmento que será atribuído à nova empresa.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="newSegmentNameFromAdd">Nome do Segmento</Label>
+            <Input
+              id="newSegmentNameFromAdd"
+              placeholder="Ex: Varejo, Indústria, Serviços..."
+              value={newSegmentNameFromAdd}
+              onChange={(e) => setNewSegmentNameFromAdd(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newSegmentNameFromAdd.trim()) {
+                  handleCreateSegmentFromAdd();
+                }
+              }}
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsCreateSegmentFromAddOpen(false);
+              setNewSegmentNameFromAdd('');
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleCreateSegmentFromAdd}
+            disabled={!newSegmentNameFromAdd.trim() || createSegmentMutation.isPending}
+            className="min-w-[120px]"
+          >
+            {createSegmentMutation.isPending ? 'Criando...' : 'Criar e Atribuir'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
   );
 };
