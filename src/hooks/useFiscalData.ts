@@ -205,7 +205,7 @@ export const useFiscalStats = () => {
     queryFn: async () => {
       const [companiesResult, fiscalDataResult] = await Promise.all([
         supabase.from('companies').select('id, sem_movimento', { count: 'exact' }),
-        supabase.from('fiscal_data').select('entrada, saida, imposto'),
+        supabase.from('fiscal_data').select('entrada, saida, imposto, company_id'),
       ]);
 
       if (companiesResult.error) throw companiesResult.error;
@@ -730,7 +730,7 @@ export const useFiscalEvolutionData = () => {
           entrada,
           saida,
           imposto,
-          companies!inner(name)
+          companies!inner(id, name)
         `)
         .order('period');
       

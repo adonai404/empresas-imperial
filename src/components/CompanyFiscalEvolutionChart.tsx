@@ -10,7 +10,6 @@ import { TrendingUp, TrendingDown, Filter, X, Building2 } from 'lucide-react';
 const chartConfig = {
   entrada: {
     label: 'Entradas',
-    color: 'hsl(var(--chart-1))',
     theme: {
       light: 'hsl(142, 76%, 36%)',
       dark: 'hsl(142, 70%, 45%)',
@@ -18,7 +17,6 @@ const chartConfig = {
   },
   saida: {
     label: 'Saídas',
-    color: 'hsl(var(--chart-2))',
     theme: {
       light: 'hsl(0, 84%, 60%)',
       dark: 'hsl(0, 84%, 60%)',
@@ -26,7 +24,6 @@ const chartConfig = {
   },
   imposto: {
     label: 'Impostos',
-    color: 'hsl(var(--chart-3))',
     theme: {
       light: 'hsl(38, 92%, 50%)',
       dark: 'hsl(38, 92%, 50%)',

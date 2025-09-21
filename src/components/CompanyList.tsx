@@ -21,13 +21,11 @@ interface CompanyListProps {
 interface AddCompanyForm {
   name: string;
   cnpj: string;
-  segmento: string;
 }
 
 interface EditCompanyForm {
   name: string;
   cnpj: string;
-  segmento: string;
 }
 
 interface FilterState {
@@ -53,7 +51,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string; segmento: string } | null>(null);
+  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string } | null>(null);
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; currentStatus: boolean } | null>(null);
@@ -72,6 +70,42 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, setValue, formState: { errors: editErrors } } = useForm<EditCompanyForm>({
     mode: 'onChange'
   });
+
+  // Funções para gerenciar regimes - move before use
+  const getRegimeCompanies = (regime: string) => {
+    if (!companies) return [];
+    
+    // Para simular a integração com os dados da aba "Definir Regime das Empresas"
+    // Aqui você pode integrar com o estado global ou contexto que armazena os regimes
+    // Por enquanto, vou usar uma lógica de exemplo baseada no CNPJ
+    
+    switch (regime) {
+      case 'todas':
+        return companies;
+      case 'lucro_real':
+        // Exemplo: empresas com CNPJ terminando em 1, 2, 3
+        return companies.filter(company => 
+          company.cnpj && ['1', '2', '3'].includes(company.cnpj.slice(-1))
+        );
+      case 'lucro_presumido':
+        // Exemplo: empresas com CNPJ terminando em 4, 5, 6
+        return companies.filter(company => 
+          company.cnpj && ['4', '5', '6'].includes(company.cnpj.slice(-1))
+        );
+      case 'simples_nacional':
+        // Exemplo: empresas com CNPJ terminando em 7, 8, 9
+        return companies.filter(company => 
+          company.cnpj && ['7', '8', '9'].includes(company.cnpj.slice(-1))
+        );
+      case 'normais':
+        // Lucro Real + Lucro Presumido
+        return companies.filter(company => 
+          company.cnpj && ['1', '2', '3', '4', '5', '6'].includes(company.cnpj.slice(-1))
+        );
+      default:
+        return companies;
+    }
+  };
 
   // Primeiro filtrar por regime se selecionado
   const regimeFilteredCompanies = selectedRegime ? getRegimeCompanies(selectedRegime) : companies || [];
@@ -150,7 +184,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
     addCompanyMutation.mutate({
       name: data.name,
       cnpj: data.cnpj || undefined,
-      segmento: data.segmento || undefined,
+      sem_movimento: false,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -166,7 +200,6 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
       companyId: editingCompany.id,
       name: data.name,
       cnpj: data.cnpj || undefined,
-      segmento: data.segmento || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -177,10 +210,9 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   };
 
   const openEditDialog = (company: any) => {
-    setEditingCompany({ id: company.id, name: company.name, cnpj: company.cnpj || '', segmento: company.segmento || '' });
+    setEditingCompany({ id: company.id, name: company.name, cnpj: company.cnpj || '' });
     setValue('name', company.name);
     setValue('cnpj', company.cnpj || '');
-    setValue('segmento', company.segmento || '');
     setIsEditDialogOpen(true);
   };
 
@@ -299,41 +331,6 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
       'normais': 'Normais (Lucro Real + Lucro Presumido)'
     };
     return labels[regime as keyof typeof labels] || regime;
-  };
-
-  const getRegimeCompanies = (regime: string) => {
-    if (!companies) return [];
-    
-    // Para simular a integração com os dados da aba "Definir Regime das Empresas"
-    // Aqui você pode integrar com o estado global ou contexto que armazena os regimes
-    // Por enquanto, vou usar uma lógica de exemplo baseada no CNPJ
-    
-    switch (regime) {
-      case 'todas':
-        return companies;
-      case 'lucro_real':
-        // Exemplo: empresas com CNPJ terminando em 1, 2, 3
-        return companies.filter(company => 
-          company.cnpj && ['1', '2', '3'].includes(company.cnpj.slice(-1))
-        );
-      case 'lucro_presumido':
-        // Exemplo: empresas com CNPJ terminando em 4, 5, 6
-        return companies.filter(company => 
-          company.cnpj && ['4', '5', '6'].includes(company.cnpj.slice(-1))
-        );
-      case 'simples_nacional':
-        // Exemplo: empresas com CNPJ terminando em 7, 8, 9
-        return companies.filter(company => 
-          company.cnpj && ['7', '8', '9'].includes(company.cnpj.slice(-1))
-        );
-      case 'normais':
-        // Lucro Real + Lucro Presumido
-        return companies.filter(company => 
-          company.cnpj && ['1', '2', '3', '4', '5', '6'].includes(company.cnpj.slice(-1))
-        );
-      default:
-        return companies;
-    }
   };
 
   const handleRegimeSelection = (regime: string) => {
@@ -506,14 +503,6 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                     {...register('cnpj')}
                     placeholder="00.000.000/0000-00 (opcional)"
                     maxLength={18}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="segmento">Segmento</Label>
-                  <Input
-                    id="segmento"
-                    {...register('segmento')}
-                    placeholder="Ex: Tecnologia, Varejo, Serviços (opcional)"
                   />
                 </div>
                 <DialogFooter>
@@ -713,7 +702,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                 <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
-                <TableHead className="border-r border-border font-semibold text-foreground w-28 hidden sm:table-cell">Segmento</TableHead>
+                
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
@@ -739,7 +728,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                       <span className="truncate">{company.name}</span>
                       {hasPassword(company) && (
                         <div className="flex items-center gap-1">
-                          <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" title="Empresa protegida por senha" />
+                          <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                         </div>
                       )}
                     </div>
@@ -754,7 +743,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-28 hidden sm:table-cell">
                     <span className="truncate block text-xs">
-                      {company.segmento || 'N/A'}
+                      N/A
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
@@ -1013,14 +1002,6 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
               {...registerEdit('cnpj')}
               placeholder="00.000.000/0000-00 (opcional)"
               maxLength={18}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="edit-segmento">Segmento</Label>
-            <Input
-              id="edit-segmento"
-              {...registerEdit('segmento')}
-              placeholder="Ex: Tecnologia, Varejo, Serviços (opcional)"
             />
           </div>
           <DialogFooter>
