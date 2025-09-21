@@ -48,6 +48,7 @@ export const ExcelUpload = () => {
           saida: parseNumber(row.saída || row.saida || row.Saída || row.Saida),
           imposto: parseNumber(row.imposto || row.Imposto),
           sem_movimento: parseSemMovimento(row['situação'] || row['Situação'] || row['situacao'] || row['Situacao'] || row['status'] || row['Status']),
+          segmento: String(row.segmento || row.Segmento || '').trim(),
         };
       });
 
@@ -109,7 +110,8 @@ export const ExcelUpload = () => {
         entrada: 50000, 
         saída: 30000, 
         imposto: 5000, 
-        situação: 'Ativa' 
+        situação: 'Ativa',
+        segmento: 'Varejo'
       },
       { 
         Empresa: 'Outra Empresa S.A.', 
@@ -119,7 +121,8 @@ export const ExcelUpload = () => {
         entrada: 80000, 
         saída: 60000, 
         imposto: 8000, 
-        situação: 'Ativa' 
+        situação: 'Ativa',
+        segmento: 'Indústria'
       },
       { 
         Empresa: 'Empresa Paralisada Ltda', 
@@ -129,7 +132,8 @@ export const ExcelUpload = () => {
         entrada: 0, 
         saída: 0, 
         imposto: 0, 
-        situação: 'Paralizada' 
+        situação: 'Paralizada',
+        segmento: 'Serviços'
       }
     ];
 
@@ -199,10 +203,11 @@ export const ExcelUpload = () => {
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
           <h4 className="font-semibold mb-2">Formato aceito:</h4>
           <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>Colunas:</strong> Empresa, CNPJ, Período, RBT12, entrada, saída, imposto, situação</p>
+            <p><strong>Colunas:</strong> Empresa, CNPJ, Período, RBT12, entrada, saída, imposto, situação, segmento</p>
             <p><strong>Flexível:</strong> Valores em branco são aceitos e tratados como null</p>
             <p><strong>Obrigatório:</strong> Apenas o nome da Empresa é campo obrigatório</p>
             <p><strong>Situação:</strong> Use "Paralizada" ou "Sem movimento" para empresas sem movimento. "Ativa" ou vazio será considerado como empresa ativa</p>
+            <p><strong>Segmento:</strong> Categoria da empresa (ex: Varejo, Indústria, Serviços). Opcional.</p>
           </div>
         </div>
         </CardContent>

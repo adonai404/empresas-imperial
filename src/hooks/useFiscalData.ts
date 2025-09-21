@@ -1214,6 +1214,7 @@ export const useImportExcel = () => {
       saida: number | null;
       imposto: number | null;
       sem_movimento?: boolean;
+      segmento?: string;
     }>) => {
       // Filter out rows without essential data (only empresa is required now)
       const validRows = data.filter(row => 
@@ -1237,12 +1238,14 @@ export const useImportExcel = () => {
             name: row.empresa.trim(),
             cnpj: row.cnpj && row.cnpj.trim() ? row.cnpj.trim() : null,
             sem_movimento: row.sem_movimento || false,
+            segmento: row.segmento && row.segmento.trim() ? row.segmento.trim() : null,
             id: null // Will be filled after insert
           });
           uniqueCompanies.push({
             name: row.empresa.trim(),
             cnpj: row.cnpj && row.cnpj.trim() ? row.cnpj.trim() : null,
             sem_movimento: row.sem_movimento || false,
+            segmento: row.segmento && row.segmento.trim() ? row.segmento.trim() : null,
           });
         }
       }

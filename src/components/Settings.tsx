@@ -62,6 +62,7 @@ export const Settings = ({}: SettingsProps) => {
   const [newSegmentName, setNewSegmentName] = useState('');
   const [isCreateSegmentDialogOpen, setIsCreateSegmentDialogOpen] = useState(false);
   const [deleteSegmentConfirm, setDeleteSegmentConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [companySearchTerm, setCompanySearchTerm] = useState('');
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: cnpjRegimes = [] } = useCnpjRegimes();
@@ -1087,11 +1088,33 @@ export const Settings = ({}: SettingsProps) => {
 
               {/* Lista de Empresas com Segmentos */}
               <div className="space-y-4">
-                <h3 className="text-lg font-medium">Atribuir Segmentos às Empresas</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-medium">Atribuir Segmentos às Empresas</h3>
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Pesquisar empresa..."
+                      value={companySearchTerm}
+                      onChange={(e) => setCompanySearchTerm(e.target.value)}
+                      className="w-64"
+                    />
+                  </div>
+                </div>
                 
                 {companies && companies.length > 0 ? (
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {companies.map((company) => (
+                  (() => {
+                    // Filtrar empresas baseado no termo de pesquisa
+                    const filteredCompanies = companies.filter(company => 
+                      company.name.toLowerCase().includes(companySearchTerm.toLowerCase()) ||
+                      (company.cnpj && company.cnpj.includes(companySearchTerm)) ||
+                      (company.segmento && company.segmento.toLowerCase().includes(companySearchTerm.toLowerCase()))
+                    );
+
+                    return (
+                      <div className="space-y-4">
+                        {filteredCompanies.length > 0 ? (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            {filteredCompanies.map((company) => (
                       <Card key={company.id} className="p-4">
                         <div className="space-y-3">
                           <div className="flex items-center gap-2">
@@ -1150,8 +1173,20 @@ export const Settings = ({}: SettingsProps) => {
                           )}
                         </div>
                       </Card>
-                    ))}
-                  </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                            <h3 className="text-lg font-medium mb-2">Nenhuma empresa encontrada</h3>
+                            <p className="text-muted-foreground">
+                              Não há empresas que correspondam ao termo de pesquisa "{companySearchTerm}".
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()
                 ) : (
                   <div className="text-center py-8">
                     <Building2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
