@@ -1057,7 +1057,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                 <SelectValue placeholder="Selecione o regime tributário" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="none">Nenhum</SelectItem>
                 <SelectItem value="lucro_real">Lucro Real</SelectItem>
                 <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
                 <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
