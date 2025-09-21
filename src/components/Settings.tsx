@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useUpdateCompany, useAddCompany } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword } from '@/hooks/useFiscalData';
 import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
@@ -55,8 +55,6 @@ export const Settings = ({}: SettingsProps) => {
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const setPasswordMutation = useSetCompanyPassword();
   const removePasswordMutation = useRemoveCompanyPassword();
-  const updateCompanyMutation = useUpdateCompany();
-  const createCompanyMutation = useAddCompany();
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PasswordForm>();
   const password = watch('password');
@@ -71,30 +69,7 @@ export const Settings = ({}: SettingsProps) => {
   };
 
   // Funções para gerenciar regimes
-  const saveCompanyToDatabase = async (cnpj: string, regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional') => {
-    // Verificar se empresa já existe no banco
-    const existingCompany = companies?.find(c => c.cnpj === cnpj);
-    
-    if (existingCompany) {
-      // Atualizar empresa existente
-      await updateCompanyMutation.mutateAsync({
-        companyId: existingCompany.id,
-        name: existingCompany.name,
-        cnpj: existingCompany.cnpj,
-        segmento: existingCompany.segmento,
-        regime_tributario: regime
-      });
-    } else {
-      // Criar nova empresa
-      await createCompanyMutation.mutateAsync({
-        cnpj,
-        regime_tributario: regime,
-        name: `Empresa ${cnpj}` // Nome temporário
-      });
-    }
-  };
-
-  const addCnpjToRegime = async () => {
+  const addCnpjToRegime = () => {
     if (!newCnpj.trim()) return;
     
     const cnpj = newCnpj.replace(/\D/g, ''); // Remove caracteres não numéricos
@@ -107,7 +82,7 @@ export const Settings = ({}: SettingsProps) => {
       return;
     }
 
-    // Verificar se CNPJ já existe no estado local
+    // Verificar se CNPJ já existe
     if (companyRegimes.some(cr => cr.cnpj === cnpj)) {
       toast({
         title: "Erro",
@@ -117,31 +92,19 @@ export const Settings = ({}: SettingsProps) => {
       return;
     }
 
-    try {
-      // Salvar no banco de dados
-      await saveCompanyToDatabase(cnpj, selectedRegime);
+    const newCompanyRegime: CompanyRegime = {
+      id: Date.now().toString(),
+      cnpj,
+      regime: selectedRegime
+    };
 
-      const newCompanyRegime: CompanyRegime = {
-        id: Date.now().toString(),
-        cnpj,
-        regime: selectedRegime
-      };
-
-      setCompanyRegimes(prev => [...prev, newCompanyRegime]);
-      setNewCnpj('');
-      
-      toast({
-        title: "Sucesso",
-        description: `CNPJ salvo no banco de dados com regime ${getRegimeLabel(selectedRegime)}.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao salvar no banco de dados.",
-        variant: "destructive",
-      });
-      console.error('Erro ao salvar empresa:', error);
-    }
+    setCompanyRegimes(prev => [...prev, newCompanyRegime]);
+    setNewCnpj('');
+    
+    toast({
+      title: "Sucesso",
+      description: `CNPJ adicionado ao regime ${getRegimeLabel(selectedRegime)}.`,
+    });
   };
 
   const removeCnpjFromRegime = (id: string) => {
@@ -172,7 +135,7 @@ export const Settings = ({}: SettingsProps) => {
     setIsAddCnpjDialogOpen(true);
   };
 
-  const addCnpjToRegimeFromKanban = async () => {
+  const addCnpjToRegimeFromKanban = () => {
     if (!tempCnpj.trim()) return;
     
     const cnpj = tempCnpj.replace(/\D/g, '');
@@ -194,32 +157,20 @@ export const Settings = ({}: SettingsProps) => {
       return;
     }
 
-    try {
-      // Salvar no banco de dados
-      await saveCompanyToDatabase(cnpj, currentRegimeForAdd);
+    const newCompanyRegime: CompanyRegime = {
+      id: Date.now().toString(),
+      cnpj,
+      regime: currentRegimeForAdd
+    };
 
-      const newCompanyRegime: CompanyRegime = {
-        id: Date.now().toString(),
-        cnpj,
-        regime: currentRegimeForAdd
-      };
-
-      setCompanyRegimes(prev => [...prev, newCompanyRegime]);
-      setTempCnpj('');
-      setIsAddCnpjDialogOpen(false);
-      
-      toast({
-        title: "Sucesso",
-        description: `CNPJ salvo no banco de dados com regime ${getRegimeLabel(currentRegimeForAdd)}.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Erro",
-        description: "Falha ao salvar no banco de dados.",
-        variant: "destructive",
-      });
-      console.error('Erro ao salvar empresa:', error);
-    }
+    setCompanyRegimes(prev => [...prev, newCompanyRegime]);
+    setTempCnpj('');
+    setIsAddCnpjDialogOpen(false);
+    
+    toast({
+      title: "Sucesso",
+      description: `CNPJ adicionado ao regime ${getRegimeLabel(currentRegimeForAdd)}.`,
+    });
   };
 
   // Funções para importação/exportação
@@ -247,7 +198,7 @@ export const Settings = ({}: SettingsProps) => {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = async (e) => {
+    reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -295,32 +246,11 @@ export const Settings = ({}: SettingsProps) => {
         });
 
         if (importedRegimes.length > 0) {
-          // Salvar no banco de dados em lote
-          const savePromises = importedRegimes.map(async (regime) => {
-            try {
-              await saveCompanyToDatabase(regime.cnpj, regime.regime);
-            } catch (error) {
-              console.error(`Erro ao salvar empresa ${regime.cnpj}:`, error);
-              throw error;
-            }
+          setCompanyRegimes(prev => [...prev, ...importedRegimes]);
+          toast({
+            title: "Importação concluída",
+            description: `${importedRegimes.length} empresa(s) importada(s) com sucesso.`,
           });
-
-          try {
-            await Promise.all(savePromises);
-            
-            setCompanyRegimes(prev => [...prev, ...importedRegimes]);
-            toast({
-              title: "Importação concluída",
-              description: `${importedRegimes.length} empresa(s) salva(s) no banco de dados.`,
-            });
-          } catch (error) {
-            toast({
-              title: "Erro na importação",
-              description: "Falha ao salvar algumas empresas no banco de dados.",
-              variant: "destructive",
-            });
-            console.error('Erro ao salvar empresas importadas:', error);
-          }
         }
 
         if (errors.length > 0) {
