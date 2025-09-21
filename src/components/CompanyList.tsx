@@ -21,11 +21,15 @@ interface CompanyListProps {
 interface AddCompanyForm {
   name: string;
   cnpj: string;
+  segmento: string;
+  regime_tributario: string;
 }
 
 interface EditCompanyForm {
   name: string;
   cnpj: string;
+  segmento: string;
+  regime_tributario: string;
 }
 
 interface FilterState {
@@ -51,7 +55,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string } | null>(null);
+  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string; segmento: string; regime_tributario: string } | null>(null);
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; currentStatus: boolean } | null>(null);
@@ -64,43 +68,33 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   const updateCompanyMutation = useUpdateCompany();
   const updateStatusMutation = useUpdateCompanyStatus();
   
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<AddCompanyForm>({
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<AddCompanyForm>({
     mode: 'onChange'
   });
-  const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, setValue, formState: { errors: editErrors } } = useForm<EditCompanyForm>({
+  const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, setValue: setValueEdit, formState: { errors: editErrors } } = useForm<EditCompanyForm>({
     mode: 'onChange'
   });
 
-  // Funções para gerenciar regimes - move before use
+  // Funções para gerenciar regimes - usando dados reais do banco de dados
   const getRegimeCompanies = (regime: string) => {
     if (!companies) return [];
-    
-    // Para simular a integração com os dados da aba "Definir Regime das Empresas"
-    // Aqui você pode integrar com o estado global ou contexto que armazena os regimes
-    // Por enquanto, vou usar uma lógica de exemplo baseada no CNPJ
     
     switch (regime) {
       case 'todas':
         return companies;
       case 'lucro_real':
-        // Exemplo: empresas com CNPJ terminando em 1, 2, 3
-        return companies.filter(company => 
-          company.cnpj && ['1', '2', '3'].includes(company.cnpj.slice(-1))
-        );
+        return companies.filter(company => company.regime_tributario === 'lucro_real');
       case 'lucro_presumido':
-        // Exemplo: empresas com CNPJ terminando em 4, 5, 6
-        return companies.filter(company => 
-          company.cnpj && ['4', '5', '6'].includes(company.cnpj.slice(-1))
-        );
+        return companies.filter(company => company.regime_tributario === 'lucro_presumido');
       case 'simples_nacional':
-        // Exemplo: empresas com CNPJ terminando em 7, 8, 9
-        return companies.filter(company => 
-          company.cnpj && ['7', '8', '9'].includes(company.cnpj.slice(-1))
-        );
+        return companies.filter(company => company.regime_tributario === 'simples_nacional');
+      case 'mei':
+        return companies.filter(company => company.regime_tributario === 'mei');
       case 'normais':
         // Lucro Real + Lucro Presumido
         return companies.filter(company => 
-          company.cnpj && ['1', '2', '3', '4', '5', '6'].includes(company.cnpj.slice(-1))
+          company.regime_tributario === 'lucro_real' || 
+          company.regime_tributario === 'lucro_presumido'
         );
       default:
         return companies;
@@ -185,6 +179,8 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
       name: data.name,
       cnpj: data.cnpj || undefined,
       sem_movimento: false,
+      segmento: data.segmento || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei' || undefined,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -200,6 +196,8 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
       companyId: editingCompany.id,
       name: data.name,
       cnpj: data.cnpj || undefined,
+      segmento: data.segmento || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -210,9 +208,11 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   };
 
   const openEditDialog = (company: any) => {
-    setEditingCompany({ id: company.id, name: company.name, cnpj: company.cnpj || '' });
-    setValue('name', company.name);
-    setValue('cnpj', company.cnpj || '');
+    setEditingCompany({ id: company.id, name: company.name, cnpj: company.cnpj || '', segmento: company.segmento || '', regime_tributario: company.regime_tributario || '' });
+    setValueEdit('name', company.name);
+    setValueEdit('cnpj', company.cnpj || '');
+    setValueEdit('segmento', company.segmento || '');
+    setValueEdit('regime_tributario', company.regime_tributario || '');
     setIsEditDialogOpen(true);
   };
 
@@ -381,6 +381,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
             { id: 'lucro_real', label: 'Lucro Real', description: 'Empresas do regime de Lucro Real', icon: FileText, color: 'green' },
             { id: 'lucro_presumido', label: 'Lucro Presumido', description: 'Empresas do regime de Lucro Presumido', icon: FileText, color: 'orange' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
+            { id: 'mei', label: 'MEI', description: 'Empresas do regime MEI', icon: FileText, color: 'pink' },
             { id: 'normais', label: 'Normais', description: 'Lucro Real + Lucro Presumido', icon: FileText, color: 'indigo' }
           ].map((regime) => {
             const IconComponent = regime.icon;
@@ -420,7 +421,7 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-blue-600">{companies?.length || 0}</p>
                 <p className="text-sm text-muted-foreground">Total</p>
@@ -436,6 +437,10 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">{getRegimeCompanies('simples_nacional').length}</p>
                 <p className="text-sm text-muted-foreground">Simples Nacional</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-pink-600">{getRegimeCompanies('mei').length}</p>
+                <p className="text-sm text-muted-foreground">MEI</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-indigo-600">{getRegimeCompanies('normais').length}</p>
@@ -504,6 +509,28 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                     placeholder="00.000.000/0000-00 (opcional)"
                     maxLength={18}
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="segmento">Segmento</Label>
+                  <Input
+                    id="segmento"
+                    {...register('segmento')}
+                    placeholder="Ex: Comércio, Serviços, Indústria (opcional)"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="regime_tributario">Regime Tributário</Label>
+                  <Select onValueChange={(value) => setValue('regime_tributario', value)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o regime tributário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="lucro_real">Lucro Real</SelectItem>
+                      <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                      <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
+                      <SelectItem value="mei">MEI</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <DialogFooter>
                   <Button
@@ -702,7 +729,8 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                 <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
-                
+                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Regime</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
@@ -741,9 +769,21 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
                       }
                     </span>
                   </TableCell>
-                  <TableCell className="border-r border-border text-foreground w-28 hidden sm:table-cell">
+                  <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
                     <span className="truncate block text-xs">
-                      N/A
+                      {company.segmento || 'N/A'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="border-r border-border text-foreground w-20 hidden lg:table-cell">
+                    <span className="truncate block text-xs">
+                      {company.regime_tributario ? (
+                        <Badge variant="outline" className="text-xs">
+                          {company.regime_tributario === 'lucro_real' ? 'LR' :
+                           company.regime_tributario === 'lucro_presumido' ? 'LP' :
+                           company.regime_tributario === 'simples_nacional' ? 'SN' :
+                           company.regime_tributario === 'mei' ? 'MEI' : 'N/A'}
+                        </Badge>
+                      ) : 'N/A'}
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
@@ -1003,6 +1043,32 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
               placeholder="00.000.000/0000-00 (opcional)"
               maxLength={18}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-segmento">Segmento</Label>
+            <Input
+              id="edit-segmento"
+              {...registerEdit('segmento')}
+              placeholder="Ex: Comércio, Serviços, Indústria (opcional)"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-regime">Regime Tributário</Label>
+            <Select 
+              value={editingCompany?.regime_tributario || ''}
+              onValueChange={(value) => setValueEdit('regime_tributario', value)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o regime tributário" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Nenhum</SelectItem>
+                <SelectItem value="lucro_real">Lucro Real</SelectItem>
+                <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
+                <SelectItem value="mei">MEI</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <DialogFooter>
             <Button

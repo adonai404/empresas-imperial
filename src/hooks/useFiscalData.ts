@@ -77,6 +77,8 @@ export interface Company {
   name: string;
   cnpj: string;
   sem_movimento?: boolean;
+  segmento?: string;
+  regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
   created_at: string;
   updated_at: string;
 }
@@ -315,13 +317,21 @@ export const useAddCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (companyData: { name: string; cnpj?: string; sem_movimento?: boolean }) => {
+    mutationFn: async (companyData: { 
+      name: string; 
+      cnpj?: string; 
+      sem_movimento?: boolean;
+      segmento?: string;
+      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
+    }) => {
       const { data, error } = await supabase
         .from('companies')
         .insert({
           name: companyData.name.trim(),
           cnpj: companyData.cnpj?.trim() || null,
           sem_movimento: companyData.sem_movimento || false,
+          segmento: companyData.segmento?.trim() || null,
+          regime_tributario: companyData.regime_tributario || null,
         })
         .select()
         .single();
@@ -506,16 +516,26 @@ export const useUpdateCompany = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ companyId, name, cnpj }: { 
+    mutationFn: async ({ 
+      companyId, 
+      name, 
+      cnpj,
+      segmento,
+      regime_tributario
+    }: { 
       companyId: string; 
       name: string; 
       cnpj?: string;
+      segmento?: string;
+      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
     }) => {
       const { data, error } = await supabase
         .from('companies')
         .update({ 
           name: name.trim(),
-          cnpj: cnpj?.trim() || null
+          cnpj: cnpj?.trim() || null,
+          segmento: segmento?.trim() || null,
+          regime_tributario: regime_tributario || null,
         })
         .eq('id', companyId)
         .select()
