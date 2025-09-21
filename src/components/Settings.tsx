@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime } from '@/hooks/useFiscalData';
 import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
@@ -42,7 +42,6 @@ export const Settings = ({}: SettingsProps) => {
   const [showPassword, setShowPassword] = useState(false);
   
   // Estados para gerenciamento de regimes
-  const [companyRegimes, setCompanyRegimes] = useState<CompanyRegime[]>([]);
   const [newCnpj, setNewCnpj] = useState('');
   const [selectedRegime, setSelectedRegime] = useState<'lucro_real' | 'lucro_presumido' | 'simples_nacional'>('lucro_real');
   
@@ -53,8 +52,11 @@ export const Settings = ({}: SettingsProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
+  const { data: cnpjRegimes = [] } = useCnpjRegimes();
   const setPasswordMutation = useSetCompanyPassword();
   const removePasswordMutation = useRemoveCompanyPassword();
+  const saveCnpjRegimeMutation = useSaveCnpjRegime();
+  const removeCnpjRegimeMutation = useRemoveCnpjRegime();
   
   const { register, handleSubmit, reset, formState: { errors }, watch } = useForm<PasswordForm>();
   const password = watch('password');
@@ -83,7 +85,7 @@ export const Settings = ({}: SettingsProps) => {
     }
 
     // Verificar se CNPJ já existe
-    if (companyRegimes.some(cr => cr.cnpj === cnpj)) {
+    if (cnpjRegimes.some(cr => cr.cnpj === cnpj)) {
       toast({
         title: "Erro",
         description: "Este CNPJ já foi adicionado.",
@@ -92,23 +94,19 @@ export const Settings = ({}: SettingsProps) => {
       return;
     }
 
-    const newCompanyRegime: CompanyRegime = {
-      id: Date.now().toString(),
+    // Salvar no banco de dados
+    saveCnpjRegimeMutation.mutate({
       cnpj,
       regime: selectedRegime
-    };
-
-    setCompanyRegimes(prev => [...prev, newCompanyRegime]);
-    setNewCnpj('');
-    
-    toast({
-      title: "Sucesso",
-      description: `CNPJ adicionado ao regime ${getRegimeLabel(selectedRegime)}.`,
+    }, {
+      onSuccess: () => {
+        setNewCnpj('');
+      }
     });
   };
 
-  const removeCnpjFromRegime = (id: string) => {
-    setCompanyRegimes(prev => prev.filter(cr => cr.id !== id));
+  const removeCnpjFromRegime = (cnpj: string) => {
+    removeCnpjRegimeMutation.mutate(cnpj);
   };
 
   const getRegimeLabel = (regime: string) => {
@@ -125,7 +123,7 @@ export const Settings = ({}: SettingsProps) => {
   };
 
   const getRegimeCompanies = (regime: string) => {
-    return companyRegimes.filter(cr => cr.regime === regime);
+    return cnpjRegimes.filter(cr => cr.regime === regime);
   };
 
   // Funções para Kanban
@@ -148,7 +146,7 @@ export const Settings = ({}: SettingsProps) => {
       return;
     }
 
-    if (companyRegimes.some(cr => cr.cnpj === cnpj)) {
+    if (cnpjRegimes.some(cr => cr.cnpj === cnpj)) {
       toast({
         title: "Erro",
         description: "Este CNPJ já foi adicionado.",
@@ -157,19 +155,15 @@ export const Settings = ({}: SettingsProps) => {
       return;
     }
 
-    const newCompanyRegime: CompanyRegime = {
-      id: Date.now().toString(),
+    // Salvar no banco de dados
+    saveCnpjRegimeMutation.mutate({
       cnpj,
       regime: currentRegimeForAdd
-    };
-
-    setCompanyRegimes(prev => [...prev, newCompanyRegime]);
-    setTempCnpj('');
-    setIsAddCnpjDialogOpen(false);
-    
-    toast({
-      title: "Sucesso",
-      description: `CNPJ adicionado ao regime ${getRegimeLabel(currentRegimeForAdd)}.`,
+    }, {
+      onSuccess: () => {
+        setTempCnpj('');
+        setIsAddCnpjDialogOpen(false);
+      }
     });
   };
 
@@ -216,7 +210,7 @@ export const Settings = ({}: SettingsProps) => {
         }
 
         const validRegimes = ['lucro_real', 'lucro_presumido', 'simples_nacional'];
-        const importedRegimes: CompanyRegime[] = [];
+        const importedRegimes: Array<{ cnpj: string, regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' }> = [];
         const errors: string[] = [];
 
         jsonData.forEach((row: any, index: number) => {
@@ -233,23 +227,27 @@ export const Settings = ({}: SettingsProps) => {
             return;
           }
 
-          if (companyRegimes.some(cr => cr.cnpj === cnpj)) {
+          if (cnpjRegimes.some(cr => cr.cnpj === cnpj)) {
             errors.push(`Linha ${index + 2}: CNPJ já existe (${cnpj})`);
             return;
           }
 
           importedRegimes.push({
-            id: `${Date.now()}_${index}`,
             cnpj,
             regime: regime as 'lucro_real' | 'lucro_presumido' | 'simples_nacional'
           });
         });
 
+        // Salvar no banco de dados em lote
         if (importedRegimes.length > 0) {
-          setCompanyRegimes(prev => [...prev, ...importedRegimes]);
+          // Usar uma abordagem mais simples para importação em lote
+          importedRegimes.forEach(regimeData => {
+            saveCnpjRegimeMutation.mutate(regimeData);
+          });
+          
           toast({
-            title: "Importação concluída",
-            description: `${importedRegimes.length} empresa(s) importada(s) com sucesso.`,
+            title: "Importação iniciada",
+            description: `${importedRegimes.length} empresa(s) sendo processada(s).`,
           });
         }
 
@@ -773,28 +771,28 @@ export const Settings = ({}: SettingsProps) => {
                       </CardHeader>
                       <CardContent className="flex-1">
                         <div className="space-y-2 min-h-[200px]">
-                          {regimeCompanies.length > 0 ? (
-                            regimeCompanies.map((company) => (
-                              <div
-                                key={company.id}
-                                className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <Building2 className="h-4 w-4 text-primary" />
-                                  <span className="font-mono text-sm">
-                                    {formatCnpj(company.cnpj)}
-                                  </span>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removeCnpjFromRegime(company.id)}
-                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 p-0"
-                                >
-                                  <X className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            ))
+                           {regimeCompanies.length > 0 ? (
+                             regimeCompanies.map((company, index) => (
+                               <div
+                                 key={`${company.cnpj}-${index}`}
+                                 className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border"
+                               >
+                                 <div className="flex items-center gap-3">
+                                   <Building2 className="h-4 w-4 text-primary" />
+                                   <span className="font-mono text-sm">
+                                     {formatCnpj(company.cnpj)}
+                                   </span>
+                                 </div>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   onClick={() => removeCnpjFromRegime(company.cnpj)}
+                                   className="text-destructive hover:text-destructive hover:bg-destructive/10 h-6 w-6 p-0"
+                                 >
+                                   <X className="h-3 w-3" />
+                                 </Button>
+                               </div>
+                             ))
                           ) : (
                             <div className="text-center py-8 text-muted-foreground">
                               <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -808,7 +806,7 @@ export const Settings = ({}: SettingsProps) => {
                 })}
               </div>
 
-              {companyRegimes.length === 0 && (
+              {cnpjRegimes.length === 0 && (
                 <div className="text-center py-12">
                   <FileSpreadsheet className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-xl font-medium mb-2">Nenhum regime configurado</h3>

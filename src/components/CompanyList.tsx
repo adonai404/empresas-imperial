@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes } from '@/hooks/useFiscalData';
 import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
@@ -67,6 +67,14 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
   const addCompanyMutation = useAddCompany();
   const updateCompanyMutation = useUpdateCompany();
   const updateStatusMutation = useUpdateCompanyStatus();
+  const autoAssignRegimesMutation = useAutoAssignRegimes();
+
+  // Aplicar regimes automaticamente quando as empresas carregarem
+  React.useEffect(() => {
+    if (companies && companies.length > 0) {
+      autoAssignRegimesMutation.mutate();
+    }
+  }, [companies?.length]);
   
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<AddCompanyForm>({
     mode: 'onChange'

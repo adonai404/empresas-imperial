@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
@@ -863,6 +864,236 @@ export const useCompanyFiscalEvolutionData = (companyId: string) => {
       return evolutionData;
     },
     enabled: !!companyId,
+  });
+};
+
+// Hook para gerenciar regimes de CNPJs
+export const useCnpjRegimes = () => {
+  return useQuery({
+    queryKey: ['cnpj-regimes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select('cnpj, regime_tributario')
+        .not('cnpj', 'is', null)
+        .not('regime_tributario', 'is', null);
+      
+      if (error) throw error;
+      
+      return data?.map(item => ({
+        cnpj: item.cnpj!,
+        regime: item.regime_tributario!
+      })) || [];
+    },
+  });
+};
+
+export const useSaveCnpjRegime = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ cnpj, regime }: {
+      cnpj: string;
+      regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
+    }) => {
+      // Verificar se já existe uma empresa com este CNPJ
+      const { data: existingCompany } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('cnpj', cnpj)
+        .maybeSingle();
+
+      if (existingCompany) {
+        // Atualizar empresa existente
+        const { data, error } = await supabase
+          .from('companies')
+          .update({ regime_tributario: regime })
+          .eq('id', existingCompany.id)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { type: 'updated', data };
+      } else {
+        // Criar nova empresa apenas com CNPJ e regime
+        const { data, error } = await supabase
+          .from('companies')
+          .insert({
+            name: `Empresa ${cnpj}`, // Nome temporário
+            cnpj,
+            regime_tributario: regime,
+            sem_movimento: false
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { type: 'created', data };
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cnpj-regimes'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      
+      toast({
+        title: 'Regime definido',
+        description: 'O regime tributário foi definido para o CNPJ.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao definir regime',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao definir o regime.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useRemoveCnpjRegime = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (cnpj: string) => {
+      // Encontrar a empresa pelo CNPJ
+      const { data: company } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('cnpj', cnpj)
+        .single();
+
+      if (!company) {
+        throw new Error('Empresa não encontrada');
+      }
+
+      // Verificar se tem dados fiscais
+      const { data: fiscalData } = await supabase
+        .from('fiscal_data')
+        .select('id')
+        .eq('company_id', company.id)
+        .limit(1);
+
+      if (fiscalData && fiscalData.length > 0) {
+        // Se tem dados fiscais, apenas remover o regime
+        const { error } = await supabase
+          .from('companies')
+          .update({ regime_tributario: null })
+          .eq('id', company.id);
+
+        if (error) throw error;
+        return { type: 'regime_removed' };
+      } else {
+        // Se não tem dados fiscais e o nome é genérico, remover a empresa completamente
+        if (company.name.startsWith('Empresa ')) {
+          const { error } = await supabase
+            .from('companies')
+            .delete()
+            .eq('id', company.id);
+
+          if (error) throw error;
+          return { type: 'company_deleted' };
+        } else {
+          // Apenas remover o regime
+          const { error } = await supabase
+            .from('companies')
+            .update({ regime_tributario: null })
+            .eq('id', company.id);
+
+          if (error) throw error;
+          return { type: 'regime_removed' };
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cnpj-regimes'] });
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      
+      toast({
+        title: 'Regime removido',
+        description: 'O regime tributário foi removido do CNPJ.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao remover regime',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao remover o regime.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useAutoAssignRegimes = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      // Buscar todas as empresas sem regime que têm CNPJ
+      const { data: companiesWithoutRegime } = await supabase
+        .from('companies')
+        .select('id, name, cnpj')
+        .not('cnpj', 'is', null)
+        .is('regime_tributario', null);
+
+      if (!companiesWithoutRegime || companiesWithoutRegime.length === 0) {
+        return { updated: 0 };
+      }
+
+      // Buscar regimes definidos para CNPJs
+      const { data: cnpjRegimes } = await supabase
+        .from('companies')
+        .select('cnpj, regime_tributario')
+        .not('cnpj', 'is', null)
+        .not('regime_tributario', 'is', null);
+
+      if (!cnpjRegimes || cnpjRegimes.length === 0) {
+        return { updated: 0 };
+      }
+
+      // Criar mapa de CNPJ para regime
+      const regimeMap = new Map();
+      cnpjRegimes.forEach(item => {
+        regimeMap.set(item.cnpj, item.regime_tributario);
+      });
+
+      // Atualizar empresas que têm regime definido
+      let updatedCount = 0;
+      for (const company of companiesWithoutRegime) {
+        const regime = regimeMap.get(company.cnpj);
+        if (regime) {
+          const { error } = await supabase
+            .from('companies')
+            .update({ regime_tributario: regime })
+            .eq('id', company.id);
+
+          if (!error) {
+            updatedCount++;
+          }
+        }
+      }
+
+      return { updated: updatedCount };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      
+      if (result.updated > 0) {
+        toast({
+          title: 'Regimes aplicados',
+          description: `${result.updated} empresas tiveram seus regimes aplicados automaticamente.`,
+        });
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao aplicar regimes',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao aplicar os regimes.',
+        variant: 'destructive',
+      });
+    },
   });
 };
 
