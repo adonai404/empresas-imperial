@@ -6,6 +6,7 @@ import { ExcelUpload } from '@/components/ExcelUpload';
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
 import { LucroRealList } from '@/components/LucroRealList';
+import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -46,7 +47,25 @@ const Index = () => {
         }
         return <CompanyList onSelectCompany={handleSelectCompany} />;
       case 'lucro-real':
-        return <LucroRealList />;
+        if (selectedCompanyId) {
+          return (
+            <div className="space-y-4">
+              <Button 
+                variant="ghost" 
+                onClick={handleBackToCompanies}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar para lista de empresas
+              </Button>
+              <CompanyLucroRealDetails 
+                companyId={selectedCompanyId} 
+                onCompanyDeleted={handleBackToCompanies}
+              />
+            </div>
+          );
+        }
+        return <LucroRealList onSelectCompany={handleSelectCompany} />;
       case 'settings':
         return <Settings />;
       default:

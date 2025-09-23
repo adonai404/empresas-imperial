@@ -1431,6 +1431,23 @@ export const useCompanyWithLucroRealData = (companyId: string) => {
   });
 };
 
+export const useLucroRealDataByCompany = (companyId: string) => {
+  return useQuery({
+    queryKey: ['lucro-real-data-by-company', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_real_data')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('period', { ascending: false });
+      
+      if (error) throw error;
+      return data as LucroRealData[];
+    },
+    enabled: !!companyId,
+  });
+};
+
 export const useAddLucroRealData = () => {
   const queryClient = useQueryClient();
 
@@ -1482,6 +1499,96 @@ export const useAddLucroRealData = () => {
       toast({
         title: 'Erro ao adicionar dados',
         description: error instanceof Error ? error.message : 'Ocorreu um erro ao cadastrar os dados.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useUpdateLucroRealData = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: string;
+      period: string;
+      entradas?: number;
+      saidas?: number;
+      pis?: number;
+      cofins?: number;
+      icms?: number;
+      irpj_primeiro_trimestre?: number;
+      csll_primeiro_trimestre?: number;
+      irpj_segundo_trimestre?: number;
+      csll_segundo_trimestre?: number;
+    }) => {
+      const { data: result, error } = await supabase
+        .from('lucro_real_data')
+        .update({
+          period: data.period.trim(),
+          entradas: data.entradas || null,
+          saidas: data.saidas || null,
+          pis: data.pis || null,
+          cofins: data.cofins || null,
+          icms: data.icms || null,
+          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre || null,
+          csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
+          irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
+          csll_segundo_trimestre: data.csll_segundo_trimestre || null,
+        })
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lucro-real-data'] });
+      queryClient.invalidateQueries({ queryKey: ['lucro-real-data-by-company'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lucro-real'] });
+      
+      toast({
+        title: 'Dados de Lucro Real atualizados',
+        description: 'Os dados foram atualizados com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao atualizar dados',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar os dados.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useDeleteLucroRealData = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('lucro_real_data')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lucro-real-data'] });
+      queryClient.invalidateQueries({ queryKey: ['lucro-real-data-by-company'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lucro-real'] });
+      
+      toast({
+        title: 'Dados de Lucro Real excluídos',
+        description: 'Os dados foram excluídos com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao excluir dados',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao excluir os dados.',
         variant: 'destructive',
       });
     },
