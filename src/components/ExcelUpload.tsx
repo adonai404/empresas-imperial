@@ -2,14 +2,17 @@ import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, FileSpreadsheet, ExternalLink, Download } from 'lucide-react';
-import { useImportExcel } from '@/hooks/useFiscalData';
+import { useImportExcel, useImportLucroRealExcel } from '@/hooks/useFiscalData';
 import * as XLSX from 'xlsx';
 
 export const ExcelUpload = () => {
   const [isDragging, setIsDragging] = useState(false);
+  const [dataType, setDataType] = useState<'simples_nacional' | 'lucro_real'>('simples_nacional');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importMutation = useImportExcel();
+  const importLucroRealMutation = useImportLucroRealExcel();
 
   const handleFileSelect = async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
@@ -23,7 +26,53 @@ export const ExcelUpload = () => {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      // Transform data to match expected structure with flexible parsing
+      // Check data type based on columns
+      const firstRow = jsonData[0] as any;
+      const hasLucroRealColumns = firstRow && (
+        'PIS' in firstRow || 'COFINS' in firstRow || 'ICMS' in firstRow ||
+        'IRPJ 1º trimestre' in firstRow || 'CSLL 1º trimestre' in firstRow
+      );
+      
+      if (hasLucroRealColumns) {
+        // Process Lucro Real data
+        const processedLucroRealData = jsonData.map((row: any) => {
+          const parseNumber = (value: any): number | null => {
+            if (value === null || value === undefined || value === '') return null;
+            const parsed = parseFloat(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'));
+            return isNaN(parsed) ? null : parsed;
+          };
+
+          return {
+            empresa: String(row.Empresa || row.empresa || '').trim(),
+            cnpj: String(row.CNPJ || row.cnpj || '').replace(/\D/g, ''),
+            periodo: String(row.Competência || row.competência || row.competencia || row.Período || row.periodo || row.Periodo || '').trim(),
+            entradas: parseNumber(row.Entradas || row.entradas),
+            saidas: parseNumber(row.Saídas || row.saídas || row.saidas || row.Saidas),
+            pis: parseNumber(row.PIS || row.pis),
+            cofins: parseNumber(row.COFINS || row.cofins),
+            icms: parseNumber(row.ICMS || row.icms),
+            irpj_primeiro_trimestre: parseNumber(row['IRPJ 1º trimestre'] || row['irpj_primeiro_trimestre'] || row['IRPJ_1_trimestre']),
+            csll_primeiro_trimestre: parseNumber(row['CSLL 1º trimestre'] || row['csll_primeiro_trimestre'] || row['CSLL_1_trimestre']),
+            irpj_segundo_trimestre: parseNumber(row['IRPJ 2º trimestre'] || row['irpj_segundo_trimestre'] || row['IRPJ_2_trimestre']),
+            csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre']),
+            segmento: String(row.Segmento || row.segmento || '').trim(),
+          };
+        });
+
+        const validLucroRealRowsCount = processedLucroRealData.filter(row => 
+          row.empresa && row.empresa.trim() !== ''
+        ).length;
+
+        if (validLucroRealRowsCount === 0) {
+          alert('Nenhum dado válido encontrado no arquivo. Verifique se a coluna Empresa está preenchida.');
+          return;
+        }
+
+        await importLucroRealMutation.mutateAsync(processedLucroRealData);
+        return;
+      }
+
+      // Transform data to match expected structure with flexible parsing for Simples Nacional
       const processedData = jsonData.map((row: any) => {
         // Helper function to safely parse numbers
         const parseNumber = (value: any): number | null => {
@@ -101,7 +150,7 @@ export const ExcelUpload = () => {
   };
 
   const downloadTemplate = () => {
-    const templateData = [
+    const simplesNacionalData = [
       { 
         Empresa: 'Empresa Exemplo Ltda', 
         CNPJ: '12345678000195', 
@@ -123,23 +172,49 @@ export const ExcelUpload = () => {
         imposto: 8000, 
         situação: 'Ativa',
         segmento: 'Indústria'
-      },
-      { 
-        Empresa: 'Empresa Paralisada Ltda', 
-        CNPJ: '11111111000111', 
-        Período: '2024-01', 
-        RBT12: 0, 
-        entrada: 0, 
-        saída: 0, 
-        imposto: 0, 
-        situação: 'Paralizada',
-        segmento: 'Serviços'
       }
     ];
 
-    const ws = XLSX.utils.json_to_sheet(templateData);
+    const lucroRealData = [
+      {
+        Empresa: 'Empresa Lucro Real Ltda',
+        CNPJ: '11222333000144',
+        Competência: '2024-01',
+        Entradas: 1500000,
+        Saídas: 1200000,
+        PIS: 15000,
+        COFINS: 70000,
+        ICMS: 180000,
+        'IRPJ 1º trimestre': 45000,
+        'CSLL 1º trimestre': 27000,
+        'IRPJ 2º trimestre': 50000,
+        'CSLL 2º trimestre': 30000,
+        Segmento: 'Indústria'
+      },
+      {
+        Empresa: 'Comercial Lucro Real S.A.',
+        CNPJ: '44555666000177',
+        Competência: '2024-01',
+        Entradas: 2000000,
+        Saídas: 1800000,
+        PIS: 20000,
+        COFINS: 92000,
+        ICMS: 240000,
+        'IRPJ 1º trimestre': 60000,
+        'CSLL 1º trimestre': 36000,
+        'IRPJ 2º trimestre': 65000,
+        'CSLL 2º trimestre': 39000,
+        Segmento: 'Comércio'
+      }
+    ];
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Dados Fiscais');
+    
+    const wsSimplesNacional = XLSX.utils.json_to_sheet(simplesNacionalData);
+    XLSX.utils.book_append_sheet(wb, wsSimplesNacional, 'Simples Nacional');
+    
+    const wsLucroReal = XLSX.utils.json_to_sheet(lucroRealData);
+    XLSX.utils.book_append_sheet(wb, wsLucroReal, 'Lucro Real');
     
     XLSX.writeFile(wb, 'template_importacao_dados_fiscais.xlsx');
   };
@@ -188,9 +263,9 @@ export const ExcelUpload = () => {
             </p>
             <Button
               onClick={() => fileInputRef.current?.click()}
-              disabled={importMutation.isPending}
+              disabled={importMutation.isPending || importLucroRealMutation.isPending}
             >
-              {importMutation.isPending ? 'Importando...' : 'Selecionar Arquivo'}
+              {(importMutation.isPending || importLucroRealMutation.isPending) ? 'Importando...' : 'Selecionar Arquivo'}
             </Button>
             <Input
               ref={fileInputRef}
@@ -201,13 +276,21 @@ export const ExcelUpload = () => {
             />
           </div>
         <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <h4 className="font-semibold mb-2">Formato aceito:</h4>
-          <div className="text-sm text-muted-foreground space-y-1">
-            <p><strong>Colunas:</strong> Empresa, CNPJ, Período, RBT12, entrada, saída, imposto, situação, segmento</p>
-            <p><strong>Flexível:</strong> Valores em branco são aceitos e tratados como null</p>
-            <p><strong>Obrigatório:</strong> Apenas o nome da Empresa é campo obrigatório</p>
-            <p><strong>Situação:</strong> Use "Paralizada" ou "Sem movimento" para empresas sem movimento. "Ativa" ou vazio será considerado como empresa ativa</p>
-            <p><strong>Segmento:</strong> Categoria da empresa (ex: Varejo, Indústria, Serviços). Opcional.</p>
+          <h4 className="font-semibold mb-2">Formatos aceitos:</h4>
+          <div className="text-sm text-muted-foreground space-y-3">
+            <div>
+              <p className="font-medium">Simples Nacional:</p>
+              <p><strong>Colunas:</strong> Empresa, CNPJ, Período, RBT12, entrada, saída, imposto, situação, segmento</p>
+            </div>
+            <div>
+              <p className="font-medium">Lucro Real:</p>
+              <p><strong>Colunas:</strong> Empresa, CNPJ, Competência, Entradas, Saídas, PIS, COFINS, ICMS, IRPJ 1º trimestre, CSLL 1º trimestre, IRPJ 2º trimestre, CSLL 2º trimestre, Segmento</p>
+            </div>
+            <div>
+              <p><strong>Detecção automática:</strong> O sistema detecta automaticamente o tipo de dados baseado nas colunas presentes</p>
+              <p><strong>Flexível:</strong> Valores em branco são aceitos e tratados como null</p>
+              <p><strong>Obrigatório:</strong> Apenas o nome da Empresa é campo obrigatório</p>
+            </div>
           </div>
         </div>
         </CardContent>

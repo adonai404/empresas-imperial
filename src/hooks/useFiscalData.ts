@@ -108,8 +108,29 @@ export interface FiscalData {
   updated_at: string;
 }
 
+export interface LucroRealData {
+  id: string;
+  company_id: string;
+  period: string;
+  entradas: number | null;
+  saidas: number | null;
+  pis: number | null;
+  cofins: number | null;
+  icms: number | null;
+  irpj_primeiro_trimestre: number | null;
+  csll_primeiro_trimestre: number | null;
+  irpj_segundo_trimestre: number | null;
+  csll_segundo_trimestre: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CompanyWithData extends Company {
   fiscal_data: FiscalData[];
+}
+
+export interface CompanyWithLucroRealData extends Company {
+  lucro_real_data: LucroRealData[];
 }
 
 export interface CompanyWithLatestData extends Company {
@@ -1367,6 +1388,220 @@ export const useImportExcel = () => {
         variant: 'destructive',
       });
       console.error('Import error:', error);
+    },
+  });
+};
+
+// Lucro Real Data Hooks
+export const useLucroRealData = () => {
+  return useQuery({
+    queryKey: ['lucro-real-data'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_real_data')
+        .select(`
+          *,
+          companies(id, name, cnpj, segmento)
+        `)
+        .order('period', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useCompanyWithLucroRealData = (companyId: string) => {
+  return useQuery({
+    queryKey: ['company-lucro-real', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          lucro_real_data(*)
+        `)
+        .eq('id', companyId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as unknown as CompanyWithLucroRealData | null;
+    },
+    enabled: !!companyId,
+  });
+};
+
+export const useAddLucroRealData = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      company_id: string;
+      period: string;
+      entradas?: number;
+      saidas?: number;
+      pis?: number;
+      cofins?: number;
+      icms?: number;
+      irpj_primeiro_trimestre?: number;
+      csll_primeiro_trimestre?: number;
+      irpj_segundo_trimestre?: number;
+      csll_segundo_trimestre?: number;
+    }) => {
+      const { data: result, error } = await supabase
+        .from('lucro_real_data')
+        .insert({
+          company_id: data.company_id,
+          period: data.period.trim(),
+          entradas: data.entradas || null,
+          saidas: data.saidas || null,
+          pis: data.pis || null,
+          cofins: data.cofins || null,
+          icms: data.icms || null,
+          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre || null,
+          csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
+          irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
+          csll_segundo_trimestre: data.csll_segundo_trimestre || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lucro-real-data'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lucro-real'] });
+      
+      toast({
+        title: 'Dados de Lucro Real adicionados',
+        description: 'Os dados foram cadastrados com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao adicionar dados',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao cadastrar os dados.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useImportLucroRealExcel = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Array<{
+      empresa: string;
+      cnpj: string;
+      periodo: string;
+      entradas: number | null;
+      saidas: number | null;
+      pis: number | null;
+      cofins: number | null;
+      icms: number | null;
+      irpj_primeiro_trimestre: number | null;
+      csll_primeiro_trimestre: number | null;
+      irpj_segundo_trimestre: number | null;
+      csll_segundo_trimestre: number | null;
+      segmento?: string;
+    }>) => {
+      const validRows = data.filter(row => 
+        row.empresa && row.empresa.trim() !== ''
+      );
+
+      if (validRows.length === 0) {
+        throw new Error('Nenhum dado válido encontrado. Verifique se a coluna Empresa está preenchida.');
+      }
+
+      // Process companies first
+      const companiesMap = new Map<string, string>();
+      
+      for (const row of validRows) {
+        const companyName = row.empresa.trim();
+        const cnpj = row.cnpj?.replace(/\D/g, '') || null;
+        
+        if (!companiesMap.has(companyName)) {
+          // Check if company exists
+          const { data: existingCompany } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('name', companyName)
+            .maybeSingle();
+
+          if (existingCompany) {
+            companiesMap.set(companyName, existingCompany.id);
+          } else {
+            // Create new company with Lucro Real regime
+            const { data: newCompany, error: companyError } = await supabase
+              .from('companies')
+              .insert({
+                name: companyName,
+                cnpj: cnpj,
+                regime_tributario: 'lucro_real',
+                segmento: row.segmento?.trim() || null,
+              })
+              .select('id')
+              .single();
+
+            if (companyError) throw companyError;
+            companiesMap.set(companyName, newCompany.id);
+          }
+        }
+      }
+
+      // Process lucro real data
+      const lucroRealDataRows = validRows
+        .filter(row => row.periodo && row.periodo.trim())
+        .map(row => ({
+          company_id: companiesMap.get(row.empresa.trim())!,
+          period: row.periodo.trim(),
+          entradas: row.entradas,
+          saidas: row.saidas,
+          pis: row.pis,
+          cofins: row.cofins,
+          icms: row.icms,
+          irpj_primeiro_trimestre: row.irpj_primeiro_trimestre,
+          csll_primeiro_trimestre: row.csll_primeiro_trimestre,
+          irpj_segundo_trimestre: row.irpj_segundo_trimestre,
+          csll_segundo_trimestre: row.csll_segundo_trimestre,
+        }));
+
+      // Insert lucro real data
+      if (lucroRealDataRows.length > 0) {
+        const { error: lucroRealError } = await supabase
+          .from('lucro_real_data')
+          .upsert(lucroRealDataRows, { onConflict: 'company_id,period' });
+
+        if (lucroRealError) throw lucroRealError;
+      }
+
+      return { 
+        importedRecords: lucroRealDataRows.length,
+        skippedRecords: data.length - lucroRealDataRows.length
+      };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['lucro-real-data'] });
+      
+      let description = `${result.importedRecords} registros de Lucro Real importados com sucesso.`;
+      if (result.skippedRecords > 0) {
+        description += ` ${result.skippedRecords} registros foram ignorados por falta de dados essenciais.`;
+      }
+      
+      toast({
+        title: 'Importação concluída',
+        description,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro na importação',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro durante a importação.',
+        variant: 'destructive',
+      });
     },
   });
 };

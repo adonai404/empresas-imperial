@@ -153,6 +153,57 @@ export type Database = {
           },
         ]
       }
+      lucro_real_data: {
+        Row: {
+          cofins: number | null
+          company_id: string
+          created_at: string
+          csll_primeiro_trimestre: number | null
+          csll_segundo_trimestre: number | null
+          entradas: number | null
+          icms: number | null
+          id: string
+          irpj_primeiro_trimestre: number | null
+          irpj_segundo_trimestre: number | null
+          period: string
+          pis: number | null
+          saidas: number | null
+          updated_at: string
+        }
+        Insert: {
+          cofins?: number | null
+          company_id: string
+          created_at?: string
+          csll_primeiro_trimestre?: number | null
+          csll_segundo_trimestre?: number | null
+          entradas?: number | null
+          icms?: number | null
+          id?: string
+          irpj_primeiro_trimestre?: number | null
+          irpj_segundo_trimestre?: number | null
+          period: string
+          pis?: number | null
+          saidas?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cofins?: number | null
+          company_id?: string
+          created_at?: string
+          csll_primeiro_trimestre?: number | null
+          csll_segundo_trimestre?: number | null
+          entradas?: number | null
+          icms?: number | null
+          id?: string
+          irpj_primeiro_trimestre?: number | null
+          irpj_segundo_trimestre?: number | null
+          period?: string
+          pis?: number | null
+          saidas?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       segments: {
         Row: {
           created_at: string

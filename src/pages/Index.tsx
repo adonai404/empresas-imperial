@@ -5,6 +5,7 @@ import { Dashboard } from '@/components/Dashboard';
 import { ExcelUpload } from '@/components/ExcelUpload';
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
+import { LucroRealList } from '@/components/LucroRealList';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -44,6 +45,8 @@ const Index = () => {
           );
         }
         return <CompanyList onSelectCompany={handleSelectCompany} />;
+      case 'lucro-real':
+        return <LucroRealList />;
       case 'settings':
         return <Settings />;
       default:
@@ -61,13 +64,15 @@ const Index = () => {
               <h1 className="text-2xl font-bold tracking-tight">
                 {activeSection === 'dashboard' && 'Dashboard'}
                 {activeSection === 'import' && 'Importação de Dados'}
-                {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Gestão de Empresas')}
+                {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Simples Nacional')}
+                {activeSection === 'lucro-real' && 'Lucro Real'}
                 {activeSection === 'settings' && 'Configurações'}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {activeSection === 'dashboard' && 'Visualize estatísticas gerais do sistema'}
                 {activeSection === 'import' && 'Importe dados de planilhas Excel'}
-                {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie e visualize dados das empresas')}
+                {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas do Simples Nacional')}
+                {activeSection === 'lucro-real' && 'Gerencie dados de empresas do regime de Lucro Real'}
                 {activeSection === 'settings' && 'Gerencie senhas de acesso e configurações de segurança'}
               </p>
             </div>

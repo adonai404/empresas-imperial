@@ -17,7 +17,11 @@ const sections = [{
   icon: Upload
 }, {
   id: "companies",
-  title: "Empresas",
+  title: "Simples Nacional",
+  icon: Building2
+}, {
+  id: "lucro-real",
+  title: "Lucro Real",
   icon: Building2
 }, {
   id: "settings",
