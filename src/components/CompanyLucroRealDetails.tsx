@@ -11,12 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown } from 'lucide-react';
 import { useCompanyWithData, useLucroRealDataByCompany, useAddLucroRealData, useUpdateLucroRealData, useDeleteLucroRealData, useImportLucroRealExcel, useDeleteCompany } from '@/hooks/useFiscalData';
 import * as XLSX from 'xlsx';
-
 interface CompanyLucroRealDetailsProps {
   companyId: string;
   onCompanyDeleted?: () => void;
 }
-
 interface AddLucroRealForm {
   period: string;
   entradas: string;
@@ -29,7 +27,6 @@ interface AddLucroRealForm {
   irpj_segundo_trimestre: string;
   csll_segundo_trimestre: string;
 }
-
 interface EditLucroRealForm {
   period: string;
   entradas: string;
@@ -42,8 +39,10 @@ interface EditLucroRealForm {
   irpj_segundo_trimestre: string;
   csll_segundo_trimestre: string;
 }
-
-export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: CompanyLucroRealDetailsProps) => {
+export const CompanyLucroRealDetails = ({
+  companyId,
+  onCompanyDeleted
+}: CompanyLucroRealDetailsProps) => {
   const [sortField, setSortField] = useState<'period' | 'entradas' | 'saidas' | 'pis' | 'cofins' | 'icms' | 'irpj_primeiro_trimestre' | 'csll_primeiro_trimestre' | 'irpj_segundo_trimestre' | 'csll_segundo_trimestre'>('period');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterPeriod, setFilterPeriod] = useState('');
@@ -55,15 +54,19 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
   const [isDragging, setIsDragging] = useState(false);
   const [isDeleteCompanyDialogOpen, setIsDeleteCompanyDialogOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { data: company, isLoading: companyLoading } = useCompanyWithData(companyId);
-  const { data: lucroRealData, isLoading: dataLoading } = useLucroRealDataByCompany(companyId);
+  const {
+    data: company,
+    isLoading: companyLoading
+  } = useCompanyWithData(companyId);
+  const {
+    data: lucroRealData,
+    isLoading: dataLoading
+  } = useLucroRealDataByCompany(companyId);
   const addMutation = useAddLucroRealData();
   const updateMutation = useUpdateLucroRealData();
   const deleteMutation = useDeleteLucroRealData();
   const deleteCompanyMutation = useDeleteCompany();
   const importMutation = useImportLucroRealExcel();
-
   const [newData, setNewData] = useState<AddLucroRealForm>({
     period: '',
     entradas: '',
@@ -74,9 +77,8 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
     irpj_primeiro_trimestre: '',
     csll_primeiro_trimestre: '',
     irpj_segundo_trimestre: '',
-    csll_segundo_trimestre: '',
+    csll_segundo_trimestre: ''
   });
-
   const [editData, setEditData] = useState<EditLucroRealForm>({
     period: '',
     entradas: '',
@@ -87,9 +89,8 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
     irpj_primeiro_trimestre: '',
     csll_primeiro_trimestre: '',
     irpj_segundo_trimestre: '',
-    csll_segundo_trimestre: '',
+    csll_segundo_trimestre: ''
   });
-
   const formatCurrency = (value: number | null) => {
     if (value === null || value === undefined) return '-';
     return new Intl.NumberFormat('pt-BR', {
@@ -108,7 +109,6 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
     return true;
   }).sort((a, b) => {
     let aValue: any, bValue: any;
-    
     switch (sortField) {
       case 'period':
         aValue = a.period || '';
@@ -154,22 +154,18 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
         aValue = a.period || '';
         bValue = b.period || '';
     }
-    
     if (sortDirection === 'asc') {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     } else {
       return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     }
   }) || [];
-
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newData.period.trim()) {
       alert('Período é obrigatório');
       return;
     }
-
     const dataToSubmit = {
       company_id: companyId,
       period: newData.period.trim(),
@@ -181,9 +177,8 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       irpj_primeiro_trimestre: newData.irpj_primeiro_trimestre ? parseFloat(newData.irpj_primeiro_trimestre) : undefined,
       csll_primeiro_trimestre: newData.csll_primeiro_trimestre ? parseFloat(newData.csll_primeiro_trimestre) : undefined,
       irpj_segundo_trimestre: newData.irpj_segundo_trimestre ? parseFloat(newData.irpj_segundo_trimestre) : undefined,
-      csll_segundo_trimestre: newData.csll_segundo_trimestre ? parseFloat(newData.csll_segundo_trimestre) : undefined,
+      csll_segundo_trimestre: newData.csll_segundo_trimestre ? parseFloat(newData.csll_segundo_trimestre) : undefined
     };
-
     try {
       await addMutation.mutateAsync(dataToSubmit);
       setIsAddDialogOpen(false);
@@ -197,21 +192,18 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
         irpj_primeiro_trimestre: '',
         csll_primeiro_trimestre: '',
         irpj_segundo_trimestre: '',
-        csll_segundo_trimestre: '',
+        csll_segundo_trimestre: ''
       });
     } catch (error) {
       console.error('Error adding lucro real data:', error);
     }
   };
-
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!editingData || !editData.period.trim()) {
       alert('Período é obrigatório');
       return;
     }
-
     const dataToSubmit = {
       id: editingData.id,
       period: editData.period.trim(),
@@ -223,9 +215,8 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       irpj_primeiro_trimestre: editData.irpj_primeiro_trimestre ? parseFloat(editData.irpj_primeiro_trimestre) : undefined,
       csll_primeiro_trimestre: editData.csll_primeiro_trimestre ? parseFloat(editData.csll_primeiro_trimestre) : undefined,
       irpj_segundo_trimestre: editData.irpj_segundo_trimestre ? parseFloat(editData.irpj_segundo_trimestre) : undefined,
-      csll_segundo_trimestre: editData.csll_segundo_trimestre ? parseFloat(editData.csll_segundo_trimestre) : undefined,
+      csll_segundo_trimestre: editData.csll_segundo_trimestre ? parseFloat(editData.csll_segundo_trimestre) : undefined
     };
-
     try {
       await updateMutation.mutateAsync(dataToSubmit);
       setIsEditDialogOpen(false);
@@ -234,7 +225,6 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       console.error('Error updating lucro real data:', error);
     }
   };
-
   const handleEdit = (item: any) => {
     setEditingData(item);
     setEditData({
@@ -247,11 +237,10 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       irpj_primeiro_trimestre: item.irpj_primeiro_trimestre?.toString() || '',
       csll_primeiro_trimestre: item.csll_primeiro_trimestre?.toString() || '',
       irpj_segundo_trimestre: item.irpj_segundo_trimestre?.toString() || '',
-      csll_segundo_trimestre: item.csll_segundo_trimestre?.toString() || '',
+      csll_segundo_trimestre: item.csll_segundo_trimestre?.toString() || ''
     });
     setIsEditDialogOpen(true);
   };
-
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir este registro?')) {
       try {
@@ -261,11 +250,9 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       }
     }
   };
-
   const handleDeleteCompany = () => {
     setIsDeleteCompanyDialogOpen(true);
   };
-
   const handleConfirmDeleteCompany = async () => {
     try {
       await deleteCompanyMutation.mutateAsync(companyId);
@@ -277,26 +264,22 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       console.error('Error deleting company:', error);
     }
   };
-
   const handleFileSelect = async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
       alert('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
       return;
     }
-
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
-
       const processedData = jsonData.map((row: any) => {
         const parseNumber = (value: any): number | null => {
           if (value === null || value === undefined || value === '') return null;
           const parsed = parseFloat(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'));
           return isNaN(parsed) ? null : parsed;
         };
-
         return {
           empresa: String(row.Empresa || row.empresa || '').trim(),
           cnpj: String(row.CNPJ || row.cnpj || '').replace(/\D/g, ''),
@@ -309,20 +292,16 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
           irpj_primeiro_trimestre: parseNumber(row['IRPJ 1º trimestre'] || row['irpj_primeiro_trimestre'] || row['IRPJ_1_trimestre']),
           csll_primeiro_trimestre: parseNumber(row['CSLL 1º trimestre'] || row['csll_primeiro_trimestre'] || row['CSLL_1_trimestre']),
           irpj_segundo_trimestre: parseNumber(row['IRPJ 2º trimestre'] || row['irpj_segundo_trimestre'] || row['IRPJ_2_trimestre']),
-          csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre']),
+          csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre'])
         };
       });
 
       // Filtrar apenas dados da empresa atual
-      const companyData = processedData.filter(row => 
-        row.empresa === company?.name || row.cnpj === company?.cnpj
-      );
-
+      const companyData = processedData.filter(row => row.empresa === company?.name || row.cnpj === company?.cnpj);
       if (companyData.length === 0) {
         alert('Nenhum dado encontrado para esta empresa no arquivo.');
         return;
       }
-
       await importMutation.mutateAsync(companyData);
       setIsImportDialogOpen(false);
     } catch (error) {
@@ -330,63 +309,49 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
       alert('Erro ao processar o arquivo. Verifique se é um arquivo Excel válido.');
     }
   };
-
   const downloadTemplate = () => {
-    const templateData = [
-      {
-        Empresa: company?.name || 'Nome da Empresa',
-        CNPJ: company?.cnpj || '00000000000000',
-        Competência: '2024-01',
-        Entradas: 1500000,
-        Saídas: 1200000,
-        PIS: 15000,
-        COFINS: 70000,
-        ICMS: 180000,
-        'IRPJ 1º trimestre': 45000,
-        'CSLL 1º trimestre': 27000,
-        'IRPJ 2º trimestre': 50000,
-        'CSLL 2º trimestre': 30000,
-      }
-    ];
-
+    const templateData = [{
+      Empresa: company?.name || 'Nome da Empresa',
+      CNPJ: company?.cnpj || '00000000000000',
+      Competência: '2024-01',
+      Entradas: 1500000,
+      Saídas: 1200000,
+      PIS: 15000,
+      COFINS: 70000,
+      ICMS: 180000,
+      'IRPJ 1º trimestre': 45000,
+      'CSLL 1º trimestre': 27000,
+      'IRPJ 2º trimestre': 50000,
+      'CSLL 2º trimestre': 30000
+    }];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(templateData);
     XLSX.utils.book_append_sheet(wb, ws, 'Lucro Real');
     XLSX.writeFile(wb, `template_lucro_real_${company?.name?.replace(/\s+/g, '_') || 'empresa'}.xlsx`);
   };
-
   if (companyLoading || dataLoading) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader>
           <CardTitle>Carregando dados da empresa...</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-muted rounded"></div>
-            ))}
+            {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted rounded"></div>)}
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
   if (!company) {
-    return (
-      <Card>
+    return <Card>
         <CardHeader>
           <CardTitle>Empresa não encontrada</CardTitle>
         </CardHeader>
         <CardContent>
           <p>A empresa solicitada não foi encontrada.</p>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       {/* Header da Empresa */}
       <Card>
         <CardHeader>
@@ -397,49 +362,31 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
                 <CardTitle className="text-2xl">{company.name}</CardTitle>
                 <p className="text-muted-foreground">
                   {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'CNPJ não informado'}
-                  {company.segmento && (
-                    <span className="ml-2">
+                  {company.segmento && <span className="ml-2">
                       <Badge variant="secondary">{company.segmento}</Badge>
-                    </span>
-                  )}
+                    </span>}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={downloadTemplate}
-                className="flex items-center gap-2"
-              >
+              <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Baixar Template
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = '.xlsx,.xls';
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) handleFileSelect(file);
-                  };
-                  input.click();
-                }}
-                disabled={importMutation.isPending}
-                className="flex items-center gap-2"
-              >
+              <Button variant="outline" onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.xlsx,.xls';
+              input.onchange = e => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (file) handleFileSelect(file);
+              };
+              input.click();
+            }} disabled={importMutation.isPending} className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
                 {importMutation.isPending ? 'Importando...' : 'Importar XLSX'}
               </Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteCompany}
-                className="flex items-center gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                Excluir Empresa
-              </Button>
+              
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button className="flex items-center gap-2">
@@ -458,138 +405,93 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="period">Competência *</Label>
-                        <Input
-                          id="period"
-                          value={newData.period}
-                          onChange={(e) => setNewData(prev => ({ ...prev, period: e.target.value }))}
-                          placeholder="Ex: 2024-01"
-                        />
+                        <Input id="period" value={newData.period} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        period: e.target.value
+                      }))} placeholder="Ex: 2024-01" />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="entradas">Entradas</Label>
-                        <Input
-                          id="entradas"
-                          type="number"
-                          step="0.01"
-                          value={newData.entradas}
-                          onChange={(e) => setNewData(prev => ({ ...prev, entradas: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="entradas" type="number" step="0.01" value={newData.entradas} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        entradas: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                       <div>
                         <Label htmlFor="saidas">Saídas</Label>
-                        <Input
-                          id="saidas"
-                          type="number"
-                          step="0.01"
-                          value={newData.saidas}
-                          onChange={(e) => setNewData(prev => ({ ...prev, saidas: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="saidas" type="number" step="0.01" value={newData.saidas} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        saidas: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="pis">PIS</Label>
-                        <Input
-                          id="pis"
-                          type="number"
-                          step="0.01"
-                          value={newData.pis}
-                          onChange={(e) => setNewData(prev => ({ ...prev, pis: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="pis" type="number" step="0.01" value={newData.pis} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        pis: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                       <div>
                         <Label htmlFor="cofins">COFINS</Label>
-                        <Input
-                          id="cofins"
-                          type="number"
-                          step="0.01"
-                          value={newData.cofins}
-                          onChange={(e) => setNewData(prev => ({ ...prev, cofins: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="cofins" type="number" step="0.01" value={newData.cofins} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        cofins: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                       <div>
                         <Label htmlFor="icms">ICMS</Label>
-                        <Input
-                          id="icms"
-                          type="number"
-                          step="0.01"
-                          value={newData.icms}
-                          onChange={(e) => setNewData(prev => ({ ...prev, icms: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="icms" type="number" step="0.01" value={newData.icms} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        icms: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="irpj1">IRPJ 1º Trimestre</Label>
-                        <Input
-                          id="irpj1"
-                          type="number"
-                          step="0.01"
-                          value={newData.irpj_primeiro_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, irpj_primeiro_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="irpj1" type="number" step="0.01" value={newData.irpj_primeiro_trimestre} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        irpj_primeiro_trimestre: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                       <div>
                         <Label htmlFor="csll1">CSLL 1º Trimestre</Label>
-                        <Input
-                          id="csll1"
-                          type="number"
-                          step="0.01"
-                          value={newData.csll_primeiro_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, csll_primeiro_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="csll1" type="number" step="0.01" value={newData.csll_primeiro_trimestre} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        csll_primeiro_trimestre: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="irpj2">IRPJ 2º Trimestre</Label>
-                        <Input
-                          id="irpj2"
-                          type="number"
-                          step="0.01"
-                          value={newData.irpj_segundo_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, irpj_segundo_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="irpj2" type="number" step="0.01" value={newData.irpj_segundo_trimestre} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        irpj_segundo_trimestre: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                       <div>
                         <Label htmlFor="csll2">CSLL 2º Trimestre</Label>
-                        <Input
-                          id="csll2"
-                          type="number"
-                          step="0.01"
-                          value={newData.csll_segundo_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, csll_segundo_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
+                        <Input id="csll2" type="number" step="0.01" value={newData.csll_segundo_trimestre} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        csll_segundo_trimestre: e.target.value
+                      }))} placeholder="0.00" />
                       </div>
                     </div>
 
                     <DialogFooter>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsAddDialogOpen(false)}
-                      >
+                      <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                         Cancelar
                       </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={addMutation.isPending}
-                      >
+                      <Button type="submit" disabled={addMutation.isPending}>
                         {addMutation.isPending ? 'Salvando...' : 'Salvar'}
                       </Button>
                     </DialogFooter>
@@ -607,12 +509,7 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
           <div className="flex items-center justify-between">
             <CardTitle>Dados Fiscais de Lucro Real</CardTitle>
             <div className="flex items-center gap-2">
-              <Input
-                placeholder="Filtrar por período..."
-                value={filterPeriod}
-                onChange={(e) => setFilterPeriod(e.target.value)}
-                className="w-48"
-              />
+              <Input placeholder="Filtrar por período..." value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="w-48" />
               <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Ordenar por" />
@@ -630,12 +527,7 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
                   <SelectItem value="csll_segundo_trimestre">CSLL 2º</SelectItem>
                 </SelectContent>
               </Select>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
-                className="px-2"
-              >
+              <Button variant="outline" size="sm" onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')} className="px-2">
                 <ArrowUpDown className="h-4 w-4" />
               </Button>
             </div>
@@ -661,11 +553,7 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedData?.map((item, index) => (
-                  <TableRow 
-                    key={item.id}
-                    className="hover:bg-accent transition-colors border-b border-border bg-muted/30"
-                  >
+                {filteredAndSortedData?.map((item, index) => <TableRow key={item.id} className="hover:bg-accent transition-colors border-b border-border bg-muted/30">
                     <TableCell className="border-r border-border text-center text-muted-foreground font-mono text-sm w-8">
                       {index + 1}
                     </TableCell>
@@ -722,36 +610,21 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
                     </TableCell>
                     <TableCell className="text-center w-12">
                       <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
-                          onClick={() => handleEdit(item)}
-                          title="Editar dados"
-                        >
+                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 w-8 p-0" onClick={() => handleEdit(item)} title="Editar dados">
                           <Edit3 className="h-3 w-3" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                          onClick={() => handleDelete(item.id)}
-                          title="Excluir dados"
-                        >
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0" onClick={() => handleDelete(item.id)} title="Excluir dados">
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
                     </TableCell>
-                  </TableRow>
-                ))}
-                {filteredAndSortedData?.length === 0 && (
-                  <TableRow>
+                  </TableRow>)}
+                {filteredAndSortedData?.length === 0 && <TableRow>
                     <TableCell colSpan={12} className="text-center py-8 text-muted-foreground border-b border-border">
                       <FileText className="h-12 w-12 mx-auto mb-4" />
                       <p>Nenhum dado de Lucro Real encontrado</p>
                     </TableCell>
-                  </TableRow>
-                )}
+                  </TableRow>}
               </TableBody>
             </Table>
           </div>
@@ -771,138 +644,93 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-period">Competência *</Label>
-                <Input
-                  id="edit-period"
-                  value={editData.period}
-                  onChange={(e) => setEditData(prev => ({ ...prev, period: e.target.value }))}
-                  placeholder="Ex: 2024-01"
-                />
+                <Input id="edit-period" value={editData.period} onChange={e => setEditData(prev => ({
+                ...prev,
+                period: e.target.value
+              }))} placeholder="Ex: 2024-01" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-entradas">Entradas</Label>
-                <Input
-                  id="edit-entradas"
-                  type="number"
-                  step="0.01"
-                  value={editData.entradas}
-                  onChange={(e) => setEditData(prev => ({ ...prev, entradas: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-entradas" type="number" step="0.01" value={editData.entradas} onChange={e => setEditData(prev => ({
+                ...prev,
+                entradas: e.target.value
+              }))} placeholder="0.00" />
               </div>
               <div>
                 <Label htmlFor="edit-saidas">Saídas</Label>
-                <Input
-                  id="edit-saidas"
-                  type="number"
-                  step="0.01"
-                  value={editData.saidas}
-                  onChange={(e) => setEditData(prev => ({ ...prev, saidas: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-saidas" type="number" step="0.01" value={editData.saidas} onChange={e => setEditData(prev => ({
+                ...prev,
+                saidas: e.target.value
+              }))} placeholder="0.00" />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label htmlFor="edit-pis">PIS</Label>
-                <Input
-                  id="edit-pis"
-                  type="number"
-                  step="0.01"
-                  value={editData.pis}
-                  onChange={(e) => setEditData(prev => ({ ...prev, pis: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-pis" type="number" step="0.01" value={editData.pis} onChange={e => setEditData(prev => ({
+                ...prev,
+                pis: e.target.value
+              }))} placeholder="0.00" />
               </div>
               <div>
                 <Label htmlFor="edit-cofins">COFINS</Label>
-                <Input
-                  id="edit-cofins"
-                  type="number"
-                  step="0.01"
-                  value={editData.cofins}
-                  onChange={(e) => setEditData(prev => ({ ...prev, cofins: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-cofins" type="number" step="0.01" value={editData.cofins} onChange={e => setEditData(prev => ({
+                ...prev,
+                cofins: e.target.value
+              }))} placeholder="0.00" />
               </div>
               <div>
                 <Label htmlFor="edit-icms">ICMS</Label>
-                <Input
-                  id="edit-icms"
-                  type="number"
-                  step="0.01"
-                  value={editData.icms}
-                  onChange={(e) => setEditData(prev => ({ ...prev, icms: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-icms" type="number" step="0.01" value={editData.icms} onChange={e => setEditData(prev => ({
+                ...prev,
+                icms: e.target.value
+              }))} placeholder="0.00" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-irpj1">IRPJ 1º Trimestre</Label>
-                <Input
-                  id="edit-irpj1"
-                  type="number"
-                  step="0.01"
-                  value={editData.irpj_primeiro_trimestre}
-                  onChange={(e) => setEditData(prev => ({ ...prev, irpj_primeiro_trimestre: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-irpj1" type="number" step="0.01" value={editData.irpj_primeiro_trimestre} onChange={e => setEditData(prev => ({
+                ...prev,
+                irpj_primeiro_trimestre: e.target.value
+              }))} placeholder="0.00" />
               </div>
               <div>
                 <Label htmlFor="edit-csll1">CSLL 1º Trimestre</Label>
-                <Input
-                  id="edit-csll1"
-                  type="number"
-                  step="0.01"
-                  value={editData.csll_primeiro_trimestre}
-                  onChange={(e) => setEditData(prev => ({ ...prev, csll_primeiro_trimestre: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-csll1" type="number" step="0.01" value={editData.csll_primeiro_trimestre} onChange={e => setEditData(prev => ({
+                ...prev,
+                csll_primeiro_trimestre: e.target.value
+              }))} placeholder="0.00" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-irpj2">IRPJ 2º Trimestre</Label>
-                <Input
-                  id="edit-irpj2"
-                  type="number"
-                  step="0.01"
-                  value={editData.irpj_segundo_trimestre}
-                  onChange={(e) => setEditData(prev => ({ ...prev, irpj_segundo_trimestre: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-irpj2" type="number" step="0.01" value={editData.irpj_segundo_trimestre} onChange={e => setEditData(prev => ({
+                ...prev,
+                irpj_segundo_trimestre: e.target.value
+              }))} placeholder="0.00" />
               </div>
               <div>
                 <Label htmlFor="edit-csll2">CSLL 2º Trimestre</Label>
-                <Input
-                  id="edit-csll2"
-                  type="number"
-                  step="0.01"
-                  value={editData.csll_segundo_trimestre}
-                  onChange={(e) => setEditData(prev => ({ ...prev, csll_segundo_trimestre: e.target.value }))}
-                  placeholder="0.00"
-                />
+                <Input id="edit-csll2" type="number" step="0.01" value={editData.csll_segundo_trimestre} onChange={e => setEditData(prev => ({
+                ...prev,
+                csll_segundo_trimestre: e.target.value
+              }))} placeholder="0.00" />
               </div>
             </div>
 
             <DialogFooter>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => setIsEditDialogOpen(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
-                disabled={updateMutation.isPending}
-              >
+              <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
               </Button>
             </DialogFooter>
@@ -935,16 +763,11 @@ export const CompanyLucroRealDetails = ({ companyId, onCompanyDeleted }: Company
             <AlertDialogCancel onClick={() => setIsDeleteCompanyDialogOpen(false)}>
               Cancelar
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleConfirmDeleteCompany}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={deleteCompanyMutation.isPending}
-            >
+            <AlertDialogAction onClick={handleConfirmDeleteCompany} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleteCompanyMutation.isPending}>
               {deleteCompanyMutation.isPending ? 'Excluindo...' : 'Excluir Empresa'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
+    </div>;
 };
