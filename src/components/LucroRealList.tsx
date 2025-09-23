@@ -7,8 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Building2, Plus, FileText, Calendar } from 'lucide-react';
-import { useLucroRealData, useAddLucroRealData, useCompanies } from '@/hooks/useFiscalData';
+import { Building2, Plus, FileText, Calendar, Upload, Download } from 'lucide-react';
+import { useLucroRealData, useAddLucroRealData, useCompanies, useImportLucroRealExcel } from '@/hooks/useFiscalData';
+import * as XLSX from 'xlsx';
 
 export const LucroRealList = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -29,6 +30,7 @@ export const LucroRealList = () => {
   const { data: lucroRealData, isLoading } = useLucroRealData();
   const { data: companies } = useCompanies();
   const addMutation = useAddLucroRealData();
+  const importMutation = useImportLucroRealExcel();
 
   const formatCurrency = (value: number | null) => {
     if (value === null || value === undefined) return '-';
@@ -81,6 +83,98 @@ export const LucroRealList = () => {
     }
   };
 
+  const handleFileSelect = async (file: File) => {
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
+      alert('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
+      return;
+    }
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      const processedData = jsonData.map((row: any) => {
+        const parseNumber = (value: any): number | null => {
+          if (value === null || value === undefined || value === '') return null;
+          const parsed = parseFloat(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'));
+          return isNaN(parsed) ? null : parsed;
+        };
+
+        return {
+          empresa: String(row.Empresa || row.empresa || '').trim(),
+          cnpj: String(row.CNPJ || row.cnpj || '').replace(/\D/g, ''),
+          periodo: String(row.Competência || row.competência || row.competencia || row.Período || row.periodo || row.Periodo || '').trim(),
+          entradas: parseNumber(row.Entradas || row.entradas),
+          saidas: parseNumber(row.Saídas || row.saídas || row.saidas || row.Saidas),
+          pis: parseNumber(row.PIS || row.pis),
+          cofins: parseNumber(row.COFINS || row.cofins),
+          icms: parseNumber(row.ICMS || row.icms),
+          irpj_primeiro_trimestre: parseNumber(row['IRPJ 1º trimestre'] || row['irpj_primeiro_trimestre'] || row['IRPJ_1_trimestre']),
+          csll_primeiro_trimestre: parseNumber(row['CSLL 1º trimestre'] || row['csll_primeiro_trimestre'] || row['CSLL_1_trimestre']),
+          irpj_segundo_trimestre: parseNumber(row['IRPJ 2º trimestre'] || row['irpj_segundo_trimestre'] || row['IRPJ_2_trimestre']),
+          csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre']),
+          segmento: String(row.Segmento || row.segmento || '').trim(),
+        };
+      });
+
+      const validRowsCount = processedData.filter(row => 
+        row.empresa && row.empresa.trim() !== ''
+      ).length;
+
+      if (validRowsCount === 0) {
+        alert('Nenhum dado válido encontrado no arquivo. Verifique se a coluna Empresa está preenchida.');
+        return;
+      }
+
+      await importMutation.mutateAsync(processedData);
+    } catch (error) {
+      console.error('Error processing file:', error);
+      alert('Erro ao processar o arquivo. Verifique se é um arquivo Excel válido.');
+    }
+  };
+
+  const downloadTemplate = () => {
+    const lucroRealData = [
+      {
+        Empresa: 'Empresa Lucro Real Ltda',
+        CNPJ: '11222333000144',
+        Competência: '2024-01',
+        Entradas: 1500000,
+        Saídas: 1200000,
+        PIS: 15000,
+        COFINS: 70000,
+        ICMS: 180000,
+        'IRPJ 1º trimestre': 45000,
+        'CSLL 1º trimestre': 27000,
+        'IRPJ 2º trimestre': 50000,
+        'CSLL 2º trimestre': 30000,
+        Segmento: 'Indústria'
+      },
+      {
+        Empresa: 'Comercial Lucro Real S.A.',
+        CNPJ: '44555666000177',
+        Competência: '2024-01',
+        Entradas: 2000000,
+        Saídas: 1800000,
+        PIS: 20000,
+        COFINS: 92000,
+        ICMS: 240000,
+        'IRPJ 1º trimestre': 60000,
+        'CSLL 1º trimestre': 36000,
+        'IRPJ 2º trimestre': 65000,
+        'CSLL 2º trimestre': 39000,
+        Segmento: 'Comércio'
+      }
+    ];
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(lucroRealData);
+    XLSX.utils.book_append_sheet(wb, ws, 'Lucro Real');
+    XLSX.writeFile(wb, 'template_lucro_real.xlsx');
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -101,177 +195,205 @@ export const LucroRealList = () => {
               <Building2 className="h-6 w-6" />
               <CardTitle>Empresas de Lucro Real</CardTitle>
             </div>
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Adicionar Dados
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl">
-                <DialogHeader>
-                  <DialogTitle>Adicionar Dados de Lucro Real</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="company">Empresa *</Label>
-                      <Select 
-                        value={newData.company_id} 
-                        onValueChange={(value) => setNewData(prev => ({ ...prev, company_id: value }))}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={downloadTemplate}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Baixar Template
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.xlsx,.xls';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) handleFileSelect(file);
+                  };
+                  input.click();
+                }}
+                disabled={importMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Upload className="h-4 w-4" />
+                {importMutation.isPending ? 'Importando...' : 'Importar XLSX'}
+              </Button>
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center gap-2">
+                    <Plus className="h-4 w-4" />
+                    Adicionar Dados
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl">
+                  <DialogHeader>
+                    <DialogTitle>Adicionar Dados de Lucro Real</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="company">Empresa *</Label>
+                        <Select 
+                          value={newData.company_id} 
+                          onValueChange={(value) => setNewData(prev => ({ ...prev, company_id: value }))}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione uma empresa" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {companies?.filter(c => c.regime_tributario === 'lucro_real').map((company) => (
+                              <SelectItem key={company.id} value={company.id}>
+                                {company.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label htmlFor="period">Competência *</Label>
+                        <Input
+                          id="period"
+                          value={newData.period}
+                          onChange={(e) => setNewData(prev => ({ ...prev, period: e.target.value }))}
+                          placeholder="Ex: 2024-01"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="entradas">Entradas</Label>
+                        <Input
+                          id="entradas"
+                          type="number"
+                          step="0.01"
+                          value={newData.entradas}
+                          onChange={(e) => setNewData(prev => ({ ...prev, entradas: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="saidas">Saídas</Label>
+                        <Input
+                          id="saidas"
+                          type="number"
+                          step="0.01"
+                          value={newData.saidas}
+                          onChange={(e) => setNewData(prev => ({ ...prev, saidas: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Label htmlFor="pis">PIS</Label>
+                        <Input
+                          id="pis"
+                          type="number"
+                          step="0.01"
+                          value={newData.pis}
+                          onChange={(e) => setNewData(prev => ({ ...prev, pis: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="cofins">COFINS</Label>
+                        <Input
+                          id="cofins"
+                          type="number"
+                          step="0.01"
+                          value={newData.cofins}
+                          onChange={(e) => setNewData(prev => ({ ...prev, cofins: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="icms">ICMS</Label>
+                        <Input
+                          id="icms"
+                          type="number"
+                          step="0.01"
+                          value={newData.icms}
+                          onChange={(e) => setNewData(prev => ({ ...prev, icms: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="irpj1">IRPJ 1º Trimestre</Label>
+                        <Input
+                          id="irpj1"
+                          type="number"
+                          step="0.01"
+                          value={newData.irpj_primeiro_trimestre}
+                          onChange={(e) => setNewData(prev => ({ ...prev, irpj_primeiro_trimestre: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="csll1">CSLL 1º Trimestre</Label>
+                        <Input
+                          id="csll1"
+                          type="number"
+                          step="0.01"
+                          value={newData.csll_primeiro_trimestre}
+                          onChange={(e) => setNewData(prev => ({ ...prev, csll_primeiro_trimestre: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="irpj2">IRPJ 2º Trimestre</Label>
+                        <Input
+                          id="irpj2"
+                          type="number"
+                          step="0.01"
+                          value={newData.irpj_segundo_trimestre}
+                          onChange={(e) => setNewData(prev => ({ ...prev, irpj_segundo_trimestre: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="csll2">CSLL 2º Trimestre</Label>
+                        <Input
+                          id="csll2"
+                          type="number"
+                          step="0.01"
+                          value={newData.csll_segundo_trimestre}
+                          onChange={(e) => setNewData(prev => ({ ...prev, csll_segundo_trimestre: e.target.value }))}
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={() => setIsAddDialogOpen(false)}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione uma empresa" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {companies?.filter(c => c.regime_tributario === 'lucro_real').map((company) => (
-                            <SelectItem key={company.id} value={company.id}>
-                              {company.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        Cancelar
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        disabled={addMutation.isPending}
+                      >
+                        {addMutation.isPending ? 'Salvando...' : 'Salvar'}
+                      </Button>
                     </div>
-                    <div>
-                      <Label htmlFor="period">Competência *</Label>
-                      <Input
-                        id="period"
-                        value={newData.period}
-                        onChange={(e) => setNewData(prev => ({ ...prev, period: e.target.value }))}
-                        placeholder="Ex: 2024-01"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="entradas">Entradas</Label>
-                      <Input
-                        id="entradas"
-                        type="number"
-                        step="0.01"
-                        value={newData.entradas}
-                        onChange={(e) => setNewData(prev => ({ ...prev, entradas: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="saidas">Saídas</Label>
-                      <Input
-                        id="saidas"
-                        type="number"
-                        step="0.01"
-                        value={newData.saidas}
-                        onChange={(e) => setNewData(prev => ({ ...prev, saidas: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-4">
-                    <div>
-                      <Label htmlFor="pis">PIS</Label>
-                      <Input
-                        id="pis"
-                        type="number"
-                        step="0.01"
-                        value={newData.pis}
-                        onChange={(e) => setNewData(prev => ({ ...prev, pis: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="cofins">COFINS</Label>
-                      <Input
-                        id="cofins"
-                        type="number"
-                        step="0.01"
-                        value={newData.cofins}
-                        onChange={(e) => setNewData(prev => ({ ...prev, cofins: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="icms">ICMS</Label>
-                      <Input
-                        id="icms"
-                        type="number"
-                        step="0.01"
-                        value={newData.icms}
-                        onChange={(e) => setNewData(prev => ({ ...prev, icms: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="irpj1">IRPJ 1º Trimestre</Label>
-                      <Input
-                        id="irpj1"
-                        type="number"
-                        step="0.01"
-                        value={newData.irpj_primeiro_trimestre}
-                        onChange={(e) => setNewData(prev => ({ ...prev, irpj_primeiro_trimestre: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="csll1">CSLL 1º Trimestre</Label>
-                      <Input
-                        id="csll1"
-                        type="number"
-                        step="0.01"
-                        value={newData.csll_primeiro_trimestre}
-                        onChange={(e) => setNewData(prev => ({ ...prev, csll_primeiro_trimestre: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="irpj2">IRPJ 2º Trimestre</Label>
-                      <Input
-                        id="irpj2"
-                        type="number"
-                        step="0.01"
-                        value={newData.irpj_segundo_trimestre}
-                        onChange={(e) => setNewData(prev => ({ ...prev, irpj_segundo_trimestre: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="csll2">CSLL 2º Trimestre</Label>
-                      <Input
-                        id="csll2"
-                        type="number"
-                        step="0.01"
-                        value={newData.csll_segundo_trimestre}
-                        onChange={(e) => setNewData(prev => ({ ...prev, csll_segundo_trimestre: e.target.value }))}
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => setIsAddDialogOpen(false)}
-                    >
-                      Cancelar
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={addMutation.isPending}
-                    >
-                      {addMutation.isPending ? 'Salvando...' : 'Salvar'}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
