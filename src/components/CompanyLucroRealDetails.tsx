@@ -8,13 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown } from 'lucide-react';
-import { useCompanyWithData, useLucroRealDataByCompany, useAddLucroRealData, useUpdateLucroRealData, useDeleteLucroRealData, useImportLucroRealExcel, useDeleteCompany } from '@/hooks/useFiscalData';
+import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown, ArrowLeft, CheckCircle, AlertCircle, PauseCircle } from 'lucide-react';
+import { useCompanyWithData, useLucroRealDataByCompany, useAddLucroRealData, useUpdateLucroRealData, useDeleteLucroRealData, useImportLucroRealExcel, useDeleteCompany, useUpdateCompanyStatus } from '@/hooks/useFiscalData';
 import { CompanyLucroRealEvolutionChart } from './CompanyLucroRealEvolutionChart';
 import * as XLSX from 'xlsx';
 interface CompanyLucroRealDetailsProps {
   companyId: string;
   onCompanyDeleted?: () => void;
+  onBack?: () => void;
 }
 interface AddLucroRealForm {
   period: string;
@@ -42,7 +43,8 @@ interface EditLucroRealForm {
 }
 export const CompanyLucroRealDetails = ({
   companyId,
-  onCompanyDeleted
+  onCompanyDeleted,
+  onBack
 }: CompanyLucroRealDetailsProps) => {
   const [sortField, setSortField] = useState<'period' | 'entradas' | 'saidas' | 'pis' | 'cofins' | 'icms' | 'irpj_primeiro_trimestre' | 'csll_primeiro_trimestre' | 'irpj_segundo_trimestre' | 'csll_segundo_trimestre'>('period');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -54,6 +56,8 @@ export const CompanyLucroRealDetails = ({
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDeleteCompanyDialogOpen, setIsDeleteCompanyDialogOpen] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; currentStatus: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     data: company,
@@ -68,6 +72,7 @@ export const CompanyLucroRealDetails = ({
   const deleteMutation = useDeleteLucroRealData();
   const deleteCompanyMutation = useDeleteCompany();
   const importMutation = useImportLucroRealExcel();
+  const updateStatusMutation = useUpdateCompanyStatus();
   const [newData, setNewData] = useState<AddLucroRealForm>({
     period: '',
     entradas: '',
@@ -265,6 +270,47 @@ export const CompanyLucroRealDetails = ({
       console.error('Error deleting company:', error);
     }
   };
+
+  const handleStatusClick = () => {
+    if (!company) return;
+    
+    setSelectedCompany({
+      id: company.id,
+      name: company.name,
+      currentStatus: company.sem_movimento || false
+    });
+    setStatusModalOpen(true);
+  };
+
+  const handleStatusChange = (newStatus: 'ativa' | 'paralizada' | 'sem_movimento') => {
+    if (!selectedCompany) return;
+
+    const sem_movimento = newStatus === 'sem_movimento' || newStatus === 'paralizada';
+    
+    updateStatusMutation.mutate({
+      companyId: selectedCompany.id,
+      sem_movimento
+    }, {
+      onSuccess: () => {
+        setStatusModalOpen(false);
+        setSelectedCompany(null);
+      }
+    });
+  };
+
+  const getStatusDisplay = (sem_movimento: boolean) => {
+    return sem_movimento ? 'SM' : 'Ativa';
+  };
+
+  const getStatusColor = (sem_movimento: boolean) => {
+    return sem_movimento 
+      ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20' 
+      : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20';
+  };
+
+  const getStatusIcon = (sem_movimento: boolean) => {
+    return sem_movimento ? PauseCircle : CheckCircle;
+  };
   const handleFileSelect = async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
       alert('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
@@ -353,6 +399,18 @@ export const CompanyLucroRealDetails = ({
       </Card>;
   }
   return <div className="space-y-6">
+      {/* Botão de Voltar */}
+      {onBack && (
+        <Button 
+          variant="ghost" 
+          onClick={onBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para lista de empresas
+        </Button>
+      )}
+      
       {/* Gráfico de Evolução Fiscal da Empresa */}
       <CompanyLucroRealEvolutionChart 
         companyId={companyId} 
@@ -376,6 +434,19 @@ export const CompanyLucroRealDetails = ({
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {/* Situação da Empresa */}
+              <div
+                className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105 ${getStatusColor(company.sem_movimento || false)}`}
+                onClick={handleStatusClick}
+                title="Clique para alterar a situação (SM = Sem Movimento)"
+              >
+                {(() => {
+                  const IconComponent = getStatusIcon(company.sem_movimento || false);
+                  return <IconComponent className="h-3 w-3 mr-1.5" />;
+                })()}
+                {getStatusDisplay(company.sem_movimento || false)}
+              </div>
+              
               <Button variant="outline" onClick={downloadTemplate} className="flex items-center gap-2">
                 <Download className="h-4 w-4" />
                 Baixar Template
@@ -776,5 +847,92 @@ export const CompanyLucroRealDetails = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Modal de Seleção de Situação */}
+      <Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings className="h-5 w-5" />
+              Alterar Situação da Empresa
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a nova situação para <strong>{selectedCompany?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Opção Ativa */}
+            <div
+              className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                selectedCompany?.currentStatus === false
+                  ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
+              }`}
+              onClick={() => handleStatusChange('ativa')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === false ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <CheckCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === false ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-green-700 dark:text-green-300">Ativa</h4>
+                  <p className="text-sm text-green-600 dark:text-green-400">Empresa em funcionamento normal</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Opção Paralisada */}
+            <div
+              className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                selectedCompany?.currentStatus === true
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-orange-300'
+              }`}
+              onClick={() => handleStatusChange('paralizada')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === true ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <AlertCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === true ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-orange-700 dark:text-orange-300">Paralisada</h4>
+                  <p className="text-sm text-orange-600 dark:text-orange-400">Empresa temporariamente paralisada</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Opção Sem Movimento */}
+            <div
+              className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                selectedCompany?.currentStatus === true
+                  ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
+              }`}
+              onClick={() => handleStatusChange('sem_movimento')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === true ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <PauseCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === true ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-red-700 dark:text-red-300">Sem Movimento</h4>
+                  <p className="text-sm text-red-600 dark:text-red-400">Empresa sem atividade fiscal</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setStatusModalOpen(false)}
+              disabled={updateStatusMutation.isPending}
+            >
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>;
 };

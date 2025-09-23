@@ -46,6 +46,7 @@ const Index = () => {
                 <CompanyLucroRealDetails 
                   companyId={selectedCompanyId} 
                   onCompanyDeleted={handleBackToCompanies}
+                  onBack={handleBackToCompanies}
                 />
               ) : (
                 <CompanyDetails companyId={selectedCompanyId} />
