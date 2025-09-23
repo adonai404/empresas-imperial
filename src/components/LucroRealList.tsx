@@ -7,11 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Building2, Plus, FileText, Calendar, Upload, Download } from 'lucide-react';
+import { Building2, Plus, FileText, Calendar, Upload, Download, ArrowLeft, Eye, TrendingUp, TrendingDown } from 'lucide-react';
 import { useLucroRealData, useAddLucroRealData, useCompanies, useImportLucroRealExcel } from '@/hooks/useFiscalData';
 import * as XLSX from 'xlsx';
 
 export const LucroRealList = () => {
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [newData, setNewData] = useState({
     company_id: '',
@@ -31,6 +32,62 @@ export const LucroRealList = () => {
   const { data: companies } = useCompanies();
   const addMutation = useAddLucroRealData();
   const importMutation = useImportLucroRealExcel();
+
+  // Get companies with Lucro Real regime
+  const lucroRealCompanies = companies?.filter(c => c.regime_tributario === 'lucro_real') || [];
+
+  // Group data by company
+  const groupDataByCompany = () => {
+    const grouped: { [key: string]: any[] } = {};
+    lucroRealData?.forEach(item => {
+      const companyId = item.company_id;
+      if (!grouped[companyId]) {
+        grouped[companyId] = [];
+      }
+      grouped[companyId].push(item);
+    });
+    return grouped;
+  };
+
+  const groupedData = groupDataByCompany();
+
+  // Get company info with data
+  const getCompanyWithData = (companyId: string) => {
+    const company = lucroRealCompanies.find(c => c.id === companyId);
+    const companyData = groupedData[companyId] || [];
+    
+    if (!company) return null;
+
+    // Calculate totals
+    const totals = companyData.reduce((acc, item) => ({
+      entradas: acc.entradas + (item.entradas || 0),
+      saidas: acc.saidas + (item.saidas || 0),
+      pis: acc.pis + (item.pis || 0),
+      cofins: acc.cofins + (item.cofins || 0),
+      icms: acc.icms + (item.icms || 0),
+      irpj_primeiro: acc.irpj_primeiro + (item.irpj_primeiro_trimestre || 0),
+      csll_primeiro: acc.csll_primeiro + (item.csll_primeiro_trimestre || 0),
+      irpj_segundo: acc.irpj_segundo + (item.irpj_segundo_trimestre || 0),
+      csll_segundo: acc.csll_segundo + (item.csll_segundo_trimestre || 0),
+    }), {
+      entradas: 0,
+      saidas: 0,
+      pis: 0,
+      cofins: 0,
+      icms: 0,
+      irpj_primeiro: 0,
+      csll_primeiro: 0,
+      irpj_segundo: 0,
+      csll_segundo: 0,
+    });
+
+    return {
+      ...company,
+      data: companyData,
+      totals,
+      periodCount: companyData.length
+    };
+  };
 
   const formatCurrency = (value: number | null) => {
     if (value === null || value === undefined) return '-';
@@ -186,223 +243,372 @@ export const LucroRealList = () => {
     );
   }
 
+  // Company list view
+  if (!selectedCompany) {
+    return (
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-6 w-6" />
+            <h2 className="text-2xl font-bold">Empresas de Lucro Real</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={downloadTemplate}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Baixar Template
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.xlsx,.xls';
+                input.onchange = (e) => {
+                  const file = (e.target as HTMLInputElement).files?.[0];
+                  if (file) handleFileSelect(file);
+                };
+                input.click();
+              }}
+              disabled={importMutation.isPending}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              {importMutation.isPending ? 'Importando...' : 'Importar XLSX'}
+            </Button>
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Adicionar Dados
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl">
+                <DialogHeader>
+                  <DialogTitle>Adicionar Dados de Lucro Real</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="company">Empresa *</Label>
+                      <Select 
+                        value={newData.company_id} 
+                        onValueChange={(value) => setNewData(prev => ({ ...prev, company_id: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione uma empresa" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {lucroRealCompanies.map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="period">Competência *</Label>
+                      <Input
+                        id="period"
+                        value={newData.period}
+                        onChange={(e) => setNewData(prev => ({ ...prev, period: e.target.value }))}
+                        placeholder="Ex: 2024-01"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="entradas">Entradas</Label>
+                      <Input
+                        id="entradas"
+                        type="number"
+                        step="0.01"
+                        value={newData.entradas}
+                        onChange={(e) => setNewData(prev => ({ ...prev, entradas: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="saidas">Saídas</Label>
+                      <Input
+                        id="saidas"
+                        type="number"
+                        step="0.01"
+                        value={newData.saidas}
+                        onChange={(e) => setNewData(prev => ({ ...prev, saidas: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="pis">PIS</Label>
+                      <Input
+                        id="pis"
+                        type="number"
+                        step="0.01"
+                        value={newData.pis}
+                        onChange={(e) => setNewData(prev => ({ ...prev, pis: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="cofins">COFINS</Label>
+                      <Input
+                        id="cofins"
+                        type="number"
+                        step="0.01"
+                        value={newData.cofins}
+                        onChange={(e) => setNewData(prev => ({ ...prev, cofins: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="icms">ICMS</Label>
+                      <Input
+                        id="icms"
+                        type="number"
+                        step="0.01"
+                        value={newData.icms}
+                        onChange={(e) => setNewData(prev => ({ ...prev, icms: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="irpj1">IRPJ 1º Trimestre</Label>
+                      <Input
+                        id="irpj1"
+                        type="number"
+                        step="0.01"
+                        value={newData.irpj_primeiro_trimestre}
+                        onChange={(e) => setNewData(prev => ({ ...prev, irpj_primeiro_trimestre: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="csll1">CSLL 1º Trimestre</Label>
+                      <Input
+                        id="csll1"
+                        type="number"
+                        step="0.01"
+                        value={newData.csll_primeiro_trimestre}
+                        onChange={(e) => setNewData(prev => ({ ...prev, csll_primeiro_trimestre: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="irpj2">IRPJ 2º Trimestre</Label>
+                      <Input
+                        id="irpj2"
+                        type="number"
+                        step="0.01"
+                        value={newData.irpj_segundo_trimestre}
+                        onChange={(e) => setNewData(prev => ({ ...prev, irpj_segundo_trimestre: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="csll2">CSLL 2º Trimestre</Label>
+                      <Input
+                        id="csll2"
+                        type="number"
+                        step="0.01"
+                        value={newData.csll_segundo_trimestre}
+                        onChange={(e) => setNewData(prev => ({ ...prev, csll_segundo_trimestre: e.target.value }))}
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => setIsAddDialogOpen(false)}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={addMutation.isPending}
+                    >
+                      {addMutation.isPending ? 'Salvando...' : 'Salvar'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Company Cards */}
+        {lucroRealCompanies.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-8">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <h3 className="text-lg font-semibold mb-2">Nenhuma empresa de Lucro Real encontrada</h3>
+              <p className="text-muted-foreground mb-4">
+                Adicione empresas com regime tributário de Lucro Real
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {lucroRealCompanies.map(company => {
+              const companyWithData = getCompanyWithData(company.id);
+              if (!companyWithData) return null;
+
+              return (
+                <Card key={company.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-5 w-5 text-primary" />
+                        <h3 className="font-semibold text-lg">{company.name}</h3>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedCompany(company.id)}
+                        className="flex items-center gap-1"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver dados
+                      </Button>
+                    </div>
+
+                    {company.cnpj && (
+                      <p className="text-sm text-muted-foreground mb-2">
+                        CNPJ: {company.cnpj}
+                      </p>
+                    )}
+
+                    {company.segmento && (
+                      <Badge variant="secondary" className="mb-4">
+                        {company.segmento}
+                      </Badge>
+                    )}
+
+                    <div className="space-y-2 mb-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Períodos registrados:</span>
+                        <span className="font-semibold">{companyWithData.periodCount}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Total Entradas:</span>
+                        <span className="font-semibold text-green-600">
+                          {formatCurrency(companyWithData.totals.entradas)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Total Saídas:</span>
+                        <span className="font-semibold text-red-600">
+                          {formatCurrency(companyWithData.totals.saidas)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <span className="text-sm font-medium">Resultado:</span>
+                      <div className="flex items-center gap-1">
+                        {(companyWithData.totals.entradas - companyWithData.totals.saidas) >= 0 ? (
+                          <TrendingUp className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <TrendingDown className="h-4 w-4 text-red-600" />
+                        )}
+                        <span className={`font-semibold ${
+                          (companyWithData.totals.entradas - companyWithData.totals.saidas) >= 0 
+                            ? 'text-green-600' 
+                            : 'text-red-600'
+                        }`}>
+                          {formatCurrency(companyWithData.totals.entradas - companyWithData.totals.saidas)}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Company detail view
+  const selectedCompanyData = getCompanyWithData(selectedCompany);
+  if (!selectedCompanyData) return null;
+
   return (
     <div className="space-y-6">
+      {/* Header with back button */}
+      <div className="flex items-center gap-4">
+        <Button
+          variant="outline"
+          onClick={() => setSelectedCompany(null)}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar
+        </Button>
+        <div className="flex items-center gap-2">
+          <Building2 className="h-6 w-6" />
+          <h2 className="text-2xl font-bold">{selectedCompanyData.name}</h2>
+        </div>
+      </div>
+
+      {/* Company Info */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-6 w-6" />
-              <CardTitle>Empresas de Lucro Real</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={downloadTemplate}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Baixar Template
-              </Button>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = '.xlsx,.xls';
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) handleFileSelect(file);
-                  };
-                  input.click();
-                }}
-                disabled={importMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                <Upload className="h-4 w-4" />
-                {importMutation.isPending ? 'Importando...' : 'Importar XLSX'}
-              </Button>
-              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Adicionar Dados
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl">
-                  <DialogHeader>
-                    <DialogTitle>Adicionar Dados de Lucro Real</DialogTitle>
-                  </DialogHeader>
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="company">Empresa *</Label>
-                        <Select 
-                          value={newData.company_id} 
-                          onValueChange={(value) => setNewData(prev => ({ ...prev, company_id: value }))}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione uma empresa" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {companies?.filter(c => c.regime_tributario === 'lucro_real').map((company) => (
-                              <SelectItem key={company.id} value={company.id}>
-                                {company.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label htmlFor="period">Competência *</Label>
-                        <Input
-                          id="period"
-                          value={newData.period}
-                          onChange={(e) => setNewData(prev => ({ ...prev, period: e.target.value }))}
-                          placeholder="Ex: 2024-01"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="entradas">Entradas</Label>
-                        <Input
-                          id="entradas"
-                          type="number"
-                          step="0.01"
-                          value={newData.entradas}
-                          onChange={(e) => setNewData(prev => ({ ...prev, entradas: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="saidas">Saídas</Label>
-                        <Input
-                          id="saidas"
-                          type="number"
-                          step="0.01"
-                          value={newData.saidas}
-                          onChange={(e) => setNewData(prev => ({ ...prev, saidas: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="pis">PIS</Label>
-                        <Input
-                          id="pis"
-                          type="number"
-                          step="0.01"
-                          value={newData.pis}
-                          onChange={(e) => setNewData(prev => ({ ...prev, pis: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cofins">COFINS</Label>
-                        <Input
-                          id="cofins"
-                          type="number"
-                          step="0.01"
-                          value={newData.cofins}
-                          onChange={(e) => setNewData(prev => ({ ...prev, cofins: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="icms">ICMS</Label>
-                        <Input
-                          id="icms"
-                          type="number"
-                          step="0.01"
-                          value={newData.icms}
-                          onChange={(e) => setNewData(prev => ({ ...prev, icms: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="irpj1">IRPJ 1º Trimestre</Label>
-                        <Input
-                          id="irpj1"
-                          type="number"
-                          step="0.01"
-                          value={newData.irpj_primeiro_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, irpj_primeiro_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="csll1">CSLL 1º Trimestre</Label>
-                        <Input
-                          id="csll1"
-                          type="number"
-                          step="0.01"
-                          value={newData.csll_primeiro_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, csll_primeiro_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="irpj2">IRPJ 2º Trimestre</Label>
-                        <Input
-                          id="irpj2"
-                          type="number"
-                          step="0.01"
-                          value={newData.irpj_segundo_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, irpj_segundo_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="csll2">CSLL 2º Trimestre</Label>
-                        <Input
-                          id="csll2"
-                          type="number"
-                          step="0.01"
-                          value={newData.csll_segundo_trimestre}
-                          onChange={(e) => setNewData(prev => ({ ...prev, csll_segundo_trimestre: e.target.value }))}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-2">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={() => setIsAddDialogOpen(false)}
-                      >
-                        Cancelar
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        disabled={addMutation.isPending}
-                      >
-                        {addMutation.isPending ? 'Salvando...' : 'Salvar'}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
+          <CardTitle>Informações da Empresa</CardTitle>
         </CardHeader>
         <CardContent>
-          {!lucroRealData || lucroRealData.length === 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">CNPJ</p>
+              <p className="font-medium">{selectedCompanyData.cnpj || 'Não informado'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Segmento</p>
+              <p className="font-medium">{selectedCompanyData.segmento || 'Não informado'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Regime Tributário</p>
+              <Badge variant="outline">Lucro Real</Badge>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Períodos</p>
+              <p className="font-medium">{selectedCompanyData.periodCount}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Dados Fiscais por Período</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {selectedCompanyData.data.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="text-lg font-semibold mb-2">Nenhum dado de Lucro Real encontrado</h3>
+              <h3 className="text-lg font-semibold mb-2">Nenhum dado encontrado</h3>
               <p className="text-muted-foreground mb-4">
-                Adicione dados de empresas do regime de Lucro Real
+                Adicione dados para esta empresa
               </p>
             </div>
           ) : (
@@ -410,9 +616,6 @@ export const LucroRealList = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Empresa</TableHead>
-                    <TableHead>CNPJ</TableHead>
-                    <TableHead>Segmento</TableHead>
                     <TableHead>Competência</TableHead>
                     <TableHead>Entradas</TableHead>
                     <TableHead>Saídas</TableHead>
@@ -426,21 +629,8 @@ export const LucroRealList = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {lucroRealData.map((item) => (
+                  {selectedCompanyData.data.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        {(item as any).companies?.name || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        {(item as any).companies?.cnpj || '-'}
-                      </TableCell>
-                      <TableCell>
-                        {(item as any).companies?.segmento ? (
-                          <Badge variant="secondary">
-                            {(item as any).companies.segmento}
-                          </Badge>
-                        ) : '-'}
-                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
