@@ -14,10 +14,12 @@ import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCir
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
+import { LucroRealList } from './LucroRealList';
 import { useForm } from 'react-hook-form';
 
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
+  onLucroRealSelect?: () => void;
 }
 
 interface AddCompanyForm {
@@ -44,7 +46,7 @@ interface FilterState {
   sortOrder: 'asc' | 'desc';
 }
 
-export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
+export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListProps) => {
   const [selectedRegime, setSelectedRegime] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -454,6 +456,9 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
 
   const handleRegimeSelection = (regime: string) => {
     setSelectedRegime(regime);
+    if (regime === 'lucro_real' && onLucroRealSelect) {
+      onLucroRealSelect();
+    }
   };
 
   const handleBackToRegimeSelection = () => {
@@ -570,6 +575,11 @@ export const CompanyList = ({ onSelectCompany }: CompanyListProps) => {
         </Card>
       </div>
     );
+  }
+
+  // Se o regime selecionado for "lucro_real", mostrar o LucroRealList
+  if (selectedRegime === 'lucro_real') {
+    return <LucroRealList onSelectCompany={onSelectCompany} />;
   }
 
   return (

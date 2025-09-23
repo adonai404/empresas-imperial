@@ -20,10 +20,6 @@ const sections = [{
   title: "Empresas",
   icon: Building2
 }, {
-  id: "lucro-real",
-  title: "Lucro Real",
-  icon: Building2
-}, {
   id: "settings",
   title: "Opções",
   icon: Settings

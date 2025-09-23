@@ -925,6 +925,69 @@ export const useCompanyFiscalEvolutionData = (companyId: string) => {
   });
 };
 
+export const useLucroRealEvolutionData = (companyId: string) => {
+  return useQuery({
+    queryKey: ['lucro-real-evolution', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_real_data')
+        .select(`
+          period,
+          entradas,
+          saidas,
+          pis,
+          cofins,
+          icms,
+          irpj_primeiro_trimestre,
+          csll_primeiro_trimestre,
+          irpj_segundo_trimestre,
+          csll_segundo_trimestre
+        `)
+        .eq('company_id', companyId)
+        .order('period');
+      
+      if (error) throw error;
+      
+      // Ordenar dados por período e calcular totais
+      const evolutionData = data?.map(item => {
+        const entradas = Number(item.entradas) || 0;
+        const saidas = Number(item.saidas) || 0;
+        const pis = Number(item.pis) || 0;
+        const cofins = Number(item.cofins) || 0;
+        const icms = Number(item.icms) || 0;
+        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
+        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
+        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
+        const csll2 = Number(item.csll_segundo_trimestre) || 0;
+        
+        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
+        
+        return {
+          period: item.period,
+          entrada: entradas,
+          saida: saidas,
+          imposto: totalImpostos,
+          pis,
+          cofins,
+          icms,
+          irpj_primeiro_trimestre: irpj1,
+          csll_primeiro_trimestre: csll1,
+          irpj_segundo_trimestre: irpj2,
+          csll_segundo_trimestre: csll2,
+          saldo: entradas - saidas
+        };
+      }).sort((a, b) => {
+        const dateA = parsePeriodToDate(a.period);
+        const dateB = parsePeriodToDate(b.period);
+        return dateA.getTime() - dateB.getTime();
+      }) || [];
+      
+      return evolutionData;
+    },
+    enabled: !!companyId,
+  });
+};
+
 // Hook para gerenciar regimes de CNPJs
 export const useCnpjRegimes = () => {
   return useQuery({

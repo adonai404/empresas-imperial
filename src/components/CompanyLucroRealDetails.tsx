@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown } from 'lucide-react';
 import { useCompanyWithData, useLucroRealDataByCompany, useAddLucroRealData, useUpdateLucroRealData, useDeleteLucroRealData, useImportLucroRealExcel, useDeleteCompany } from '@/hooks/useFiscalData';
+import { CompanyLucroRealEvolutionChart } from './CompanyLucroRealEvolutionChart';
 import * as XLSX from 'xlsx';
 interface CompanyLucroRealDetailsProps {
   companyId: string;
@@ -352,6 +353,12 @@ export const CompanyLucroRealDetails = ({
       </Card>;
   }
   return <div className="space-y-6">
+      {/* Gráfico de Evolução Fiscal da Empresa */}
+      <CompanyLucroRealEvolutionChart 
+        companyId={companyId} 
+        companyName={company?.name || 'Empresa'} 
+      />
+      
       {/* Header da Empresa */}
       <Card>
         <CardHeader>
