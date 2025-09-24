@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment } from '@/hooks/useFiscalData';
-import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag } from 'lucide-react';
+import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { LucroRealList } from './LucroRealList';
 import { useForm } from 'react-hook-form';
+import * as XLSX from 'xlsx';
+import { useToast } from '@/hooks/use-toast';
 
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
@@ -76,6 +78,10 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
   const [newSegmentNameFromEdit, setNewSegmentNameFromEdit] = useState('');
   const [isCreateSegmentFromAddOpen, setIsCreateSegmentFromAddOpen] = useState(false);
   const [newSegmentNameFromAdd, setNewSegmentNameFromAdd] = useState('');
+  
+  // Estados para funcionalidades de importação/exportação  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: segments = [] } = useSegments();
@@ -465,6 +471,109 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
     setSelectedRegime(null);
   };
 
+  // Função para baixar template XLSX
+  const downloadTemplate = () => {
+    const templateData = [
+      ['nome', 'cnpj', 'segmento', 'regime_tributario'],
+      ['Empresa Exemplo', '12.345.678/0001-90', 'Varejo', 'simples_nacional'],
+      ['', '', '', ''],
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Template Empresas');
+
+    // Ajustar largura das colunas
+    ws['!cols'] = [
+      { wch: 30 }, // nome
+      { wch: 20 }, // cnpj  
+      { wch: 15 }, // segmento
+      { wch: 20 }, // regime_tributario
+    ];
+
+    XLSX.writeFile(wb, 'template_empresas.xlsx');
+    
+    toast({
+      title: "Template baixado",
+      description: "O arquivo template_empresas.xlsx foi baixado com sucesso.",
+    });
+  };
+
+  // Função para processar arquivo importado
+  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        if (jsonData.length < 2) {
+          toast({
+            title: "Erro na importação",
+            description: "O arquivo deve conter pelo menos uma linha de dados além do cabeçalho.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const [headers, ...rows] = jsonData as any[][];
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Processar cada linha
+        rows.forEach((row: any[], index: number) => {
+          if (row.length < 1 || !row[0]) return; // Pular linhas vazias
+
+          try {
+            const companyData = {
+              name: row[0]?.toString() || '',
+              cnpj: row[1]?.toString() || '',
+              segmento: row[2]?.toString() || '',
+              regime_tributario: row[3]?.toString() || '',
+            };
+
+            if (companyData.name.trim()) {
+              addCompanyMutation.mutate({
+                name: companyData.name,
+                cnpj: companyData.cnpj || undefined,
+                sem_movimento: false,
+                segmento: companyData.segmento || undefined,
+                regime_tributario: companyData.regime_tributario as any || undefined,
+              });
+              successCount++;
+            }
+          } catch (error) {
+            errorCount++;
+            console.error(`Erro na linha ${index + 2}:`, error);
+          }
+        });
+
+        toast({
+          title: "Importação concluída",
+          description: `${successCount} empresas importadas com sucesso. ${errorCount > 0 ? `${errorCount} erros encontrados.` : ''}`,
+        });
+
+      } catch (error) {
+        toast({
+          title: "Erro ao processar arquivo",
+          description: "Verifique se o arquivo está no formato correto.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    // Limpar o input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -595,7 +704,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
                 onClick={handleBackToRegimeSelection}
                 className="flex items-center gap-2"
               >
-                <ArrowUpDown className="h-4 w-4" />
+                <ArrowLeft className="h-4 w-4" />
                 Voltar
               </Button>
               <CardTitle className="flex items-center gap-2 text-lg">
@@ -604,13 +713,45 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
               </CardTitle>
             </div>
           </div>
-          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" className="w-full sm:w-auto">
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Empresa
-              </Button>
-            </DialogTrigger>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Botão para baixar template */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadTemplate}
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              Baixar Template
+            </Button>
+
+            {/* Input oculto para importar arquivo */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileImport}
+              className="hidden"
+            />
+
+            {/* Botão para importar planilha */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2"
+            >
+              <Upload className="h-4 w-4" />
+              Importar Planilha
+            </Button>
+
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="w-full sm:w-auto">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Adicionar Empresa
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Adicionar Nova Empresa</DialogTitle>
@@ -703,6 +844,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
         
         <div className="flex flex-col gap-4">
