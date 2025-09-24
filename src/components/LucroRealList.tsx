@@ -5,7 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Building2, Eye, Lock, Trash2, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { Building2, Eye, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter } from 'lucide-react';
 import { useCompanies, useDeleteCompany, useImportLucroRealExcel } from '@/hooks/useFiscalData';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
@@ -14,9 +14,10 @@ import * as XLSX from 'xlsx';
 
 interface LucroRealListProps {
   onSelectCompany?: (companyId: string) => void;
+  onBack?: () => void;
 }
 
-export const LucroRealList = ({ onSelectCompany }: LucroRealListProps) => {
+export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) => {
   const [passwordAuthCompany, setPasswordAuthCompany] = useState<{ id: string; name: string } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [operationAuthCompany, setOperationAuthCompany] = useState<{ id: string; name: string; operation: 'delete' } | null>(null);
@@ -25,6 +26,8 @@ export const LucroRealList = ({ onSelectCompany }: LucroRealListProps) => {
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSegment, setSelectedSegment] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: companies, isLoading } = useCompanies();
@@ -33,6 +36,20 @@ export const LucroRealList = ({ onSelectCompany }: LucroRealListProps) => {
 
   // Filtrar apenas empresas do regime lucro_real
   const lucroRealCompanies = companies?.filter(company => company.regime_tributario === 'lucro_real') || [];
+
+  // Aplicar filtros de busca e segmento
+  const filteredCompanies = lucroRealCompanies.filter(company => {
+    const matchesSearch = !searchTerm || 
+      company.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      company.cnpj?.includes(searchTerm);
+    
+    const matchesSegment = !selectedSegment || company.segmento === selectedSegment;
+    
+    return matchesSearch && matchesSegment;
+  });
+
+  // Obter segmentos únicos para o filtro
+  const availableSegments = [...new Set(lucroRealCompanies.map(company => company.segmento).filter(Boolean))];
 
   const handleCompanyClick = (company: any) => {
     // Se a empresa tem senha, sempre abrir modal de autenticação
@@ -232,13 +249,56 @@ export const LucroRealList = ({ onSelectCompany }: LucroRealListProps) => {
     <div className="space-y-6">
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Building2 className="h-5 w-5" />
-                Empresas Lucro Real ({lucroRealCompanies.length})
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                {onBack && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onBack}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                    Voltar
+                  </Button>
+                )}
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Building2 className="h-5 w-5" />
+                  Empresas Lucro Real ({filteredCompanies.length})
+                </CardTitle>
+              </div>
             </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Buscar por nome ou CNPJ..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <select
+                    value={selectedSegment}
+                    onChange={(e) => setSelectedSegment(e.target.value)}
+                    className="pl-10 pr-4 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring min-w-[150px]"
+                  >
+                    <option value="">Todos os segmentos</option>
+                    {availableSegments.map(segment => (
+                      <option key={segment} value={segment}>{segment}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div></div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div></div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -274,17 +334,22 @@ export const LucroRealList = ({ onSelectCompany }: LucroRealListProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {lucroRealCompanies.length === 0 ? (
+                {filteredCompanies.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
-                        <p>Nenhuma empresa do regime Lucro Real encontrada</p>
+                        <p>
+                          {lucroRealCompanies.length === 0 
+                            ? "Nenhuma empresa do regime Lucro Real encontrada"
+                            : "Nenhuma empresa encontrada com os filtros aplicados"
+                          }
+                        </p>
                       </div>
                     </TableCell>
                   </TableRow>
                 ) : (
-                  lucroRealCompanies.map((company, index) => (
+                  filteredCompanies.map((company, index) => (
                     <TableRow 
                       key={company.id}
                       className="cursor-pointer hover:bg-accent transition-colors border-b border-border bg-muted/30"
