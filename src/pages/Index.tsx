@@ -9,21 +9,17 @@ import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-
 const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isLucroRealSection, setIsLucroRealSection] = useState(false);
-  
   const handleSelectCompany = (companyId: string) => {
     setSelectedCompanyId(companyId);
   };
-  
   const handleBackToCompanies = () => {
     setSelectedCompanyId(undefined);
     setIsLucroRealSection(false);
   };
-
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
@@ -32,27 +28,10 @@ const Index = () => {
         return <ExcelUpload />;
       case 'companies':
         if (selectedCompanyId) {
-          return (
-            <div className="space-y-4">
-              <Button 
-                variant="ghost" 
-                onClick={handleBackToCompanies}
-                className="flex items-center gap-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                Voltar para lista de empresas
-              </Button>
-              {isLucroRealSection ? (
-                <CompanyLucroRealDetails 
-                  companyId={selectedCompanyId} 
-                  onCompanyDeleted={handleBackToCompanies}
-                  onBack={handleBackToCompanies}
-                />
-              ) : (
-                <CompanyDetails companyId={selectedCompanyId} />
-              )}
-            </div>
-          );
+          return <div className="space-y-4">
+              
+              {isLucroRealSection ? <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} /> : <CompanyDetails companyId={selectedCompanyId} />}
+            </div>;
         }
         return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} />;
       case 'settings':
