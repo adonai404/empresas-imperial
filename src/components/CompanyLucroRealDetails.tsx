@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown, ArrowLeft, CheckCircle, AlertCircle, PauseCircle } from 'lucide-react';
+import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown, ArrowLeft, CheckCircle, AlertCircle, PauseCircle, Settings } from 'lucide-react';
 import { useCompanyWithData, useLucroRealDataByCompany, useAddLucroRealData, useUpdateLucroRealData, useDeleteLucroRealData, useImportLucroRealExcel, useDeleteCompany, useUpdateCompanyStatus } from '@/hooks/useFiscalData';
 import { CompanyLucroRealEvolutionChart } from './CompanyLucroRealEvolutionChart';
 import * as XLSX from 'xlsx';
