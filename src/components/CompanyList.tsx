@@ -688,7 +688,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
 
   // Se o regime selecionado for "lucro_real", mostrar o LucroRealList
   if (selectedRegime === 'lucro_real') {
-    return <LucroRealList onSelectCompany={onSelectCompany} />;
+    return <LucroRealList onSelectCompany={onSelectCompany} onBack={handleBackToRegimeSelection} />;
   }
 
   return (
