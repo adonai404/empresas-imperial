@@ -5,8 +5,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Building2, Eye, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter } from 'lucide-react';
-import { useCompanies, useDeleteCompany, useImportLucroRealExcel } from '@/hooks/useFiscalData';
+import { Building2, Eye, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter, CheckCircle, PauseCircle } from 'lucide-react';
+import { useCompanies, useDeleteCompany, useImportLucroRealExcel, useUpdateCompanyStatus } from '@/hooks/useFiscalData';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -28,11 +28,14 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
   const [isDragging, setIsDragging] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSegment, setSelectedSegment] = useState('');
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: companies, isLoading } = useCompanies();
   const deleteCompanyMutation = useDeleteCompany();
   const importMutation = useImportLucroRealExcel();
+  const updateCompanyMutation = useUpdateCompanyStatus();
 
   // Filtrar apenas empresas do regime lucro_real
   const lucroRealCompanies = companies?.filter(company => company.regime_tributario === 'lucro_real') || [];
@@ -67,6 +70,39 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
 
   const hasPassword = (company: any) => {
     return company?.company_passwords && company.company_passwords.id !== null;
+  };
+
+  const getStatusDisplay = (sem_movimento: boolean) => {
+    return sem_movimento ? 'SM' : 'Ativa';
+  };
+
+  const getStatusColor = (sem_movimento: boolean) => {
+    return sem_movimento 
+      ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20' 
+      : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20';
+  };
+
+  const getStatusIcon = (sem_movimento: boolean) => {
+    return sem_movimento ? PauseCircle : CheckCircle;
+  };
+
+  const handleStatusClick = (company: any) => {
+    setSelectedCompany(company);
+    setStatusModalOpen(true);
+  };
+
+  const handleStatusUpdate = (sem_movimento: boolean) => {
+    if (!selectedCompany) return;
+    
+    updateCompanyMutation.mutate({
+      companyId: selectedCompany.id,
+      sem_movimento
+    }, {
+      onSuccess: () => {
+        setStatusModalOpen(false);
+        setSelectedCompany(null);
+      }
+    });
   };
 
   const handlePasswordSuccess = () => {
@@ -327,16 +363,17 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                 <TableRow className="border-b border-border bg-muted/50 backdrop-blur-sm">
                   <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Empresa</TableHead>
-                  <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
-                  <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
-                  <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Regime</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 hidden sm:table-cell">CNPJ</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32">Segmento</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 hidden sm:table-cell">Regime</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
                   <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCompanies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
                         <p>
@@ -372,7 +409,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                       <TableCell className="border-r border-border text-muted-foreground text-sm hidden sm:table-cell">
                         {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'N/A'}
                       </TableCell>
-                      <TableCell className="border-r border-border text-muted-foreground text-sm hidden lg:table-cell">
+                      <TableCell className="border-r border-border text-muted-foreground text-sm">
                         {company.segmento ? (
                           <Badge variant="secondary" className="text-xs">
                             {company.segmento}
@@ -383,6 +420,22 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                         <Badge variant="secondary" className="text-xs">
                           Lucro Real
                         </Badge>
+                      </TableCell>
+                      <TableCell className="border-r border-border text-center w-24">
+                        <div
+                          className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105 ${getStatusColor(company.sem_movimento || false)}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStatusClick(company);
+                          }}
+                          title="Clique para alterar a situação (SM = Sem Movimento)"
+                        >
+                          {(() => {
+                            const IconComponent = getStatusIcon(company.sem_movimento || false);
+                            return <IconComponent className="h-3 w-3 mr-1.5" />;
+                          })()}
+                          {getStatusDisplay(company.sem_movimento || false)}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -546,6 +599,43 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
             >
               {deleteCompanyMutation.isPending ? 'Excluindo...' : 'Excluir Empresa'}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Modal de alteração de situação */}
+      <AlertDialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Alterar Situação da Empresa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Selecione a nova situação para a empresa <strong>{selectedCompany?.name}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-4 py-4">
+            <Button
+              variant="outline"
+              onClick={() => handleStatusUpdate(false)}
+              disabled={updateCompanyMutation.isPending}
+              className="flex-1 flex items-center gap-2"
+            >
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              Ativa
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => handleStatusUpdate(true)}
+              disabled={updateCompanyMutation.isPending}
+              className="flex-1 flex items-center gap-2"
+            >
+              <PauseCircle className="h-4 w-4 text-orange-600" />
+              Sem Movimento
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={updateCompanyMutation.isPending}>
+              Cancelar
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
