@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Building2, Eye, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter, CheckCircle, PauseCircle } from 'lucide-react';
-import { useCompanies, useDeleteCompany, useImportLucroRealExcel, useUpdateCompanyStatus } from '@/hooks/useFiscalData';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building2, Edit, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter, CheckCircle, PauseCircle, AlertCircle } from 'lucide-react';
+import { useCompanies, useDeleteCompany, useImportLucroRealExcel, useUpdateCompanyStatus, useUpdateCompany, useSegments } from '@/hooks/useFiscalData';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -30,12 +32,16 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
   const [selectedSegment, setSelectedSegment] = useState('');
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string; segmento: string; regime_tributario: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: companies, isLoading } = useCompanies();
+  const { data: segments = [] } = useSegments();
   const deleteCompanyMutation = useDeleteCompany();
   const importMutation = useImportLucroRealExcel();
   const updateCompanyMutation = useUpdateCompanyStatus();
+  const updateCompanyInfoMutation = useUpdateCompany();
 
   // Filtrar apenas empresas do regime lucro_real
   const lucroRealCompanies = companies?.filter(company => company.regime_tributario === 'lucro_real') || [];
@@ -87,12 +93,18 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
   };
 
   const handleStatusClick = (company: any) => {
-    setSelectedCompany(company);
+    setSelectedCompany({
+      id: company.id,
+      name: company.name,
+      currentStatus: company.sem_movimento || false
+    });
     setStatusModalOpen(true);
   };
 
-  const handleStatusUpdate = (sem_movimento: boolean) => {
+  const handleStatusChange = (newStatus: 'ativa' | 'paralizada' | 'sem_movimento') => {
     if (!selectedCompany) return;
+
+    const sem_movimento = newStatus === 'sem_movimento' || newStatus === 'paralizada';
     
     updateCompanyMutation.mutate({
       companyId: selectedCompany.id,
@@ -101,6 +113,34 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
       onSuccess: () => {
         setStatusModalOpen(false);
         setSelectedCompany(null);
+      }
+    });
+  };
+
+  const handleEditCompany = (company: any) => {
+    setEditingCompany({
+      id: company.id,
+      name: company.name,
+      cnpj: company.cnpj || '',
+      segmento: company.segmento || '',
+      regime_tributario: company.regime_tributario || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateCompany = () => {
+    if (!editingCompany) return;
+
+    updateCompanyInfoMutation.mutate({
+      companyId: editingCompany.id,
+      name: editingCompany.name,
+      cnpj: editingCompany.cnpj || undefined,
+      segmento: editingCompany.segmento || undefined,
+      regime_tributario: editingCompany.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei' || undefined,
+    }, {
+      onSuccess: () => {
+        setIsEditDialogOpen(false);
+        setEditingCompany(null);
       }
     });
   };
@@ -363,9 +403,8 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                 <TableRow className="border-b border-border bg-muted/50 backdrop-blur-sm">
                   <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Empresa</TableHead>
-                  <TableHead className="border-r border-border font-semibold text-foreground w-32 hidden sm:table-cell">CNPJ</TableHead>
-                  <TableHead className="border-r border-border font-semibold text-foreground w-32">Segmento</TableHead>
-                  <TableHead className="border-r border-border font-semibold text-foreground w-32 hidden sm:table-cell">Regime</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-40 hidden sm:table-cell">CNPJ</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-36">Segmento</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
                   <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
                 </TableRow>
@@ -373,7 +412,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
               <TableBody>
                 {filteredCompanies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
                         <p>
@@ -406,7 +445,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                           )}
                         </div>
                       </TableCell>
-                      <TableCell className="border-r border-border text-muted-foreground text-sm hidden sm:table-cell">
+                      <TableCell className="border-r border-border text-muted-foreground text-sm hidden sm:table-cell whitespace-nowrap">
                         {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'N/A'}
                       </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm">
@@ -415,11 +454,6 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                             {company.segmento}
                           </Badge>
                         ) : 'N/A'}
-                      </TableCell>
-                      <TableCell className="border-r border-border text-muted-foreground text-sm hidden sm:table-cell">
-                        <Badge variant="secondary" className="text-xs">
-                          Lucro Real
-                        </Badge>
                       </TableCell>
                       <TableCell className="border-r border-border text-center w-24">
                         <div
@@ -444,11 +478,11 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleCompanyClick(company);
+                              handleEditCompany(company);
                             }}
                             className="h-8 w-8 p-0 hover:bg-primary/10"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -603,42 +637,181 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Modal de alteração de situação */}
-      <AlertDialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Alterar Situação da Empresa</AlertDialogTitle>
-            <AlertDialogDescription>
-              Selecione a nova situação para a empresa <strong>{selectedCompany?.name}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-4 py-4">
-            <Button
-              variant="outline"
-              onClick={() => handleStatusUpdate(false)}
-              disabled={updateCompanyMutation.isPending}
-              className="flex-1 flex items-center gap-2"
+      {/* Modal de Alteração de Situação */}
+      <Dialog open={statusModalOpen} onOpenChange={setStatusModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-primary" />
+              Alterar Situação
+            </DialogTitle>
+            <DialogDescription>
+              Selecione a nova situação para <strong>{selectedCompany?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3 py-4">
+            {/* Opção Ativa */}
+            <div
+              className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                selectedCompany?.currentStatus === false
+                  ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
+              }`}
+              onClick={() => handleStatusChange('ativa')}
             >
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              Ativa
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleStatusUpdate(true)}
-              disabled={updateCompanyMutation.isPending}
-              className="flex-1 flex items-center gap-2"
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === false ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <CheckCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === false ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-green-700 dark:text-green-300">Ativa</h4>
+                  <p className="text-sm text-green-600 dark:text-green-400">Empresa em funcionamento normal</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Opção Paralisada */}
+            <div
+              className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                selectedCompany?.currentStatus === true
+                  ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-orange-300'
+              }`}
+              onClick={() => handleStatusChange('paralizada')}
             >
-              <PauseCircle className="h-4 w-4 text-orange-600" />
-              Sem Movimento
-            </Button>
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === true ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <AlertCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === true ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-orange-700 dark:text-orange-300">Paralisada</h4>
+                  <p className="text-sm text-orange-600 dark:text-orange-400">Empresa temporariamente paralisada</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Opção Sem Movimento */}
+            <div
+              className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+                selectedCompany?.currentStatus === true
+                  ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                  : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
+              }`}
+              onClick={() => handleStatusChange('sem_movimento')}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === true ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
+                  <PauseCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === true ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`} />
+                </div>
+                <div>
+                  <h4 className="font-medium text-red-700 dark:text-red-300">Sem Movimento</h4>
+                  <p className="text-sm text-red-600 dark:text-red-400">Empresa sem atividade fiscal</p>
+                </div>
+              </div>
+            </div>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={updateCompanyMutation.isPending}>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setStatusModalOpen(false)}
+              disabled={updateCompanyMutation.isPending}
+            >
               Cancelar
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Edição da Empresa */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Empresa</DialogTitle>
+            <DialogDescription>
+              Altere os dados da empresa.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome da Empresa *</Label>
+              <Input
+                id="edit-name"
+                value={editingCompany?.name || ''}
+                onChange={(e) => setEditingCompany(prev => prev ? { ...prev, name: e.target.value } : null)}
+                placeholder="Digite o nome da empresa"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-cnpj">CNPJ</Label>
+              <Input
+                id="edit-cnpj"
+                value={editingCompany?.cnpj || ''}
+                onChange={(e) => setEditingCompany(prev => prev ? { ...prev, cnpj: e.target.value } : null)}
+                placeholder="00.000.000/0000-00 (opcional)"
+                maxLength={18}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-segmento">Segmento</Label>
+              <Select
+                value={editingCompany?.segmento || 'none'}
+                onValueChange={(value) => setEditingCompany(prev => prev ? { ...prev, segmento: value === 'none' ? '' : value } : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar segmento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem segmento</SelectItem>
+                  {segments.map((segment) => (
+                    <SelectItem key={segment.id} value={segment.name}>
+                      {segment.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-regime">Regime Tributário</Label>
+              <Select 
+                value={editingCompany?.regime_tributario || ''}
+                onValueChange={(value) => setEditingCompany(prev => prev ? { ...prev, regime_tributario: value } : null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o regime tributário" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum</SelectItem>
+                  <SelectItem value="lucro_real">Lucro Real</SelectItem>
+                  <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                  <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
+                  <SelectItem value="mei">MEI</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                setEditingCompany(null);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleUpdateCompany}
+              disabled={updateCompanyInfoMutation.isPending || !editingCompany?.name}
+            >
+              {updateCompanyInfoMutation.isPending ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
