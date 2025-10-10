@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BarChart3, Upload, Building2, Settings } from "lucide-react";
+import { Upload, Building2, Settings } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./ThemeToggle";
@@ -8,17 +8,13 @@ interface AppSidebarProps {
   onSectionChange: (section: string) => void;
 }
 const sections = [{
-  id: "dashboard",
-  title: "Dashboard",
-  icon: BarChart3
+  id: "companies",
+  title: "Empresas",
+  icon: Building2
 }, {
   id: "import",
   title: "Importação",
   icon: Upload
-}, {
-  id: "companies",
-  title: "Empresas",
-  icon: Building2
 }, {
   id: "settings",
   title: "Opções",
