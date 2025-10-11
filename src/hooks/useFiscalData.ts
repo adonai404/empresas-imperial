@@ -1777,3 +1777,302 @@ export const useImportLucroRealExcel = () => {
     },
   });
 };
+
+// Lucro Presumido Data Hooks
+// COMENTADO TEMPORARIAMENTE ATÉ A MIGRAÇÃO SER EXECUTADA
+/*
+export interface LucroPresumidoData {
+  id: string;
+  company_id: string;
+  period: string;
+  entradas: number | null;
+  saidas: number | null;
+  servicos: number | null;
+  pis: number | null;
+  cofins: number | null;
+  icms: number | null;
+  irpj_primeiro_trimestre: number | null;
+  csll_primeiro_trimestre: number | null;
+  irpj_segundo_trimestre: number | null;
+  csll_segundo_trimestre: number | null;
+  tvi: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CompanyWithLucroPresumidoData extends Company {
+  lucro_presumido_data: LucroPresumidoData[];
+}
+
+export const useLucroPresumidoData = () => {
+  return useQuery({
+    queryKey: ['lucro-presumido-data'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_presumido_data')
+        .select(`
+          *,
+          companies(id, name, cnpj, segmento)
+        `)
+        .order('period', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+};
+
+export const useCompanyWithLucroPresumidoData = (companyId: string) => {
+  return useQuery({
+    queryKey: ['company-lucro-presumido', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('companies')
+        .select(`
+          *,
+          lucro_presumido_data(*)
+        `)
+        .eq('id', companyId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as unknown as CompanyWithLucroPresumidoData | null;
+    },
+    enabled: !!companyId,
+  });
+};
+
+export const useLucroPresumidoDataByCompany = (companyId: string) => {
+  return useQuery({
+    queryKey: ['lucro-presumido-data-by-company', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_presumido_data')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('period', { ascending: false });
+      
+      if (error) throw error;
+      return data as LucroPresumidoData[];
+    },
+    enabled: !!companyId,
+  });
+};
+
+export const useAddLucroPresumidoData = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      company_id: string;
+      period: string;
+      entradas?: number;
+      saidas?: number;
+      servicos?: number;
+      pis?: number;
+      cofins?: number;
+      icms?: number;
+      irpj_primeiro_trimestre?: number;
+      csll_primeiro_trimestre?: number;
+      irpj_segundo_trimestre?: number;
+      csll_segundo_trimestre?: number;
+      tvi?: number;
+    }) => {
+      const { data: result, error } = await supabase
+        .from('lucro_presumido_data')
+        .insert({
+          company_id: data.company_id,
+          period: data.period.trim(),
+          entradas: data.entradas || null,
+          saidas: data.saidas || null,
+          servicos: data.servicos || null,
+          pis: data.pis || null,
+          cofins: data.cofins || null,
+          icms: data.icms || null,
+          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre || null,
+          csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
+          irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
+          csll_segundo_trimestre: data.csll_segundo_trimestre || null,
+          tvi: data.tvi || null,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lucro-presumido'] });
+      
+      toast({
+        title: 'Dados de Lucro Presumido adicionados',
+        description: 'Os dados foram cadastrados com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao adicionar dados',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao cadastrar os dados.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useUpdateLucroPresumidoData = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: {
+      id: string;
+      period: string;
+      entradas?: number;
+      saidas?: number;
+      servicos?: number;
+      pis?: number;
+      cofins?: number;
+      icms?: number;
+      irpj_primeiro_trimestre?: number;
+      csll_primeiro_trimestre?: number;
+      irpj_segundo_trimestre?: number;
+      csll_segundo_trimestre?: number;
+      tvi?: number;
+    }) => {
+      const { data: result, error } = await supabase
+        .from('lucro_presumido_data')
+        .update({
+          period: data.period.trim(),
+          entradas: data.entradas || null,
+          saidas: data.saidas || null,
+          servicos: data.servicos || null,
+          pis: data.pis || null,
+          cofins: data.cofins || null,
+          icms: data.icms || null,
+          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre || null,
+          csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
+          irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
+          csll_segundo_trimestre: data.csll_segundo_trimestre || null,
+          tvi: data.tvi || null,
+        })
+        .eq('id', data.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data'] });
+      queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data-by-company'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lucro-presumido'] });
+      
+      toast({
+        title: 'Dados de Lucro Presumido atualizados',
+        description: 'Os dados foram atualizados com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao atualizar dados',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar os dados.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useDeleteLucroPresumidoData = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('lucro_presumido_data')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data'] });
+      queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data-by-company'] });
+      queryClient.invalidateQueries({ queryKey: ['company-lucro-presumido'] });
+      
+      toast({
+        title: 'Dados de Lucro Presumido excluídos',
+        description: 'Os dados foram excluídos com sucesso.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao excluir dados',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro ao excluir os dados.',
+        variant: 'destructive',
+      });
+    },
+  });
+};
+
+export const useLucroPresumidoEvolutionData = (companyId: string) => {
+  return useQuery({
+    queryKey: ['lucro-presumido-evolution', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_presumido_data')
+        .select(`
+          period,
+          entradas,
+          saidas,
+          pis,
+          cofins,
+          icms,
+          irpj_primeiro_trimestre,
+          csll_primeiro_trimestre,
+          irpj_segundo_trimestre,
+          csll_segundo_trimestre
+        `)
+        .eq('company_id', companyId)
+        .order('period');
+      
+      if (error) throw error;
+      
+      const evolutionData = data?.map(item => {
+        const entradas = Number(item.entradas) || 0;
+        const saidas = Number(item.saidas) || 0;
+        const pis = Number(item.pis) || 0;
+        const cofins = Number(item.cofins) || 0;
+        const icms = Number(item.icms) || 0;
+        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
+        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
+        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
+        const csll2 = Number(item.csll_segundo_trimestre) || 0;
+        
+        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
+        
+        return {
+          period: item.period,
+          entrada: entradas,
+          saida: saidas,
+          imposto: totalImpostos,
+          pis,
+          cofins,
+          icms,
+          irpj_primeiro_trimestre: irpj1,
+          csll_primeiro_trimestre: csll1,
+          irpj_segundo_trimestre: irpj2,
+          csll_segundo_trimestre: csll2,
+          saldo: entradas - saidas
+        };
+      }).sort((a, b) => {
+        const dateA = parsePeriodToDate(a.period);
+        const dateB = parsePeriodToDate(b.period);
+        return dateA.getTime() - dateB.getTime();
+      }) || [];
+      
+      return evolutionData;
+    },
+    enabled: !!companyId,
+  });
+};
+*/
