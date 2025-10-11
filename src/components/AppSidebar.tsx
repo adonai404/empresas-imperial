@@ -33,8 +33,8 @@ export function AppSidebar({
   return <Sidebar collapsible="icon" variant="inset" className="border-r border-border">
       <SidebarHeader className="flex flex-row items-center justify-between p-4">
         {!isCollapsed && <div>
-            <h2 className="text-lg font-semibold text-sidebar-foreground">Dados fiscais</h2>
-            <p className="text-sm text-sidebar-foreground/60">Empresarial</p>
+            <h2 className="text-lg font-semibold text-sidebar-foreground">Empresas</h2>
+            
           </div>}
         <ThemeToggle />
       </SidebarHeader>
