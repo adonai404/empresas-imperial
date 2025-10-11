@@ -169,6 +169,7 @@ export type Database = {
           pis: number | null
           saidas: number | null
           servicos: number | null
+          tvi: number | null
           updated_at: string
         }
         Insert: {
@@ -186,6 +187,7 @@ export type Database = {
           pis?: number | null
           saidas?: number | null
           servicos?: number | null
+          tvi?: number | null
           updated_at?: string
         }
         Update: {
@@ -203,6 +205,7 @@ export type Database = {
           pis?: number | null
           saidas?: number | null
           servicos?: number | null
+          tvi?: number | null
           updated_at?: string
         }
         Relationships: [

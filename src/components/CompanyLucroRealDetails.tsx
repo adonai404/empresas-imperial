@@ -29,6 +29,7 @@ interface AddLucroRealForm {
   csll_primeiro_trimestre: string;
   irpj_segundo_trimestre: string;
   csll_segundo_trimestre: string;
+  tvi: string;
 }
 interface EditLucroRealForm {
   period: string;
@@ -42,13 +43,14 @@ interface EditLucroRealForm {
   csll_primeiro_trimestre: string;
   irpj_segundo_trimestre: string;
   csll_segundo_trimestre: string;
+  tvi: string;
 }
 export const CompanyLucroRealDetails = ({
   companyId,
   onCompanyDeleted,
   onBack
 }: CompanyLucroRealDetailsProps) => {
-  const [sortField, setSortField] = useState<'period' | 'entradas' | 'saidas' | 'servicos' | 'pis' | 'cofins' | 'icms' | 'irpj_primeiro_trimestre' | 'csll_primeiro_trimestre' | 'irpj_segundo_trimestre' | 'csll_segundo_trimestre'>('period');
+  const [sortField, setSortField] = useState<'period' | 'entradas' | 'saidas' | 'servicos' | 'pis' | 'cofins' | 'icms' | 'irpj_primeiro_trimestre' | 'csll_primeiro_trimestre' | 'irpj_segundo_trimestre' | 'csll_segundo_trimestre' | 'tvi'>('period');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterPeriod, setFilterPeriod] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -86,7 +88,8 @@ export const CompanyLucroRealDetails = ({
     irpj_primeiro_trimestre: '',
     csll_primeiro_trimestre: '',
     irpj_segundo_trimestre: '',
-    csll_segundo_trimestre: ''
+    csll_segundo_trimestre: '',
+    tvi: ''
   });
   const [editData, setEditData] = useState<EditLucroRealForm>({
     period: '',
@@ -99,7 +102,8 @@ export const CompanyLucroRealDetails = ({
     irpj_primeiro_trimestre: '',
     csll_primeiro_trimestre: '',
     irpj_segundo_trimestre: '',
-    csll_segundo_trimestre: ''
+    csll_segundo_trimestre: '',
+    tvi: ''
   });
   const formatCurrency = (value: number | null) => {
     if (value === null || value === undefined) return '-';
@@ -164,6 +168,10 @@ export const CompanyLucroRealDetails = ({
         aValue = a.csll_segundo_trimestre || 0;
         bValue = b.csll_segundo_trimestre || 0;
         break;
+      case 'tvi':
+        aValue = a.tvi || 0;
+        bValue = b.tvi || 0;
+        break;
       default:
         aValue = a.period || '';
         bValue = b.period || '';
@@ -192,7 +200,8 @@ export const CompanyLucroRealDetails = ({
       irpj_primeiro_trimestre: newData.irpj_primeiro_trimestre ? parseFloat(newData.irpj_primeiro_trimestre) : undefined,
       csll_primeiro_trimestre: newData.csll_primeiro_trimestre ? parseFloat(newData.csll_primeiro_trimestre) : undefined,
       irpj_segundo_trimestre: newData.irpj_segundo_trimestre ? parseFloat(newData.irpj_segundo_trimestre) : undefined,
-      csll_segundo_trimestre: newData.csll_segundo_trimestre ? parseFloat(newData.csll_segundo_trimestre) : undefined
+      csll_segundo_trimestre: newData.csll_segundo_trimestre ? parseFloat(newData.csll_segundo_trimestre) : undefined,
+      tvi: newData.tvi ? parseFloat(newData.tvi) : undefined
     };
     try {
       await addMutation.mutateAsync(dataToSubmit);
@@ -208,7 +217,8 @@ export const CompanyLucroRealDetails = ({
         irpj_primeiro_trimestre: '',
         csll_primeiro_trimestre: '',
         irpj_segundo_trimestre: '',
-        csll_segundo_trimestre: ''
+        csll_segundo_trimestre: '',
+        tvi: ''
       });
     } catch (error) {
       console.error('Error adding lucro real data:', error);
@@ -232,7 +242,8 @@ export const CompanyLucroRealDetails = ({
       irpj_primeiro_trimestre: editData.irpj_primeiro_trimestre ? parseFloat(editData.irpj_primeiro_trimestre) : undefined,
       csll_primeiro_trimestre: editData.csll_primeiro_trimestre ? parseFloat(editData.csll_primeiro_trimestre) : undefined,
       irpj_segundo_trimestre: editData.irpj_segundo_trimestre ? parseFloat(editData.irpj_segundo_trimestre) : undefined,
-      csll_segundo_trimestre: editData.csll_segundo_trimestre ? parseFloat(editData.csll_segundo_trimestre) : undefined
+      csll_segundo_trimestre: editData.csll_segundo_trimestre ? parseFloat(editData.csll_segundo_trimestre) : undefined,
+      tvi: editData.tvi ? parseFloat(editData.tvi) : undefined
     };
     try {
       await updateMutation.mutateAsync(dataToSubmit);
@@ -255,7 +266,8 @@ export const CompanyLucroRealDetails = ({
       irpj_primeiro_trimestre: item.irpj_primeiro_trimestre?.toString() || '',
       csll_primeiro_trimestre: item.csll_primeiro_trimestre?.toString() || '',
       irpj_segundo_trimestre: item.irpj_segundo_trimestre?.toString() || '',
-      csll_segundo_trimestre: item.csll_segundo_trimestre?.toString() || ''
+      csll_segundo_trimestre: item.csll_segundo_trimestre?.toString() || '',
+      tvi: item.tvi?.toString() || ''
     });
     setIsEditDialogOpen(true);
   };
@@ -352,7 +364,8 @@ export const CompanyLucroRealDetails = ({
           irpj_primeiro_trimestre: parseNumber(row['IRPJ 1º trimestre'] || row['irpj_primeiro_trimestre'] || row['IRPJ_1_trimestre']),
           csll_primeiro_trimestre: parseNumber(row['CSLL 1º trimestre'] || row['csll_primeiro_trimestre'] || row['CSLL_1_trimestre']),
           irpj_segundo_trimestre: parseNumber(row['IRPJ 2º trimestre'] || row['irpj_segundo_trimestre'] || row['IRPJ_2_trimestre']),
-          csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre'])
+          csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre']),
+          tvi: parseNumber(row.TVI || row.tvi)
         };
       });
 
@@ -383,7 +396,8 @@ export const CompanyLucroRealDetails = ({
       'IRPJ 1º trimestre': 45000,
       'CSLL 1º trimestre': 27000,
       'IRPJ 2º trimestre': 50000,
-      'CSLL 2º trimestre': 30000
+      'CSLL 2º trimestre': 30000,
+      TVI: 25000
     }];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(templateData);
@@ -586,6 +600,16 @@ export const CompanyLucroRealDetails = ({
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <Label htmlFor="tvi">TVI</Label>
+                        <Input id="tvi" type="number" step="0.01" value={newData.tvi} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        tvi: e.target.value
+                      }))} placeholder="0.00" />
+                      </div>
+                    </div>
+
                     <DialogFooter>
                       <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>
                         Cancelar
@@ -625,6 +649,7 @@ export const CompanyLucroRealDetails = ({
                   <SelectItem value="csll_primeiro_trimestre">CSLL 1º</SelectItem>
                   <SelectItem value="irpj_segundo_trimestre">IRPJ 2º</SelectItem>
                   <SelectItem value="csll_segundo_trimestre">CSLL 2º</SelectItem>
+                  <SelectItem value="tvi">TVI</SelectItem>
                 </SelectContent>
               </Select>
               <Button variant="outline" size="sm" onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')} className="px-2">
@@ -650,6 +675,7 @@ export const CompanyLucroRealDetails = ({
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">CSLL 1º</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">IRPJ 2º</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">CSLL 2º</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">TVI</TableHead>
                   <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -712,6 +738,11 @@ export const CompanyLucroRealDetails = ({
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
                       <span className="truncate block text-xs">
                         {formatCurrency(item.csll_segundo_trimestre)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
+                      <span className="truncate block text-xs">
+                        {formatCurrency(item.tvi)}
                       </span>
                     </TableCell>
                     <TableCell className="text-center w-12">
@@ -835,6 +866,16 @@ export const CompanyLucroRealDetails = ({
                 <Input id="edit-csll2" type="number" step="0.01" value={editData.csll_segundo_trimestre} onChange={e => setEditData(prev => ({
                 ...prev,
                 csll_segundo_trimestre: e.target.value
+              }))} placeholder="0.00" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <Label htmlFor="edit-tvi">TVI</Label>
+                <Input id="edit-tvi" type="number" step="0.01" value={editData.tvi} onChange={e => setEditData(prev => ({
+                ...prev,
+                tvi: e.target.value
               }))} placeholder="0.00" />
               </div>
             </div>

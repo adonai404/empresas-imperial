@@ -122,6 +122,7 @@ export interface LucroRealData {
   csll_primeiro_trimestre: number | null;
   irpj_segundo_trimestre: number | null;
   csll_segundo_trimestre: number | null;
+  tvi: number | null;
   created_at: string;
   updated_at: string;
 }
