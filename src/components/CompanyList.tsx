@@ -111,22 +111,12 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
     if (!companies) return [];
     
     switch (regime) {
-      case 'todas':
-        return companies;
       case 'lucro_real':
         return companies.filter(company => company.regime_tributario === 'lucro_real');
-      case 'lucro_presumido':
-        return companies.filter(company => company.regime_tributario === 'lucro_presumido');
       case 'simples_nacional':
         return companies.filter(company => company.regime_tributario === 'simples_nacional');
       case 'mei':
         return companies.filter(company => company.regime_tributario === 'mei');
-      case 'normais':
-        // Lucro Real + Lucro Presumido
-        return companies.filter(company => 
-          company.regime_tributario === 'lucro_real' || 
-          company.regime_tributario === 'lucro_presumido'
-        );
       default:
         return companies;
     }
@@ -451,11 +441,9 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
   // Funções para gerenciar regimes
   const getRegimeLabel = (regime: string) => {
     const labels = {
-      'todas': 'Todas as empresas',
       'lucro_real': 'Lucro Real',
-      'lucro_presumido': 'Lucro Presumido',
       'simples_nacional': 'Simples Nacional',
-      'normais': 'Normais (Lucro Real + Lucro Presumido)'
+      'mei': 'MEI'
     };
     return labels[regime as keyof typeof labels] || regime;
   };
@@ -610,12 +598,9 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
         {/* Cards de seleção de regime */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { id: 'todas', label: 'Todas as empresas', description: 'Visualizar todas as empresas cadastradas', icon: Building2, color: 'blue' },
             { id: 'lucro_real', label: 'Lucro Real', description: 'Empresas do regime de Lucro Real', icon: FileText, color: 'green' },
-            { id: 'lucro_presumido', label: 'Lucro Presumido', description: 'Empresas do regime de Lucro Presumido', icon: FileText, color: 'orange' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
-            { id: 'mei', label: 'MEI', description: 'Empresas do regime MEI', icon: FileText, color: 'pink' },
-            { id: 'normais', label: 'Normais', description: 'Lucro Real + Lucro Presumido', icon: FileText, color: 'indigo' }
+            { id: 'mei', label: 'MEI', description: 'Empresas do regime MEI', icon: FileText, color: 'pink' }
           ].map((regime) => {
             const IconComponent = regime.icon;
             const companyCount = getRegimeCompanies(regime.id).length;
@@ -654,18 +639,10 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{companies?.length || 0}</p>
-                <p className="text-sm text-muted-foreground">Total</p>
-              </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{getRegimeCompanies('lucro_real').length}</p>
                 <p className="text-sm text-muted-foreground">Lucro Real</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">{getRegimeCompanies('lucro_presumido').length}</p>
-                <p className="text-sm text-muted-foreground">Lucro Presumido</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">{getRegimeCompanies('simples_nacional').length}</p>
@@ -674,10 +651,6 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListP
               <div className="text-center">
                 <p className="text-2xl font-bold text-pink-600">{getRegimeCompanies('mei').length}</p>
                 <p className="text-sm text-muted-foreground">MEI</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-indigo-600">{getRegimeCompanies('normais').length}</p>
-                <p className="text-sm text-muted-foreground">Normais</p>
               </div>
             </div>
           </CardContent>
