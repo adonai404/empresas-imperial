@@ -114,6 +114,7 @@ export interface LucroRealData {
   period: string;
   entradas: number | null;
   saidas: number | null;
+  servicos: number | null;
   pis: number | null;
   cofins: number | null;
   icms: number | null;
