@@ -21,6 +21,7 @@ interface AddLucroRealForm {
   period: string;
   entradas: string;
   saidas: string;
+  servicos: string;
   pis: string;
   cofins: string;
   icms: string;
@@ -33,6 +34,7 @@ interface EditLucroRealForm {
   period: string;
   entradas: string;
   saidas: string;
+  servicos: string;
   pis: string;
   cofins: string;
   icms: string;
@@ -46,7 +48,7 @@ export const CompanyLucroRealDetails = ({
   onCompanyDeleted,
   onBack
 }: CompanyLucroRealDetailsProps) => {
-  const [sortField, setSortField] = useState<'period' | 'entradas' | 'saidas' | 'pis' | 'cofins' | 'icms' | 'irpj_primeiro_trimestre' | 'csll_primeiro_trimestre' | 'irpj_segundo_trimestre' | 'csll_segundo_trimestre'>('period');
+  const [sortField, setSortField] = useState<'period' | 'entradas' | 'saidas' | 'servicos' | 'pis' | 'cofins' | 'icms' | 'irpj_primeiro_trimestre' | 'csll_primeiro_trimestre' | 'irpj_segundo_trimestre' | 'csll_segundo_trimestre'>('period');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterPeriod, setFilterPeriod] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -77,6 +79,7 @@ export const CompanyLucroRealDetails = ({
     period: '',
     entradas: '',
     saidas: '',
+    servicos: '',
     pis: '',
     cofins: '',
     icms: '',
@@ -89,6 +92,7 @@ export const CompanyLucroRealDetails = ({
     period: '',
     entradas: '',
     saidas: '',
+    servicos: '',
     pis: '',
     cofins: '',
     icms: '',
@@ -127,6 +131,10 @@ export const CompanyLucroRealDetails = ({
       case 'saidas':
         aValue = a.saidas || 0;
         bValue = b.saidas || 0;
+        break;
+      case 'servicos':
+        aValue = a.servicos || 0;
+        bValue = b.servicos || 0;
         break;
       case 'pis':
         aValue = a.pis || 0;
@@ -177,6 +185,7 @@ export const CompanyLucroRealDetails = ({
       period: newData.period.trim(),
       entradas: newData.entradas ? parseFloat(newData.entradas) : undefined,
       saidas: newData.saidas ? parseFloat(newData.saidas) : undefined,
+      servicos: newData.servicos ? parseFloat(newData.servicos) : undefined,
       pis: newData.pis ? parseFloat(newData.pis) : undefined,
       cofins: newData.cofins ? parseFloat(newData.cofins) : undefined,
       icms: newData.icms ? parseFloat(newData.icms) : undefined,
@@ -192,6 +201,7 @@ export const CompanyLucroRealDetails = ({
         period: '',
         entradas: '',
         saidas: '',
+        servicos: '',
         pis: '',
         cofins: '',
         icms: '',
@@ -215,6 +225,7 @@ export const CompanyLucroRealDetails = ({
       period: editData.period.trim(),
       entradas: editData.entradas ? parseFloat(editData.entradas) : undefined,
       saidas: editData.saidas ? parseFloat(editData.saidas) : undefined,
+      servicos: editData.servicos ? parseFloat(editData.servicos) : undefined,
       pis: editData.pis ? parseFloat(editData.pis) : undefined,
       cofins: editData.cofins ? parseFloat(editData.cofins) : undefined,
       icms: editData.icms ? parseFloat(editData.icms) : undefined,
@@ -237,6 +248,7 @@ export const CompanyLucroRealDetails = ({
       period: item.period || '',
       entradas: item.entradas?.toString() || '',
       saidas: item.saidas?.toString() || '',
+      servicos: item.servicos?.toString() || '',
       pis: item.pis?.toString() || '',
       cofins: item.cofins?.toString() || '',
       icms: item.icms?.toString() || '',
@@ -333,6 +345,7 @@ export const CompanyLucroRealDetails = ({
           periodo: String(row.Competência || row.competência || row.competencia || row.Período || row.periodo || row.Periodo || '').trim(),
           entradas: parseNumber(row.Entradas || row.entradas),
           saidas: parseNumber(row.Saídas || row.saídas || row.saidas || row.Saidas),
+          servicos: parseNumber(row.Serviços || row.servicos || row.Servicos),
           pis: parseNumber(row.PIS || row.pis),
           cofins: parseNumber(row.COFINS || row.cofins),
           icms: parseNumber(row.ICMS || row.icms),
@@ -363,6 +376,7 @@ export const CompanyLucroRealDetails = ({
       Competência: '2024-01',
       Entradas: 1500000,
       Saídas: 1200000,
+      Serviços: 300000,
       PIS: 15000,
       COFINS: 70000,
       ICMS: 180000,
@@ -507,7 +521,14 @@ export const CompanyLucroRealDetails = ({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <Label htmlFor="servicos">Serviços</Label>
+                        <Input id="servicos" type="number" step="0.01" value={newData.servicos} onChange={e => setNewData(prev => ({
+                        ...prev,
+                        servicos: e.target.value
+                      }))} placeholder="0.00" />
+                      </div>
                       <div>
                         <Label htmlFor="pis">PIS</Label>
                         <Input id="pis" type="number" step="0.01" value={newData.pis} onChange={e => setNewData(prev => ({
@@ -596,6 +617,7 @@ export const CompanyLucroRealDetails = ({
                   <SelectItem value="period">Período</SelectItem>
                   <SelectItem value="entradas">Entradas</SelectItem>
                   <SelectItem value="saidas">Saídas</SelectItem>
+                  <SelectItem value="servicos">Serviços</SelectItem>
                   <SelectItem value="pis">PIS</SelectItem>
                   <SelectItem value="cofins">COFINS</SelectItem>
                   <SelectItem value="icms">ICMS</SelectItem>
@@ -620,6 +642,7 @@ export const CompanyLucroRealDetails = ({
                   <TableHead className="border-r border-border font-semibold text-foreground w-24">Período</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">Entradas</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">Saídas</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">Serviços</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">PIS</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">COFINS</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">ICMS</TableHead>
@@ -649,6 +672,11 @@ export const CompanyLucroRealDetails = ({
                     <TableCell className="border-r border-border text-right text-red-600 dark:text-red-400 font-medium w-20 hidden md:table-cell">
                       <span className="truncate block text-xs">
                         {formatCurrency(item.saidas)}
+                      </span>
+                    </TableCell>
+                    <TableCell className="border-r border-border text-right text-blue-600 dark:text-blue-400 font-medium w-20 hidden md:table-cell">
+                      <span className="truncate block text-xs">
+                        {formatCurrency(item.servicos)}
                       </span>
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden lg:table-cell">
@@ -746,7 +774,14 @@ export const CompanyLucroRealDetails = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="edit-servicos">Serviços</Label>
+                <Input id="edit-servicos" type="number" step="0.01" value={editData.servicos} onChange={e => setEditData(prev => ({
+                ...prev,
+                servicos: e.target.value
+              }))} placeholder="0.00" />
+              </div>
               <div>
                 <Label htmlFor="edit-pis">PIS</Label>
                 <Input id="edit-pis" type="number" step="0.01" value={editData.pis} onChange={e => setEditData(prev => ({

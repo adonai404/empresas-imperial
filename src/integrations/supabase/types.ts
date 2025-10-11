@@ -168,6 +168,7 @@ export type Database = {
           period: string
           pis: number | null
           saidas: number | null
+          servicos: number | null
           updated_at: string
         }
         Insert: {
@@ -184,6 +185,7 @@ export type Database = {
           period: string
           pis?: number | null
           saidas?: number | null
+          servicos?: number | null
           updated_at?: string
         }
         Update: {
@@ -200,6 +202,7 @@ export type Database = {
           period?: string
           pis?: number | null
           saidas?: number | null
+          servicos?: number | null
           updated_at?: string
         }
         Relationships: [
