@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useCompanyWithData, useAddFiscalData, useImportCompanyExcel, useUpdateFiscalData, useDeleteFiscalData } from '@/hooks/useFiscalData';
-import { Download, ArrowUpDown, Building2, Calculator, Plus, Upload, FileDown, X, Edit3, Trash2, FileSpreadsheet } from 'lucide-react';
+import { Download, ArrowUpDown, Building2, Calculator, Plus, Upload, FileDown, X, Edit3, Trash2, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
@@ -75,6 +75,7 @@ const parsePeriodToDate = (period: string): Date => {
 
 interface CompanyDetailsProps {
   companyId: string;
+  onBack?: () => void;
 }
 
 interface AddFiscalDataForm {
@@ -93,7 +94,7 @@ interface EditFiscalDataForm {
   imposto: string;
 }
 
-export const CompanyDetails = ({ companyId }: CompanyDetailsProps) => {
+export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
   const { data: company, isLoading } = useCompanyWithData(companyId);
   const [isPasswordRequired, setIsPasswordRequired] = useState(false);
   const [passwordAuthCompany, setPasswordAuthCompany] = useState<{ id: string; name: string } | null>(null);
@@ -439,6 +440,18 @@ export const CompanyDetails = ({ companyId }: CompanyDetailsProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Botão de Voltar */}
+      {onBack && (
+        <Button 
+          variant="ghost" 
+          onClick={onBack}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Voltar para lista de empresas
+        </Button>
+      )}
+      
       {/* Gráfico de Evolução Fiscal da Empresa */}
       <CompanyFiscalEvolutionChart 
         companyId={companyId} 
