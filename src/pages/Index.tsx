@@ -5,6 +5,7 @@ import { ExcelUpload } from '@/components/ExcelUpload';
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
 import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
+import { CompanyProdutorRuralDetails } from '@/components/CompanyProdutorRuralDetails';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -12,12 +13,14 @@ const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>();
   const [activeSection, setActiveSection] = useState('companies');
   const [isLucroRealSection, setIsLucroRealSection] = useState(false);
+  const [isProdutorRuralSection, setIsProdutorRuralSection] = useState(false);
   const handleSelectCompany = (companyId: string) => {
     setSelectedCompanyId(companyId);
   };
   const handleBackToCompanies = () => {
     setSelectedCompanyId(undefined);
     setIsLucroRealSection(false);
+    setIsProdutorRuralSection(false);
   };
   const renderContent = () => {
     switch (activeSection) {
@@ -26,11 +29,16 @@ const Index = () => {
       case 'companies':
         if (selectedCompanyId) {
           return <div className="space-y-4">
-              
-              {isLucroRealSection ? <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} /> : <CompanyDetails companyId={selectedCompanyId} />}
+              {isLucroRealSection ? (
+                <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} />
+              ) : isProdutorRuralSection ? (
+                <CompanyProdutorRuralDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} />
+              ) : (
+                <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToCompanies} />
+              )}
             </div>;
         }
-        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} />;
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} />;
       case 'settings':
         return <Settings />;
       default:
