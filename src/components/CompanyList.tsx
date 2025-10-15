@@ -22,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
   onLucroRealSelect?: () => void;
+  onProdutorRuralSelect?: () => void;
 }
 
 interface AddCompanyForm {
@@ -48,7 +49,7 @@ interface FilterState {
   sortOrder: 'asc' | 'desc';
 }
 
-export const CompanyList = ({ onSelectCompany, onLucroRealSelect }: CompanyListProps) => {
+export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRuralSelect }: CompanyListProps) => {
   const [selectedRegime, setSelectedRegime] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     search: '',

@@ -45,7 +45,7 @@ interface EditLucroRealForm {
   csll_segundo_trimestre: string;
   tvi: string;
 }
-export const CompanyLucroRealDetails = ({
+export const CompanyProdutorRuralDetails = ({
   companyId,
   onCompanyDeleted,
   onBack
