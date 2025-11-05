@@ -18,23 +18,27 @@ import { LucroRealList } from './LucroRealList';
 import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
+
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
   onLucroRealSelect?: () => void;
   onProdutorRuralSelect?: () => void;
 }
+
 interface AddCompanyForm {
   name: string;
   cnpj: string;
   segmento: string;
   regime_tributario: string;
 }
+
 interface EditCompanyForm {
   name: string;
   cnpj: string;
   segmento: string;
   regime_tributario: string;
 }
+
 interface FilterState {
   search: string;
   status: string;
@@ -44,11 +48,8 @@ interface FilterState {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
-export const CompanyList = ({
-  onSelectCompany,
-  onLucroRealSelect,
-  onProdutorRuralSelect
-}: CompanyListProps) => {
+
+export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRuralSelect }: CompanyListProps) => {
   const [selectedRegime, setSelectedRegime] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -61,56 +62,30 @@ export const CompanyList = ({
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingCompany, setEditingCompany] = useState<{
-    id: string;
-    name: string;
-    cnpj: string;
-    segmento: string;
-    regime_tributario: string;
-  } | null>(null);
+  const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string; segmento: string; regime_tributario: string } | null>(null);
   const [editingStatus, setEditingStatus] = useState<string | null>(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [selectedCompany, setSelectedCompany] = useState<{
-    id: string;
-    name: string;
-    currentStatus: boolean;
-  } | null>(null);
+  const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; currentStatus: boolean } | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [passwordAuthCompany, setPasswordAuthCompany] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [passwordAuthCompany, setPasswordAuthCompany] = useState<{ id: string; name: string } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [operationAuthCompany, setOperationAuthCompany] = useState<{
-    id: string;
-    name: string;
-    operation: 'edit' | 'delete';
-  } | null>(null);
+  const [operationAuthCompany, setOperationAuthCompany] = useState<{ id: string; name: string; operation: 'edit' | 'delete' } | null>(null);
   const [isOperationAuthModalOpen, setIsOperationAuthModalOpen] = useState(false);
-  const [deleteConfirmCompany, setDeleteConfirmCompany] = useState<{
-    id: string;
-    name: string;
-  } | null>(null);
+  const [deleteConfirmCompany, setDeleteConfirmCompany] = useState<{ id: string; name: string } | null>(null);
   const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
-
+  
   // Estados para gerenciamento de segmentos na adição e edição
   const [isCreateSegmentFromEditOpen, setIsCreateSegmentFromEditOpen] = useState(false);
   const [newSegmentNameFromEdit, setNewSegmentNameFromEdit] = useState('');
   const [isCreateSegmentFromAddOpen, setIsCreateSegmentFromAddOpen] = useState(false);
   const [newSegmentNameFromAdd, setNewSegmentNameFromAdd] = useState('');
-
+  
   // Estados para funcionalidades de importação/exportação  
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    toast
-  } = useToast();
-  const {
-    data: companies,
-    isLoading
-  } = useCompaniesWithLatestFiscalData();
-  const {
-    data: segments = []
-  } = useSegments();
+  const { toast } = useToast();
+  
+  const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
+  const { data: segments = [] } = useSegments();
   const deleteCompanyMutation = useDeleteCompany();
   const addCompanyMutation = useAddCompany();
   const updateCompanyMutation = useUpdateCompany();
@@ -124,32 +99,18 @@ export const CompanyList = ({
       autoAssignRegimesMutation.mutate();
     }
   }, [companies?.length]);
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: {
-      errors
-    }
-  } = useForm<AddCompanyForm>({
+  
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<AddCompanyForm>({
     mode: 'onChange'
   });
-  const {
-    register: registerEdit,
-    handleSubmit: handleEditSubmit,
-    reset: resetEdit,
-    setValue: setValueEdit,
-    formState: {
-      errors: editErrors
-    }
-  } = useForm<EditCompanyForm>({
+  const { register: registerEdit, handleSubmit: handleEditSubmit, reset: resetEdit, setValue: setValueEdit, formState: { errors: editErrors } } = useForm<EditCompanyForm>({
     mode: 'onChange'
   });
 
   // Funções para gerenciar regimes - usando dados reais do banco de dados
   const getRegimeCompanies = (regime: string) => {
     if (!companies) return [];
+    
     switch (regime) {
       case 'lucro_real':
         return companies.filter(company => company.regime_tributario === 'lucro_real');
@@ -164,23 +125,32 @@ export const CompanyList = ({
 
   // Primeiro filtrar por regime se selecionado
   const regimeFilteredCompanies = selectedRegime ? getRegimeCompanies(selectedRegime) : companies || [];
+  
   const filteredAndSortedCompanies = regimeFilteredCompanies.filter(company => {
     // Filtro de busca
-    const matchesSearch = filters.search === '' || company.name.toLowerCase().includes(filters.search.toLowerCase()) || company.cnpj && company.cnpj.includes(filters.search);
-
+    const matchesSearch = filters.search === '' || 
+      company.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      (company.cnpj && company.cnpj.includes(filters.search));
+    
     // Filtro de status
-    const matchesStatus = filters.status === 'todas' || filters.status === 'ativa' && !company.sem_movimento || filters.status === 'paralizada' && company.sem_movimento || filters.status === 'sem_movimento' && company.sem_movimento;
-
+    const matchesStatus = filters.status === 'todas' || 
+      (filters.status === 'ativa' && !company.sem_movimento) ||
+      (filters.status === 'paralizada' && company.sem_movimento) ||
+      (filters.status === 'sem_movimento' && company.sem_movimento);
+    
     // Filtro de RBT12
     const rbt12 = company.latest_fiscal_data?.rbt12 || 0;
     const matchesRbt12Min = filters.rbt12Min === '' || rbt12 >= parseFloat(filters.rbt12Min);
     const matchesRbt12Max = filters.rbt12Max === '' || rbt12 <= parseFloat(filters.rbt12Max);
-
+    
     // Filtro de período
-    const matchesPeriodo = filters.periodo === 'todos' || company.latest_fiscal_data?.period === filters.periodo;
+    const matchesPeriodo = filters.periodo === 'todos' || 
+      (company.latest_fiscal_data?.period === filters.periodo);
+    
     return matchesSearch && matchesStatus && matchesRbt12Min && matchesRbt12Max && matchesPeriodo;
   }).sort((a, b) => {
     let aValue: any, bValue: any;
+    
     switch (filters.sortBy) {
       case 'name':
         aValue = a.name.toLowerCase();
@@ -214,41 +184,37 @@ export const CompanyList = ({
         aValue = a.name.toLowerCase();
         bValue = b.name.toLowerCase();
     }
+    
     if (filters.sortOrder === 'asc') {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
     } else {
       return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     }
   });
+
   const handleDeleteCompany = (companyId: string, companyName: string) => {
     // Encontrar a empresa para verificar se tem senha
     const company = companies?.find(c => c.id === companyId);
-
+    
     // Se a empresa tem senha, exigir autenticação primeiro
     if (company && hasPassword(company)) {
-      setOperationAuthCompany({
-        id: companyId,
-        name: companyName,
-        operation: 'delete'
-      });
+      setOperationAuthCompany({ id: companyId, name: companyName, operation: 'delete' });
       setIsOperationAuthModalOpen(true);
       return;
     }
-
+    
     // Empresa sem senha - abrir modal de confirmação
-    setDeleteConfirmCompany({
-      id: companyId,
-      name: companyName
-    });
+    setDeleteConfirmCompany({ id: companyId, name: companyName });
     setIsDeleteConfirmModalOpen(true);
   };
+
   const handleAddCompany = (data: AddCompanyForm) => {
     addCompanyMutation.mutate({
       name: data.name,
       cnpj: data.cnpj || undefined,
       sem_movimento: false,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -256,14 +222,16 @@ export const CompanyList = ({
       }
     });
   };
+
   const handleEditCompany = (data: EditCompanyForm) => {
     if (!editingCompany) return;
+    
     updateCompanyMutation.mutate({
       companyId: editingCompany.id,
       name: data.name,
       cnpj: data.cnpj || undefined,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -272,32 +240,24 @@ export const CompanyList = ({
       }
     });
   };
+
   const openEditDialog = (company: any) => {
     // Se a empresa tem senha, exigir autenticação primeiro
     if (hasPassword(company)) {
-      setOperationAuthCompany({
-        id: company.id,
-        name: company.name,
-        operation: 'edit'
-      });
+      setOperationAuthCompany({ id: company.id, name: company.name, operation: 'edit' });
       setIsOperationAuthModalOpen(true);
       return;
     }
-
+    
     // Empresa sem senha - abrir diretamente
-    setEditingCompany({
-      id: company.id,
-      name: company.name,
-      cnpj: company.cnpj || '',
-      segmento: company.segmento || '',
-      regime_tributario: company.regime_tributario || ''
-    });
+    setEditingCompany({ id: company.id, name: company.name, cnpj: company.cnpj || '', segmento: company.segmento || '', regime_tributario: company.regime_tributario || '' });
     setValueEdit('name', company.name);
     setValueEdit('cnpj', company.cnpj || '');
     setValueEdit('segmento', company.segmento || '');
     setValueEdit('regime_tributario', company.regime_tributario || '');
     setIsEditDialogOpen(true);
   };
+
   const handleStatusClick = (company: any) => {
     setSelectedCompany({
       id: company.id,
@@ -306,9 +266,12 @@ export const CompanyList = ({
     });
     setStatusModalOpen(true);
   };
+
   const handleStatusChange = (newStatus: 'ativa' | 'paralizada' | 'sem_movimento') => {
     if (!selectedCompany) return;
+
     const sem_movimento = newStatus === 'sem_movimento' || newStatus === 'paralizada';
+    
     updateStatusMutation.mutate({
       companyId: selectedCompany.id,
       sem_movimento
@@ -319,21 +282,25 @@ export const CompanyList = ({
       }
     });
   };
+
   const getStatusDisplay = (sem_movimento: boolean) => {
     return sem_movimento ? 'SM' : 'Ativa';
   };
+
   const getStatusColor = (sem_movimento: boolean) => {
-    return sem_movimento ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20' : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20';
+    return sem_movimento 
+      ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20' 
+      : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/20';
   };
+
   const getStatusIcon = (sem_movimento: boolean) => {
     return sem_movimento ? PauseCircle : CheckCircle;
   };
+
   const updateFilter = (key: keyof FilterState, value: string) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value
-    }));
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
+
   const clearFilters = () => {
     setFilters({
       search: '',
@@ -345,6 +312,7 @@ export const CompanyList = ({
       sortOrder: 'asc'
     });
   };
+
   const getActiveFiltersCount = () => {
     let count = 0;
     if (filters.search !== '') count++;
@@ -353,27 +321,29 @@ export const CompanyList = ({
     if (filters.periodo !== 'todos') count++;
     return count;
   };
+
   const getPeriodos = () => {
     const periodos = companies?.map(c => c.latest_fiscal_data?.period).filter(Boolean) || [];
     return [...new Set(periodos)].sort();
   };
+
+
   const hasPassword = (company: any) => {
     return company.company_passwords && company.company_passwords.id !== null;
   };
+
   const handleCompanyClick = (company: any) => {
     // Se a empresa tem senha, sempre abrir modal de autenticação
     if (hasPassword(company)) {
-      setPasswordAuthCompany({
-        id: company.id,
-        name: company.name
-      });
+      setPasswordAuthCompany({ id: company.id, name: company.name });
       setIsAuthModalOpen(true);
       return;
     }
-
+    
     // Prosseguir normalmente (empresa sem senha)
     onSelectCompany(company.id);
   };
+
   const handlePasswordSuccess = () => {
     if (passwordAuthCompany) {
       onSelectCompany(passwordAuthCompany.id);
@@ -381,22 +351,25 @@ export const CompanyList = ({
     setPasswordAuthCompany(null);
     setIsAuthModalOpen(false);
   };
+
   const handlePasswordCancel = () => {
     setPasswordAuthCompany(null);
     setIsAuthModalOpen(false);
   };
+
   const handleOperationAuthSuccess = () => {
     if (!operationAuthCompany) return;
+    
     if (operationAuthCompany.operation === 'edit') {
       // Abrir modal de edição
       const company = companies?.find(c => c.id === operationAuthCompany.id);
       if (company) {
-        setEditingCompany({
-          id: company.id,
-          name: company.name,
-          cnpj: company.cnpj || '',
-          segmento: company.segmento || '',
-          regime_tributario: company.regime_tributario || ''
+        setEditingCompany({ 
+          id: company.id, 
+          name: company.name, 
+          cnpj: company.cnpj || '', 
+          segmento: company.segmento || '', 
+          regime_tributario: company.regime_tributario || '' 
         });
         setValueEdit('name', company.name);
         setValueEdit('cnpj', company.cnpj || '');
@@ -406,15 +379,14 @@ export const CompanyList = ({
       }
     } else if (operationAuthCompany.operation === 'delete') {
       // Abrir modal de confirmação de exclusão
-      setDeleteConfirmCompany({
-        id: operationAuthCompany.id,
-        name: operationAuthCompany.name
-      });
+      setDeleteConfirmCompany({ id: operationAuthCompany.id, name: operationAuthCompany.name });
       setIsDeleteConfirmModalOpen(true);
     }
+    
     setOperationAuthCompany(null);
     setIsOperationAuthModalOpen(false);
   };
+
   const handleOperationAuthCancel = () => {
     setOperationAuthCompany(null);
     setIsOperationAuthModalOpen(false);
@@ -423,8 +395,9 @@ export const CompanyList = ({
   // Função para criar segmento durante edição
   const handleCreateSegmentFromEdit = () => {
     if (!newSegmentNameFromEdit.trim()) return;
+    
     createSegmentMutation.mutate(newSegmentNameFromEdit, {
-      onSuccess: data => {
+      onSuccess: (data) => {
         // Atribuir o novo segmento à empresa que está sendo editada
         setValueEdit('segmento', data.name);
         setIsCreateSegmentFromEditOpen(false);
@@ -436,8 +409,9 @@ export const CompanyList = ({
   // Função para criar segmento durante adição
   const handleCreateSegmentFromAdd = () => {
     if (!newSegmentNameFromAdd.trim()) return;
+    
     createSegmentMutation.mutate(newSegmentNameFromAdd, {
-      onSuccess: data => {
+      onSuccess: (data) => {
         // Atribuir o novo segmento à empresa que está sendo adicionada
         setValue('segmento', data.name);
         setIsCreateSegmentFromAddOpen(false);
@@ -445,6 +419,7 @@ export const CompanyList = ({
       }
     });
   };
+
   const handleConfirmDelete = () => {
     if (deleteConfirmCompany) {
       deleteCompanyMutation.mutate(deleteConfirmCompany.id);
@@ -452,10 +427,12 @@ export const CompanyList = ({
       setIsDeleteConfirmModalOpen(false);
     }
   };
+
   const handleCancelDelete = () => {
     setDeleteConfirmCompany(null);
     setIsDeleteConfirmModalOpen(false);
   };
+
   const clearAuthentication = (companyName: string) => {
     localStorage.removeItem(`company_auth_${companyName}`);
     // Recarregar a página para atualizar o estado
@@ -471,6 +448,7 @@ export const CompanyList = ({
     };
     return labels[regime as keyof typeof labels] || regime;
   };
+
   const handleRegimeSelection = (regime: string) => {
     setSelectedRegime(regime);
     if (regime === 'lucro_real' && onLucroRealSelect) {
@@ -480,38 +458,36 @@ export const CompanyList = ({
       onProdutorRuralSelect();
     }
   };
+
   const handleBackToRegimeSelection = () => {
     setSelectedRegime(null);
   };
 
   // Função para baixar template XLSX
   const downloadTemplate = () => {
-    const templateData = [['nome', 'cnpj', 'segmento', 'regime_tributario'], ['Empresa Exemplo', '12.345.678/0001-90', 'Varejo', 'simples_nacional'], ['', '', '', '']];
+    const templateData = [
+      ['nome', 'cnpj', 'segmento', 'regime_tributario'],
+      ['Empresa Exemplo', '12.345.678/0001-90', 'Varejo', 'simples_nacional'],
+      ['', '', '', ''],
+    ];
+
     const ws = XLSX.utils.aoa_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Template Empresas');
 
     // Ajustar largura das colunas
-    ws['!cols'] = [{
-      wch: 30
-    },
-    // nome
-    {
-      wch: 20
-    },
-    // cnpj  
-    {
-      wch: 15
-    },
-    // segmento
-    {
-      wch: 20
-    } // regime_tributario
+    ws['!cols'] = [
+      { wch: 30 }, // nome
+      { wch: 20 }, // cnpj  
+      { wch: 15 }, // segmento
+      { wch: 20 }, // regime_tributario
     ];
+
     XLSX.writeFile(wb, 'template_empresas.xlsx');
+    
     toast({
       title: "Template baixado",
-      description: "O arquivo template_empresas.xlsx foi baixado com sucesso."
+      description: "O arquivo template_empresas.xlsx foi baixado com sucesso.",
     });
   };
 
@@ -519,25 +495,24 @@ export const CompanyList = ({
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
     const reader = new FileReader();
-    reader.onload = e => {
+    reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, {
-          type: 'array'
-        });
+        const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1
-        });
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
         if (jsonData.length < 2) {
           toast({
             title: "Erro na importação",
             description: "O arquivo deve conter pelo menos uma linha de dados além do cabeçalho.",
-            variant: "destructive"
+            variant: "destructive",
           });
           return;
         }
+
         const [headers, ...rows] = jsonData as any[][];
         let successCount = 0;
         let errorCount = 0;
@@ -551,15 +526,16 @@ export const CompanyList = ({
               name: row[0]?.toString() || '',
               cnpj: row[1]?.toString() || '',
               segmento: row[2]?.toString() || '',
-              regime_tributario: row[3]?.toString() || ''
+              regime_tributario: row[3]?.toString() || '',
             };
+
             if (companyData.name.trim()) {
               addCompanyMutation.mutate({
                 name: companyData.name,
                 cnpj: companyData.cnpj || undefined,
                 sem_movimento: false,
                 segmento: companyData.segmento || undefined,
-                regime_tributario: companyData.regime_tributario as any || undefined
+                regime_tributario: companyData.regime_tributario as any || undefined,
               });
               successCount++;
             }
@@ -568,43 +544,54 @@ export const CompanyList = ({
             console.error(`Erro na linha ${index + 2}:`, error);
           }
         });
+
         toast({
           title: "Importação concluída",
-          description: `${successCount} empresas importadas com sucesso. ${errorCount > 0 ? `${errorCount} erros encontrados.` : ''}`
+          description: `${successCount} empresas importadas com sucesso. ${errorCount > 0 ? `${errorCount} erros encontrados.` : ''}`,
         });
+
       } catch (error) {
         toast({
           title: "Erro ao processar arquivo",
           description: "Verifique se o arquivo está no formato correto.",
-          variant: "destructive"
+          variant: "destructive",
         });
       }
     };
+
     reader.readAsArrayBuffer(file);
     // Limpar o input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
+
+
   if (isLoading) {
-    return <Card>
+    return (
+      <Card>
         <CardHeader>
           <CardTitle>Empresas</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
-            {[...Array(5)].map((_, i) => <div key={i} className="h-16 bg-muted rounded"></div>)}
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-muted rounded"></div>
+            ))}
           </div>
         </CardContent>
-      </Card>;
+      </Card>
+    );
   }
 
   // Tela inicial de seleção de regime
   if (!selectedRegime) {
-    return <div className="space-y-8">
+    return (
+      <div className="space-y-8">
         {/* Header */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">Empresas<Building2 className="h-8 w-8 text-primary" />
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Building2 className="h-8 w-8 text-primary" />
             Empresas
           </h1>
           <p className="text-muted-foreground">
@@ -614,34 +601,21 @@ export const CompanyList = ({
 
         {/* Cards de seleção de regime */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[{
-          id: 'lucro_real',
-          label: 'Lucro Real',
-          description: 'Empresas do regime de Lucro Real',
-          icon: FileText,
-          color: 'green'
-        }, {
-          id: 'lucro_presumido',
-          label: 'Lucro Presumido',
-          description: 'Empresas do regime de Lucro Presumido',
-          icon: FileText,
-          color: 'blue'
-        }, {
-          id: 'simples_nacional',
-          label: 'Simples Nacional',
-          description: 'Empresas do regime Simples Nacional',
-          icon: FileText,
-          color: 'purple'
-        }, {
-          id: 'produtor_rural',
-          label: 'Produtor Rural',
-          description: 'Empresas do regime Produtor Rural',
-          icon: FileText,
-          color: 'orange'
-        }].map(regime => {
-          const IconComponent = regime.icon;
-          const companyCount = getRegimeCompanies(regime.id).length;
-          return <Card key={regime.id} className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-primary/50" onClick={() => handleRegimeSelection(regime.id)}>
+          {[
+            { id: 'lucro_real', label: 'Lucro Real', description: 'Empresas do regime de Lucro Real', icon: FileText, color: 'green' },
+            { id: 'lucro_presumido', label: 'Lucro Presumido', description: 'Empresas do regime de Lucro Presumido', icon: FileText, color: 'blue' },
+            { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
+            { id: 'produtor_rural', label: 'Produtor Rural', description: 'Empresas do regime Produtor Rural', icon: FileText, color: 'orange' }
+          ].map((regime) => {
+            const IconComponent = regime.icon;
+            const companyCount = getRegimeCompanies(regime.id).length;
+            
+            return (
+              <Card 
+                key={regime.id} 
+                className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 border-2 hover:border-primary/50"
+                onClick={() => handleRegimeSelection(regime.id)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className={`p-3 rounded-lg bg-${regime.color}-100 dark:bg-${regime.color}-900/20`}>
@@ -656,8 +630,9 @@ export const CompanyList = ({
                   <h3 className="font-semibold text-lg mb-2">{regime.label}</h3>
                   <p className="text-sm text-muted-foreground">{regime.description}</p>
                 </CardContent>
-              </Card>;
-        })}
+              </Card>
+            );
+          })}
         </div>
 
         {/* Estatísticas gerais */}
@@ -689,20 +664,28 @@ export const CompanyList = ({
             </div>
           </CardContent>
         </Card>
-      </div>;
+      </div>
+    );
   }
 
   // Se o regime selecionado for "lucro_real", mostrar o LucroRealList
   if (selectedRegime === 'lucro_real') {
     return <LucroRealList onSelectCompany={onSelectCompany} onBack={handleBackToRegimeSelection} />;
   }
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <Card>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" onClick={handleBackToRegimeSelection} className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBackToRegimeSelection}
+                className="flex items-center gap-2"
+              >
                 <ArrowLeft className="h-4 w-4" />
                 Voltar
               </Button>
@@ -714,16 +697,32 @@ export const CompanyList = ({
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
             {/* Botão para baixar template */}
-            <Button variant="outline" size="sm" onClick={downloadTemplate} className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadTemplate}
+              className="flex items-center gap-2"
+            >
               <Download className="h-4 w-4" />
               Baixar Template
             </Button>
 
             {/* Input oculto para importar arquivo */}
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleFileImport} className="hidden" />
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileImport}
+              className="hidden"
+            />
 
             {/* Botão para importar planilha */}
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex items-center gap-2"
+            >
               <Upload className="h-4 w-4" />
               Importar Planilha
             </Button>
@@ -745,32 +744,43 @@ export const CompanyList = ({
               <form onSubmit={handleSubmit(handleAddCompany)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Nome da Empresa *</Label>
-                  <Input id="name" {...register('name', {
-                      required: 'Nome da empresa é obrigatório'
-                    })} placeholder="Digite o nome da empresa" />
-                  {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+                  <Input
+                    id="name"
+                    {...register('name', { required: 'Nome da empresa é obrigatório' })}
+                    placeholder="Digite o nome da empresa"
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name.message}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="cnpj">CNPJ</Label>
-                  <Input id="cnpj" {...register('cnpj')} placeholder="00.000.000/0000-00 (opcional)" maxLength={18} />
+                  <Input
+                    id="cnpj"
+                    {...register('cnpj')}
+                    placeholder="00.000.000/0000-00 (opcional)"
+                    maxLength={18}
+                  />
                 </div>
                  <div className="space-y-2">
                    <Label htmlFor="segmento">Segmento</Label>
-                   <Select onValueChange={value => {
-                      if (value === 'create_new_segment') {
-                        setIsCreateSegmentFromAddOpen(true);
-                      } else {
-                        setValue('segmento', value === 'none' ? '' : value);
-                      }
-                    }}>
+                   <Select onValueChange={(value) => {
+                     if (value === 'create_new_segment') {
+                       setIsCreateSegmentFromAddOpen(true);
+                     } else {
+                       setValue('segmento', value === 'none' ? '' : value);
+                     }
+                   }}>
                      <SelectTrigger>
                        <SelectValue placeholder="Selecionar segmento" />
                      </SelectTrigger>
                      <SelectContent>
                        <SelectItem value="none">Sem segmento</SelectItem>
-                       {segments.map(segment => <SelectItem key={segment.id} value={segment.name}>
+                       {segments.map((segment) => (
+                         <SelectItem key={segment.id} value={segment.name}>
                            {segment.name}
-                         </SelectItem>)}
+                         </SelectItem>
+                       ))}
                        <Separator />
                        <SelectItem value="create_new_segment" className="text-primary">
                          <div className="flex items-center gap-2">
@@ -783,7 +793,7 @@ export const CompanyList = ({
                  </div>
                 <div className="space-y-2">
                   <Label htmlFor="regime_tributario">Regime Tributário</Label>
-                  <Select onValueChange={value => setValue('regime_tributario', value)}>
+                  <Select onValueChange={(value) => setValue('regime_tributario', value)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o regime tributário" />
                     </SelectTrigger>
@@ -796,13 +806,20 @@ export const CompanyList = ({
                   </Select>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => {
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
                       setIsAddDialogOpen(false);
                       reset();
-                    }}>
+                    }}
+                  >
                     Cancelar
                   </Button>
-                  <Button type="submit" disabled={addCompanyMutation.isPending}>
+                  <Button
+                    type="submit"
+                    disabled={addCompanyMutation.isPending}
+                  >
                     {addCompanyMutation.isPending ? 'Adicionando...' : 'Adicionar'}
                   </Button>
                 </DialogFooter>
@@ -817,11 +834,16 @@ export const CompanyList = ({
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input placeholder="Buscar por empresa ou CNPJ..." value={filters.search} onChange={e => updateFilter('search', e.target.value)} className="pl-10" />
+              <Input
+                placeholder="Buscar por empresa ou CNPJ..."
+                value={filters.search}
+                onChange={(e) => updateFilter('search', e.target.value)}
+                className="pl-10"
+              />
             </div>
             
             <div className="flex items-center gap-2">
-              <Select value={filters.status} onValueChange={value => updateFilter('status', value)}>
+              <Select value={filters.status} onValueChange={(value) => updateFilter('status', value)}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Filtrar por situação" />
                 </SelectTrigger>
@@ -833,7 +855,7 @@ export const CompanyList = ({
                 </SelectContent>
               </Select>
               
-              <Select value={filters.sortBy} onValueChange={value => updateFilter('sortBy', value)}>
+              <Select value={filters.sortBy} onValueChange={(value) => updateFilter('sortBy', value)}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Ordenar por" />
                 </SelectTrigger>
@@ -848,7 +870,12 @@ export const CompanyList = ({
                 </SelectContent>
               </Select>
               
-              <Button variant="outline" size="sm" onClick={() => updateFilter('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')} className="px-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => updateFilter('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="px-2"
+              >
                 <ArrowUpDown className="h-4 w-4" />
               </Button>
               
@@ -857,16 +884,23 @@ export const CompanyList = ({
                   <Button variant="outline" size="sm" className="relative">
                     <Filter className="h-4 w-4 mr-2" />
                     Filtros
-                    {getActiveFiltersCount() > 0 && <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
+                    {getActiveFiltersCount() > 0 && (
+                      <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
                         {getActiveFiltersCount()}
-                      </Badge>}
+                      </Badge>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80" align="end">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">Filtros Avançados</h4>
-                      <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 px-2 text-xs">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="h-8 px-2 text-xs"
+                      >
                         Limpar tudo
                       </Button>
                     </div>
@@ -875,20 +909,32 @@ export const CompanyList = ({
                       <div>
                         <Label className="text-sm font-medium">RBT12 (R$)</Label>
                         <div className="flex gap-2 mt-1">
-                          <Input placeholder="Mínimo" value={filters.rbt12Min} onChange={e => updateFilter('rbt12Min', e.target.value)} className="text-sm" />
-                          <Input placeholder="Máximo" value={filters.rbt12Max} onChange={e => updateFilter('rbt12Max', e.target.value)} className="text-sm" />
+                          <Input
+                            placeholder="Mínimo"
+                            value={filters.rbt12Min}
+                            onChange={(e) => updateFilter('rbt12Min', e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="Máximo"
+                            value={filters.rbt12Max}
+                            onChange={(e) => updateFilter('rbt12Max', e.target.value)}
+                            className="text-sm"
+                          />
                         </div>
                       </div>
                       
                       <div>
                         <Label className="text-sm font-medium">Período</Label>
-                        <Select value={filters.periodo} onValueChange={value => updateFilter('periodo', value)}>
+                        <Select value={filters.periodo} onValueChange={(value) => updateFilter('periodo', value)}>
                           <SelectTrigger className="mt-1">
                             <SelectValue placeholder="Selecionar período" />
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value="todos">Todos os períodos</SelectItem>
-                            {getPeriodos().map(periodo => <SelectItem key={periodo} value={periodo}>{periodo}</SelectItem>)}
+                            {getPeriodos().map(periodo => (
+                              <SelectItem key={periodo} value={periodo}>{periodo}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -900,27 +946,53 @@ export const CompanyList = ({
           </div>
           
           {/* Indicadores de filtros ativos */}
-          {getActiveFiltersCount() > 0 && <div className="flex flex-wrap gap-2">
-              {filters.search && <Badge variant="secondary" className="gap-1">
+          {getActiveFiltersCount() > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {filters.search && (
+                <Badge variant="secondary" className="gap-1">
                   Busca: {filters.search}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('search', '')} />
-                </Badge>}
-              {filters.status !== 'todas' && <Badge variant="secondary" className="gap-1">
-                  Status: {filters.status === 'ativa' ? 'Ativas' : filters.status === 'paralizada' ? 'Paralizadas' : 'Sem Movimento'}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('status', 'todas')} />
-                </Badge>}
-              {(filters.rbt12Min || filters.rbt12Max) && <Badge variant="secondary" className="gap-1">
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => updateFilter('search', '')}
+                  />
+                </Badge>
+              )}
+              {filters.status !== 'todas' && (
+                <Badge variant="secondary" className="gap-1">
+                  Status: {
+                    filters.status === 'ativa' ? 'Ativas' : 
+                    filters.status === 'paralizada' ? 'Paralizadas' : 
+                    'Sem Movimento'
+                  }
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => updateFilter('status', 'todas')}
+                  />
+                </Badge>
+              )}
+              {(filters.rbt12Min || filters.rbt12Max) && (
+                <Badge variant="secondary" className="gap-1">
                   RBT12: {filters.rbt12Min || '0'} - {filters.rbt12Max || '∞'}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => {
-                updateFilter('rbt12Min', '');
-                updateFilter('rbt12Max', '');
-              }} />
-                </Badge>}
-              {filters.periodo !== 'todos' && <Badge variant="secondary" className="gap-1">
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => {
+                      updateFilter('rbt12Min', '');
+                      updateFilter('rbt12Max', '');
+                    }}
+                  />
+                </Badge>
+              )}
+              {filters.periodo !== 'todos' && (
+                <Badge variant="secondary" className="gap-1">
                   Período: {filters.periodo}
-                  <X className="h-3 w-3 cursor-pointer" onClick={() => updateFilter('periodo', 'todos')} />
-                </Badge>}
-            </div>}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => updateFilter('periodo', 'todos')}
+                  />
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="p-0">
@@ -942,7 +1014,12 @@ export const CompanyList = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedCompanies?.map((company, index) => <TableRow key={company.id} className="cursor-pointer hover:bg-accent transition-colors border-b border-border bg-muted/30" onClick={() => handleCompanyClick(company)}>
+              {filteredAndSortedCompanies?.map((company, index) => (
+                <TableRow 
+                  key={company.id}
+                  className="cursor-pointer hover:bg-accent transition-colors border-b border-border bg-muted/30"
+                  onClick={() => handleCompanyClick(company)}
+                >
                   <TableCell className="border-r border-border text-center text-muted-foreground font-mono text-sm w-8">
                     {index + 1}
                   </TableCell>
@@ -950,14 +1027,19 @@ export const CompanyList = ({
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
                       <span className="truncate">{company.name}</span>
-                      {hasPassword(company) && <div className="flex items-center gap-1">
+                      {hasPassword(company) && (
+                        <div className="flex items-center gap-1">
                           <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                        </div>}
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
                     <span className="truncate block text-xs">
-                      {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'N/A'}
+                      {company.cnpj 
+                        ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+                        : 'N/A'
+                      }
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
@@ -967,84 +1049,121 @@ export const CompanyList = ({
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
                     <span className="truncate block text-xs">
-                      {hasPassword(company) ? <span className="text-muted-foreground">***</span> : company.latest_fiscal_data?.period || 'N/A'}
+                      {hasPassword(company) ? (
+                        <span className="text-muted-foreground">***</span>
+                      ) : company.latest_fiscal_data?.period || 'N/A'}
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-right text-foreground w-20 hidden md:table-cell">
                     <span className="truncate block text-xs">
-                      {hasPassword(company) ? <span className="text-muted-foreground">***</span> : company.latest_fiscal_data?.rbt12 ? company.latest_fiscal_data.rbt12.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    }) : 'N/A'}
+                      {hasPassword(company) ? (
+                        <span className="text-muted-foreground">***</span>
+                      ) : company.latest_fiscal_data?.rbt12 ? 
+                        company.latest_fiscal_data.rbt12.toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }) : 'N/A'
+                      }
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-right text-green-600 dark:text-green-400 font-medium w-20 hidden lg:table-cell">
                     <span className="truncate block text-xs">
-                      {hasPassword(company) ? <span className="text-muted-foreground">***</span> : company.latest_fiscal_data?.entrada ? company.latest_fiscal_data.entrada.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    }) : 'N/A'}
+                      {hasPassword(company) ? (
+                        <span className="text-muted-foreground">***</span>
+                      ) : company.latest_fiscal_data?.entrada ? 
+                        company.latest_fiscal_data.entrada.toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }) : 'N/A'
+                      }
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-right text-red-600 dark:text-red-400 font-medium w-20 hidden lg:table-cell">
                     <span className="truncate block text-xs">
-                      {hasPassword(company) ? <span className="text-muted-foreground">***</span> : company.latest_fiscal_data?.saida ? company.latest_fiscal_data.saida.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    }) : 'N/A'}
+                      {hasPassword(company) ? (
+                        <span className="text-muted-foreground">***</span>
+                      ) : company.latest_fiscal_data?.saida ? 
+                        company.latest_fiscal_data.saida.toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }) : 'N/A'
+                      }
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-medium w-20 hidden xl:table-cell">
                     <span className="truncate block text-xs">
-                      {hasPassword(company) ? <span className="text-muted-foreground">***</span> : company.latest_fiscal_data?.imposto ? company.latest_fiscal_data.imposto.toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0
-                    }) : 'N/A'}
+                      {hasPassword(company) ? (
+                        <span className="text-muted-foreground">***</span>
+                      ) : company.latest_fiscal_data?.imposto ? 
+                        company.latest_fiscal_data.imposto.toLocaleString('pt-BR', { 
+                          style: 'currency', 
+                          currency: 'BRL',
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0
+                        }) : 'N/A'
+                      }
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-center w-24">
-                    <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105 ${getStatusColor(company.sem_movimento || false)}`} onClick={e => {
-                    e.stopPropagation();
-                    handleStatusClick(company);
-                  }} title="Clique para alterar a situação (SM = Sem Movimento)">
+                    <div
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105 ${getStatusColor(company.sem_movimento || false)}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStatusClick(company);
+                      }}
+                      title="Clique para alterar a situação (SM = Sem Movimento)"
+                    >
                       {(() => {
-                      const IconComponent = getStatusIcon(company.sem_movimento || false);
-                      return <IconComponent className="h-3 w-3 mr-1.5" />;
-                    })()}
+                        const IconComponent = getStatusIcon(company.sem_movimento || false);
+                        return <IconComponent className="h-3 w-3 mr-1.5" />;
+                      })()}
                       {getStatusDisplay(company.sem_movimento || false)}
                     </div>
                   </TableCell>
                   <TableCell className="text-center w-12">
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 w-8 p-0" onClick={e => {
-                      e.stopPropagation();
-                      openEditDialog(company);
-                    }} title="Editar empresa">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditDialog(company);
+                        }}
+                        title="Editar empresa"
+                      >
                         <Edit3 className="h-3 w-3" />
                       </Button>
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0" onClick={e => {
-                      e.stopPropagation();
-                      handleDeleteCompany(company.id, company.name);
-                    }} title="Excluir empresa">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteCompany(company.id, company.name);
+                        }}
+                        title="Excluir empresa"
+                      >
                         <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>)}
-              {filteredAndSortedCompanies?.length === 0 && <TableRow>
+                </TableRow>
+              ))}
+              {filteredAndSortedCompanies?.length === 0 && (
+                <TableRow>
                   <TableCell colSpan={9} className="text-center py-8 text-muted-foreground border-b border-border">
                     <FileText className="h-12 w-12 mx-auto mb-4" />
                     <p>Nenhuma empresa encontrada</p>
                   </TableCell>
-                </TableRow>}
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
@@ -1066,7 +1185,14 @@ export const CompanyList = ({
         
         <div className="space-y-3 py-4">
           {/* Opção Ativa */}
-          <div className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedCompany?.currentStatus === false ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-gray-200 dark:border-gray-700 hover:border-green-300'}`} onClick={() => handleStatusChange('ativa')}>
+          <div
+            className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+              selectedCompany?.currentStatus === false
+                ? 'border-green-500 bg-green-50 dark:bg-green-950/20'
+                : 'border-gray-200 dark:border-gray-700 hover:border-green-300'
+            }`}
+            onClick={() => handleStatusChange('ativa')}
+          >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === false ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
                 <CheckCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === false ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`} />
@@ -1079,7 +1205,14 @@ export const CompanyList = ({
           </div>
 
           {/* Opção Paralisada */}
-          <div className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedCompany?.currentStatus === true ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'border-gray-200 dark:border-gray-700 hover:border-orange-300'}`} onClick={() => handleStatusChange('paralizada')}>
+          <div
+            className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+              selectedCompany?.currentStatus === true
+                ? 'border-orange-500 bg-orange-50 dark:bg-orange-950/20'
+                : 'border-gray-200 dark:border-gray-700 hover:border-orange-300'
+            }`}
+            onClick={() => handleStatusChange('paralizada')}
+          >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === true ? 'bg-orange-100 dark:bg-orange-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
                 <AlertCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === true ? 'text-orange-600 dark:text-orange-400' : 'text-gray-400'}`} />
@@ -1092,7 +1225,14 @@ export const CompanyList = ({
           </div>
 
           {/* Opção Sem Movimento */}
-          <div className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${selectedCompany?.currentStatus === true ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : 'border-gray-200 dark:border-gray-700 hover:border-red-300'}`} onClick={() => handleStatusChange('sem_movimento')}>
+          <div
+            className={`flex items-center p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 hover:shadow-md ${
+              selectedCompany?.currentStatus === true
+                ? 'border-red-500 bg-red-50 dark:bg-red-950/20'
+                : 'border-gray-200 dark:border-gray-700 hover:border-red-300'
+            }`}
+            onClick={() => handleStatusChange('sem_movimento')}
+          >
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full ${selectedCompany?.currentStatus === true ? 'bg-red-100 dark:bg-red-900/30' : 'bg-gray-100 dark:bg-gray-800'}`}>
                 <PauseCircle className={`h-5 w-5 ${selectedCompany?.currentStatus === true ? 'text-red-600 dark:text-red-400' : 'text-gray-400'}`} />
@@ -1106,7 +1246,11 @@ export const CompanyList = ({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => setStatusModalOpen(false)} disabled={updateStatusMutation.isPending}>
+          <Button
+            variant="outline"
+            onClick={() => setStatusModalOpen(false)}
+            disabled={updateStatusMutation.isPending}
+          >
             Cancelar
           </Button>
         </DialogFooter>
@@ -1125,32 +1269,46 @@ export const CompanyList = ({
         <form onSubmit={handleEditSubmit(handleEditCompany)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="edit-name">Nome da Empresa *</Label>
-            <Input id="edit-name" {...registerEdit('name', {
-              required: 'Nome da empresa é obrigatório'
-            })} placeholder="Digite o nome da empresa" />
-            {editErrors.name && <p className="text-sm text-destructive">{editErrors.name.message}</p>}
+            <Input
+              id="edit-name"
+              {...registerEdit('name', { required: 'Nome da empresa é obrigatório' })}
+              placeholder="Digite o nome da empresa"
+            />
+            {editErrors.name && (
+              <p className="text-sm text-destructive">{editErrors.name.message}</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-cnpj">CNPJ</Label>
-            <Input id="edit-cnpj" {...registerEdit('cnpj')} placeholder="00.000.000/0000-00 (opcional)" maxLength={18} />
+            <Input
+              id="edit-cnpj"
+              {...registerEdit('cnpj')}
+              placeholder="00.000.000/0000-00 (opcional)"
+              maxLength={18}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-segmento">Segmento</Label>
-            <Select value={editingCompany?.segmento || 'none'} onValueChange={value => {
-              if (value === 'create_new_segment') {
-                setIsCreateSegmentFromEditOpen(true);
-              } else {
-                setValueEdit('segmento', value === 'none' ? '' : value);
-              }
-            }}>
+            <Select
+              value={editingCompany?.segmento || 'none'}
+              onValueChange={(value) => {
+                if (value === 'create_new_segment') {
+                  setIsCreateSegmentFromEditOpen(true);
+                } else {
+                  setValueEdit('segmento', value === 'none' ? '' : value);
+                }
+              }}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecionar segmento" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Sem segmento</SelectItem>
-                {segments.map(segment => <SelectItem key={segment.id} value={segment.name}>
+                {segments.map((segment) => (
+                  <SelectItem key={segment.id} value={segment.name}>
                     {segment.name}
-                  </SelectItem>)}
+                  </SelectItem>
+                ))}
                 <Separator />
                 <SelectItem value="create_new_segment" className="text-primary">
                   <div className="flex items-center gap-2">
@@ -1163,7 +1321,10 @@ export const CompanyList = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="edit-regime">Regime Tributário</Label>
-            <Select value={editingCompany?.regime_tributario || ''} onValueChange={value => setValueEdit('regime_tributario', value)}>
+            <Select 
+              value={editingCompany?.regime_tributario || ''}
+              onValueChange={(value) => setValueEdit('regime_tributario', value)}
+            >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o regime tributário" />
               </SelectTrigger>
@@ -1177,14 +1338,21 @@ export const CompanyList = ({
             </Select>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => {
-              setIsEditDialogOpen(false);
-              setEditingCompany(null);
-              resetEdit();
-            }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsEditDialogOpen(false);
+                setEditingCompany(null);
+                resetEdit();
+              }}
+            >
               Cancelar
             </Button>
-            <Button type="submit" disabled={updateCompanyMutation.isPending}>
+            <Button
+              type="submit"
+              disabled={updateCompanyMutation.isPending}
+            >
               {updateCompanyMutation.isPending ? 'Salvando...' : 'Salvar'}
             </Button>
           </DialogFooter>
@@ -1204,7 +1372,14 @@ export const CompanyList = ({
             Esta empresa requer senha para visualizar os dados
           </DialogDescription>
         </DialogHeader>
-        {passwordAuthCompany && <CompanyPasswordAuth companyName={passwordAuthCompany.name} companyId={passwordAuthCompany.id} onSuccess={handlePasswordSuccess} onCancel={handlePasswordCancel} />}
+        {passwordAuthCompany && (
+          <CompanyPasswordAuth
+            companyName={passwordAuthCompany.name}
+            companyId={passwordAuthCompany.id}
+            onSuccess={handlePasswordSuccess}
+            onCancel={handlePasswordCancel}
+          />
+        )}
       </DialogContent>
     </Dialog>
 
@@ -1220,7 +1395,15 @@ export const CompanyList = ({
             Esta operação requer confirmação de senha
           </DialogDescription>
         </DialogHeader>
-        {operationAuthCompany && <CompanyOperationAuth companyName={operationAuthCompany.name} companyId={operationAuthCompany.id} operation={operationAuthCompany.operation} onSuccess={handleOperationAuthSuccess} onCancel={handleOperationAuthCancel} />}
+        {operationAuthCompany && (
+          <CompanyOperationAuth
+            companyName={operationAuthCompany.name}
+            companyId={operationAuthCompany.id}
+            operation={operationAuthCompany.operation}
+            onSuccess={handleOperationAuthSuccess}
+            onCancel={handleOperationAuthCancel}
+          />
+        )}
       </DialogContent>
     </Dialog>
 
@@ -1249,7 +1432,11 @@ export const CompanyList = ({
           <AlertDialogCancel onClick={handleCancelDelete}>
             Cancelar
           </AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={deleteCompanyMutation.isPending}>
+          <AlertDialogAction
+            onClick={handleConfirmDelete}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            disabled={deleteCompanyMutation.isPending}
+          >
             {deleteCompanyMutation.isPending ? 'Excluindo...' : 'Excluir Empresa'}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -1272,22 +1459,36 @@ export const CompanyList = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newSegmentNameFromEdit">Nome do Segmento</Label>
-            <Input id="newSegmentNameFromEdit" placeholder="Ex: Varejo, Indústria, Serviços..." value={newSegmentNameFromEdit} onChange={e => setNewSegmentNameFromEdit(e.target.value)} onKeyPress={e => {
-              if (e.key === 'Enter' && newSegmentNameFromEdit.trim()) {
-                handleCreateSegmentFromEdit();
-              }
-            }} />
+            <Input
+              id="newSegmentNameFromEdit"
+              placeholder="Ex: Varejo, Indústria, Serviços..."
+              value={newSegmentNameFromEdit}
+              onChange={(e) => setNewSegmentNameFromEdit(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newSegmentNameFromEdit.trim()) {
+                  handleCreateSegmentFromEdit();
+                }
+              }}
+            />
           </div>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button type="button" variant="outline" onClick={() => {
-            setIsCreateSegmentFromEditOpen(false);
-            setNewSegmentNameFromEdit('');
-          }}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsCreateSegmentFromEditOpen(false);
+              setNewSegmentNameFromEdit('');
+            }}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleCreateSegmentFromEdit} disabled={!newSegmentNameFromEdit.trim() || createSegmentMutation.isPending} className="min-w-[120px]">
+          <Button
+            onClick={handleCreateSegmentFromEdit}
+            disabled={!newSegmentNameFromEdit.trim() || createSegmentMutation.isPending}
+            className="min-w-[120px]"
+          >
             {createSegmentMutation.isPending ? 'Criando...' : 'Criar e Atribuir'}
           </Button>
         </DialogFooter>
@@ -1310,26 +1511,41 @@ export const CompanyList = ({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newSegmentNameFromAdd">Nome do Segmento</Label>
-            <Input id="newSegmentNameFromAdd" placeholder="Ex: Varejo, Indústria, Serviços..." value={newSegmentNameFromAdd} onChange={e => setNewSegmentNameFromAdd(e.target.value)} onKeyPress={e => {
-              if (e.key === 'Enter' && newSegmentNameFromAdd.trim()) {
-                handleCreateSegmentFromAdd();
-              }
-            }} />
+            <Input
+              id="newSegmentNameFromAdd"
+              placeholder="Ex: Varejo, Indústria, Serviços..."
+              value={newSegmentNameFromAdd}
+              onChange={(e) => setNewSegmentNameFromAdd(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && newSegmentNameFromAdd.trim()) {
+                  handleCreateSegmentFromAdd();
+                }
+              }}
+            />
           </div>
         </div>
 
         <DialogFooter className="gap-2">
-          <Button type="button" variant="outline" onClick={() => {
-            setIsCreateSegmentFromAddOpen(false);
-            setNewSegmentNameFromAdd('');
-          }}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsCreateSegmentFromAddOpen(false);
+              setNewSegmentNameFromAdd('');
+            }}
+          >
             Cancelar
           </Button>
-          <Button onClick={handleCreateSegmentFromAdd} disabled={!newSegmentNameFromAdd.trim() || createSegmentMutation.isPending} className="min-w-[120px]">
+          <Button
+            onClick={handleCreateSegmentFromAdd}
+            disabled={!newSegmentNameFromAdd.trim() || createSegmentMutation.isPending}
+            className="min-w-[120px]"
+          >
             {createSegmentMutation.isPending ? 'Criando...' : 'Criar e Atribuir'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  </div>;
+  </div>
+  );
 };
