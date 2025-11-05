@@ -114,10 +114,12 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
     switch (regime) {
       case 'lucro_real':
         return companies.filter(company => company.regime_tributario === 'lucro_real');
+      case 'lucro_presumido':
+        return companies.filter(company => company.regime_tributario === 'lucro_presumido');
       case 'simples_nacional':
         return companies.filter(company => company.regime_tributario === 'simples_nacional');
-      case 'mei':
-        return companies.filter(company => company.regime_tributario === 'mei');
+      case 'produtor_rural':
+        return companies.filter(company => company.regime_tributario === 'produtor_rural');
       default:
         return companies;
     }
@@ -214,7 +216,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
       cnpj: data.cnpj || undefined,
       sem_movimento: false,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei' || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -231,7 +233,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
       name: data.name,
       cnpj: data.cnpj || undefined,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei' || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -443,8 +445,9 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
   const getRegimeLabel = (regime: string) => {
     const labels = {
       'lucro_real': 'Lucro Real',
+      'lucro_presumido': 'Lucro Presumido',
       'simples_nacional': 'Simples Nacional',
-      'mei': 'MEI'
+      'produtor_rural': 'Produtor Rural'
     };
     return labels[regime as keyof typeof labels] || regime;
   };
@@ -453,6 +456,9 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
     setSelectedRegime(regime);
     if (regime === 'lucro_real' && onLucroRealSelect) {
       onLucroRealSelect();
+    }
+    if (regime === 'produtor_rural' && onProdutorRuralSelect) {
+      onProdutorRuralSelect();
     }
   };
 
