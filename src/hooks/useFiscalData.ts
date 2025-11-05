@@ -1522,6 +1522,7 @@ export const useAddLucroRealData = () => {
       period: string;
       entradas?: number;
       saidas?: number;
+      servicos?: number;
       pis?: number;
       cofins?: number;
       icms?: number;
@@ -1529,6 +1530,7 @@ export const useAddLucroRealData = () => {
       csll_primeiro_trimestre?: number;
       irpj_segundo_trimestre?: number;
       csll_segundo_trimestre?: number;
+      tvi?: number;
     }) => {
       const { data: result, error } = await supabase
         .from('lucro_real_data')
@@ -1537,6 +1539,7 @@ export const useAddLucroRealData = () => {
           period: data.period.trim(),
           entradas: data.entradas || null,
           saidas: data.saidas || null,
+          servicos: data.servicos || null,
           pis: data.pis || null,
           cofins: data.cofins || null,
           icms: data.icms || null,
@@ -1544,6 +1547,7 @@ export const useAddLucroRealData = () => {
           csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
           irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
           csll_segundo_trimestre: data.csll_segundo_trimestre || null,
+          tvi: data.tvi || null,
         })
         .select()
         .single();
@@ -1579,6 +1583,7 @@ export const useUpdateLucroRealData = () => {
       period: string;
       entradas?: number;
       saidas?: number;
+      servicos?: number;
       pis?: number;
       cofins?: number;
       icms?: number;
@@ -1586,6 +1591,7 @@ export const useUpdateLucroRealData = () => {
       csll_primeiro_trimestre?: number;
       irpj_segundo_trimestre?: number;
       csll_segundo_trimestre?: number;
+      tvi?: number;
     }) => {
       const { data: result, error } = await supabase
         .from('lucro_real_data')
@@ -1593,6 +1599,7 @@ export const useUpdateLucroRealData = () => {
           period: data.period.trim(),
           entradas: data.entradas || null,
           saidas: data.saidas || null,
+          servicos: data.servicos || null,
           pis: data.pis || null,
           cofins: data.cofins || null,
           icms: data.icms || null,
@@ -1600,6 +1607,7 @@ export const useUpdateLucroRealData = () => {
           csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
           irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
           csll_segundo_trimestre: data.csll_segundo_trimestre || null,
+          tvi: data.tvi || null,
         })
         .eq('id', data.id)
         .select()

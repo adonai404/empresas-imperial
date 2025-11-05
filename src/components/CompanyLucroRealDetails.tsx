@@ -340,20 +340,22 @@ export const CompanyLucroRealDetails = ({
       alert('Por favor, selecione um arquivo Excel (.xlsx ou .xls)');
       return;
     }
+    
     try {
+      setIsImporting(true);
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      const parseNumber = (value: any): number | null => {
+        if (value === null || value === undefined || value === '') return null;
+        const parsed = parseFloat(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'));
+        return isNaN(parsed) ? null : parsed;
+      };
+      
       const processedData = jsonData.map((row: any) => {
-        const parseNumber = (value: any): number | null => {
-          if (value === null || value === undefined || value === '') return null;
-          const parsed = parseFloat(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'));
-          return isNaN(parsed) ? null : parsed;
-        };
         return {
-          empresa: String(row.Empresa || row.empresa || '').trim(),
-          cnpj: String(row.CNPJ || row.cnpj || '').replace(/\D/g, ''),
           periodo: String(row.Competência || row.competência || row.competencia || row.Período || row.periodo || row.Periodo || '').trim(),
           entradas: parseNumber(row.Entradas || row.entradas),
           saidas: parseNumber(row.Saídas || row.saídas || row.saidas || row.Saidas),
@@ -369,17 +371,40 @@ export const CompanyLucroRealDetails = ({
         };
       });
 
-      // Filtrar apenas dados da empresa atual
-      const companyData = processedData.filter(row => row.empresa === company?.name || row.cnpj === company?.cnpj);
-      if (companyData.length === 0) {
-        alert('Nenhum dado encontrado para esta empresa no arquivo.');
+      const validRows = processedData.filter(row => row.periodo && row.periodo.trim());
+      
+      if (validRows.length === 0) {
+        alert('Nenhum registro válido encontrado. Verifique se a coluna Período/Competência está preenchida.');
+        setIsImporting(false);
         return;
       }
-      await importMutation.mutateAsync(companyData);
+
+      // Adicionar cada registro usando a mutation
+      for (const row of validRows) {
+        await addMutation.mutateAsync({
+          company_id: companyId,
+          period: row.periodo,
+          entradas: row.entradas,
+          saidas: row.saidas,
+          servicos: row.servicos,
+          pis: row.pis,
+          cofins: row.cofins,
+          icms: row.icms,
+          irpj_primeiro_trimestre: row.irpj_primeiro_trimestre,
+          csll_primeiro_trimestre: row.csll_primeiro_trimestre,
+          irpj_segundo_trimestre: row.irpj_segundo_trimestre,
+          csll_segundo_trimestre: row.csll_segundo_trimestre,
+          tvi: row.tvi,
+        });
+      }
+
+      alert(`${validRows.length} registros importados com sucesso!`);
       setIsImportDialogOpen(false);
     } catch (error) {
       console.error('Error processing file:', error);
       alert('Erro ao processar o arquivo. Verifique se é um arquivo Excel válido.');
+    } finally {
+      setIsImporting(false);
     }
   };
   const downloadTemplate = () => {
