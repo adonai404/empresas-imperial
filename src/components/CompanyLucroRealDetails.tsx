@@ -427,7 +427,7 @@ export const CompanyLucroRealDetails = ({
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(templateData);
     XLSX.utils.book_append_sheet(wb, ws, 'Lucro Real');
-    XLSX.writeFile(wb, `template_lucro_real_${company?.name?.replace(/\s+/g, '_') || 'empresa'}.xlsx`);
+    XLSX.writeFile(wb, `template_normais_${company?.name?.replace(/\s+/g, '_') || 'empresa'}.xlsx`);
   };
   if (companyLoading || dataLoading) {
     return <Card>
@@ -527,7 +527,7 @@ export const CompanyLucroRealDetails = ({
                 </DialogTrigger>
                 <DialogContent className="max-w-4xl">
                   <DialogHeader>
-                    <DialogTitle>Adicionar Dados de Lucro Real</DialogTitle>
+                    <DialogTitle>Adicionar Dados Normais</DialogTitle>
                     <DialogDescription>
                       Preencha os dados fiscais para o período selecionado.
                     </DialogDescription>
@@ -655,7 +655,7 @@ export const CompanyLucroRealDetails = ({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Dados Fiscais de Lucro Real</CardTitle>
+            <CardTitle>Dados Fiscais Normais</CardTitle>
             <div className="flex items-center gap-2">
               <Input placeholder="Filtrar por período..." value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="w-48" />
               <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
@@ -784,7 +784,7 @@ export const CompanyLucroRealDetails = ({
                 {filteredAndSortedData?.length === 0 && <TableRow>
                     <TableCell colSpan={12} className="text-center py-8 text-muted-foreground border-b border-border">
                       <FileText className="h-12 w-12 mx-auto mb-4" />
-                      <p>Nenhum dado de Lucro Real encontrado</p>
+                      <p>Nenhum dado Normal encontrado</p>
                     </TableCell>
                   </TableRow>}
               </TableBody>
@@ -797,7 +797,7 @@ export const CompanyLucroRealDetails = ({
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Editar Dados de Lucro Real</DialogTitle>
+            <DialogTitle>Editar Dados Normais</DialogTitle>
             <DialogDescription>
               Altere os dados fiscais para o período selecionado.
             </DialogDescription>
@@ -930,7 +930,7 @@ export const CompanyLucroRealDetails = ({
               <br /><br />
               Esta ação também removerá:
               <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>Todos os dados de Lucro Real associados</li>
+                <li>Todos os dados Normais associados</li>
                 <li>Histórico de períodos fiscais</li>
                 <li>Configurações de senha (se houver)</li>
               </ul>

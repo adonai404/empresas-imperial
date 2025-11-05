@@ -22,7 +22,6 @@ import { useToast } from '@/hooks/use-toast';
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
   onLucroRealSelect?: () => void;
-  onLucroPresumidoSelect?: () => void;
   onProdutorRuralSelect?: () => void;
 }
 
@@ -50,7 +49,7 @@ interface FilterState {
   sortOrder: 'asc' | 'desc';
 }
 
-export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onLucroPresumidoSelect, onProdutorRuralSelect }: CompanyListProps) => {
+export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRuralSelect }: CompanyListProps) => {
   const [selectedRegime, setSelectedRegime] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -115,8 +114,6 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onLucroPresumi
     switch (regime) {
       case 'lucro_real':
         return companies.filter(company => company.regime_tributario === 'lucro_real');
-      case 'lucro_presumido':
-        return companies.filter(company => company.regime_tributario === 'lucro_presumido');
       case 'simples_nacional':
         return companies.filter(company => company.regime_tributario === 'simples_nacional');
       case 'produtor_rural':
@@ -445,8 +442,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onLucroPresumi
   // Funções para gerenciar regimes
   const getRegimeLabel = (regime: string) => {
     const labels = {
-      'lucro_real': 'Lucro Real',
-      'lucro_presumido': 'Lucro Presumido',
+      'lucro_real': 'Normais',
       'simples_nacional': 'Simples Nacional',
       'produtor_rural': 'Produtor Rural'
     };

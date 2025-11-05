@@ -220,8 +220,8 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(lucroRealData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Lucro Real');
-    XLSX.writeFile(wb, 'template_lucro_real.xlsx');
+    XLSX.utils.book_append_sheet(wb, ws, 'Normais');
+    XLSX.writeFile(wb, 'template_normais.xlsx');
   };
 
   const handleFileSelect = async (file: File) => {
@@ -308,7 +308,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Empresas Lucro Real</CardTitle>
+          <CardTitle>Empresas Normais</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="animate-pulse space-y-4">
@@ -341,7 +341,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                 )}
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <Building2 className="h-5 w-5" />
-                  Empresas Lucro Real ({filteredCompanies.length})
+                  Empresas Normais ({filteredCompanies.length})
                 </CardTitle>
               </div>
             </div>
@@ -417,7 +417,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
                         <p>
                           {lucroRealCompanies.length === 0 
-                            ? "Nenhuma empresa do regime Lucro Real encontrada"
+                            ? "Nenhuma empresa do regime Normal encontrada"
                             : "Nenhuma empresa encontrada com os filtros aplicados"
                           }
                         </p>
@@ -553,10 +553,10 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileSpreadsheet className="h-5 w-5" />
-              Importar Dados do Lucro Real
+              Importar Dados Normais
             </DialogTitle>
             <DialogDescription>
-              Faça upload de uma planilha Excel com os dados das empresas do Lucro Real
+              Faça upload de uma planilha Excel com os dados das empresas Normais
             </DialogDescription>
           </DialogHeader>
           
@@ -783,8 +783,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Nenhum</SelectItem>
-                  <SelectItem value="lucro_real">Lucro Real</SelectItem>
-                  <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                  <SelectItem value="lucro_real">Normais</SelectItem>
                   <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
                   <SelectItem value="mei">MEI</SelectItem>
                 </SelectContent>

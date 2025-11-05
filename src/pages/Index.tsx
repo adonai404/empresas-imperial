@@ -5,7 +5,7 @@ import { ExcelUpload } from '@/components/ExcelUpload';
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
 import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
-import { CompanyLucroPresumidoDetails } from '@/components/CompanyLucroPresumidoDetails';
+
 import { CompanyProdutorRuralDetails } from '@/components/CompanyProdutorRuralDetails';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>();
   const [activeSection, setActiveSection] = useState('companies');
   const [isLucroRealSection, setIsLucroRealSection] = useState(false);
-  const [isLucroPresumidoSection, setIsLucroPresumidoSection] = useState(false);
   const [isProdutorRuralSection, setIsProdutorRuralSection] = useState(false);
   const handleSelectCompany = (companyId: string) => {
     setSelectedCompanyId(companyId);
@@ -22,7 +21,6 @@ const Index = () => {
   const handleBackToCompanies = () => {
     setSelectedCompanyId(undefined);
     setIsLucroRealSection(false);
-    setIsLucroPresumidoSection(false);
     setIsProdutorRuralSection(false);
   };
   const renderContent = () => {
@@ -34,8 +32,6 @@ const Index = () => {
           return <div className="space-y-4">
               {isLucroRealSection ? (
                 <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} />
-              ) : isLucroPresumidoSection ? (
-                <CompanyLucroPresumidoDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} />
               ) : isProdutorRuralSection ? (
                 <CompanyProdutorRuralDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToCompanies} />
               ) : (
@@ -43,11 +39,11 @@ const Index = () => {
               )}
             </div>;
         }
-        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} onLucroPresumidoSelect={() => setIsLucroPresumidoSection(true)} onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} />;
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} />;
       case 'settings':
         return <Settings />;
       default:
-        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} onLucroPresumidoSelect={() => setIsLucroPresumidoSection(true)} onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} />;
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} />;
     }
   };
   return <SidebarProvider>
