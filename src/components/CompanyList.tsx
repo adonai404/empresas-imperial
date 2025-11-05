@@ -214,7 +214,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
       cnpj: data.cnpj || undefined,
       sem_movimento: false,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'simples_nacional' | 'produtor_rural' || undefined,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -231,7 +231,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
       name: data.name,
       cnpj: data.cnpj || undefined,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural' || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'simples_nacional' | 'produtor_rural' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -602,8 +602,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
         {/* Cards de seleção de regime */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { id: 'lucro_real', label: 'Lucro Real', description: 'Empresas do regime de Lucro Real', icon: FileText, color: 'green' },
-            { id: 'lucro_presumido', label: 'Lucro Presumido', description: 'Empresas do regime de Lucro Presumido', icon: FileText, color: 'blue' },
+            { id: 'lucro_real', label: 'Normais', description: 'Empresas do regime Normal', icon: FileText, color: 'green' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
             { id: 'produtor_rural', label: 'Produtor Rural', description: 'Empresas do regime Produtor Rural', icon: FileText, color: 'orange' }
           ].map((regime) => {
@@ -644,14 +643,10 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{getRegimeCompanies('lucro_real').length}</p>
-                <p className="text-sm text-muted-foreground">Lucro Real</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">{getRegimeCompanies('lucro_presumido').length}</p>
-                <p className="text-sm text-muted-foreground">Lucro Presumido</p>
+                <p className="text-sm text-muted-foreground">Normais</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">{getRegimeCompanies('simples_nacional').length}</p>
@@ -798,8 +793,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
                       <SelectValue placeholder="Selecione o regime tributário" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="lucro_real">Lucro Real</SelectItem>
-                      <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                      <SelectItem value="lucro_real">Normais</SelectItem>
                       <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
                       <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
                     </SelectContent>
@@ -1330,8 +1324,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Nenhum</SelectItem>
-                <SelectItem value="lucro_real">Lucro Real</SelectItem>
-                <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
+                <SelectItem value="lucro_real">Normais</SelectItem>
                 <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
                 <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
               </SelectContent>

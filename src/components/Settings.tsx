@@ -138,8 +138,7 @@ export const Settings = ({}: SettingsProps) => {
 
   const getRegimeLabel = (regime: string) => {
     const labels = {
-      'lucro_real': 'Lucro Real',
-      'lucro_presumido': 'Lucro Presumido',
+      'lucro_real': 'Normais',
       'simples_nacional': 'Simples Nacional'
     };
     return labels[regime as keyof typeof labels] || regime;
@@ -154,7 +153,7 @@ export const Settings = ({}: SettingsProps) => {
   };
 
   // Funções para Kanban
-  const openAddCnpjDialog = (regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional') => {
+  const openAddCnpjDialog = (regime: 'lucro_real' | 'simples_nacional') => {
     setCurrentRegimeForAdd(regime);
     setTempCnpj('');
     setIsAddCnpjDialogOpen(true);
@@ -198,8 +197,7 @@ export const Settings = ({}: SettingsProps) => {
   const downloadTemplate = () => {
     const templateData = [
       { CNPJ: '00000000000100', Regime: 'lucro_real' },
-      { CNPJ: '00000000000200', Regime: 'lucro_presumido' },
-      { CNPJ: '00000000000300', Regime: 'simples_nacional' }
+      { CNPJ: '00000000000200', Regime: 'simples_nacional' }
     ];
 
     const ws = XLSX.utils.json_to_sheet(templateData);
@@ -236,8 +234,8 @@ export const Settings = ({}: SettingsProps) => {
           return;
         }
 
-        const validRegimes = ['lucro_real', 'lucro_presumido', 'simples_nacional'];
-        const importedRegimes: Array<{ cnpj: string, regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' }> = [];
+        const validRegimes = ['lucro_real', 'simples_nacional'];
+        const importedRegimes: Array<{ cnpj: string, regime: 'lucro_real' | 'simples_nacional' }> = [];
         const errors: string[] = [];
 
         jsonData.forEach((row: any, index: number) => {
@@ -250,7 +248,7 @@ export const Settings = ({}: SettingsProps) => {
           }
 
           if (!validRegimes.includes(regime)) {
-            errors.push(`Linha ${index + 2}: Regime inválido (${row.Regime}). Use: Lucro Real, Lucro Presumido ou Simples Nacional`);
+            errors.push(`Linha ${index + 2}: Regime inválido (${row.Regime}). Use: Normais ou Simples Nacional`);
             return;
           }
 
@@ -261,7 +259,7 @@ export const Settings = ({}: SettingsProps) => {
 
           importedRegimes.push({
             cnpj,
-            regime: regime as 'lucro_real' | 'lucro_presumido' | 'simples_nacional'
+            regime: regime as 'lucro_real' | 'simples_nacional'
           });
         });
 
@@ -841,10 +839,10 @@ export const Settings = ({}: SettingsProps) => {
               <Separator />
 
               {/* Kanban Board */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {['lucro_real', 'lucro_presumido', 'simples_nacional'].map((regime) => {
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {['lucro_real', 'simples_nacional'].map((regime) => {
                   const regimeCompanies = getRegimeCompanies(regime);
-                  const regimeKey = regime as 'lucro_real' | 'lucro_presumido' | 'simples_nacional';
+                  const regimeKey = regime as 'lucro_real' | 'simples_nacional';
                   
                   return (
                     <Card key={regime} className="flex flex-col h-fit">

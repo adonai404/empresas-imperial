@@ -426,7 +426,7 @@ export const CompanyLucroRealDetails = ({
     }];
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(templateData);
-    XLSX.utils.book_append_sheet(wb, ws, 'Lucro Real');
+    XLSX.utils.book_append_sheet(wb, ws, 'Normais');
     XLSX.writeFile(wb, `template_normais_${company?.name?.replace(/\s+/g, '_') || 'empresa'}.xlsx`);
   };
   if (companyLoading || dataLoading) {
