@@ -108,6 +108,13 @@ export interface FiscalData {
   updated_at: string;
 }
 
+export interface Responsavel {
+  id: string;
+  nome: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface LucroRealData {
   id: string;
   company_id: string;
@@ -123,6 +130,7 @@ export interface LucroRealData {
   irpj_segundo_trimestre: number | null;
   csll_segundo_trimestre: number | null;
   tvi: number | null;
+  responsavel_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -151,7 +159,11 @@ export const useCompanies = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*')
+        .select(`
+          *,
+          lucro_real_data(responsavel_id),
+          company_passwords!left(id, password_hash, created_at, updated_at)
+        `)
         .order('name');
       
       if (error) throw error;
@@ -1248,6 +1260,87 @@ export const useDeleteSegment = () => {
       toast({
         title: "Erro",
         description: error.message || "Erro ao excluir segmento.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Hook para buscar responsáveis
+export const useResponsaveis = () => {
+  return useQuery({
+    queryKey: ['responsaveis'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('responsaveis')
+        .select('*')
+        .order('nome', { ascending: true });
+      
+      if (error) throw error;
+      return data || [];
+    },
+  });
+};
+
+// Hook para criar responsável
+export const useCreateResponsavel = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async (nome: string) => {
+      const { data, error } = await supabase
+        .from('responsaveis')
+        .insert([{ nome: nome.trim() }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['responsaveis'] });
+      toast({
+        title: "Sucesso",
+        description: "Responsável criado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar responsável.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Hook para atualizar responsável em lucro_real_data
+export const useUpdateLucroRealResponsavel = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ companyId, responsavelId }: { companyId: string; responsavelId: string | null }) => {
+      const { data, error } = await supabase
+        .from('lucro_real_data')
+        .update({ responsavel_id: responsavelId })
+        .eq('company_id', companyId)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      toast({
+        title: "Sucesso",
+        description: "Responsável atualizado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar responsável.",
         variant: "destructive",
       });
     },

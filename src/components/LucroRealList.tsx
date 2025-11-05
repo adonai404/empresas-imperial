@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Edit, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter, CheckCircle, PauseCircle, AlertCircle } from 'lucide-react';
-import { useCompanies, useDeleteCompany, useImportLucroRealExcel, useUpdateCompanyStatus, useUpdateCompany, useSegments } from '@/hooks/useFiscalData';
+import { Building2, Edit, Lock, Trash2, Download, Upload, FileSpreadsheet, ArrowLeft, Search, Filter, CheckCircle, PauseCircle, AlertCircle, User } from 'lucide-react';
+import { useCompanies, useDeleteCompany, useImportLucroRealExcel, useUpdateCompanyStatus, useUpdateCompany, useSegments, useResponsaveis, useCreateResponsavel, useUpdateLucroRealResponsavel } from '@/hooks/useFiscalData';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 
 interface LucroRealListProps {
@@ -34,10 +35,16 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
   const [selectedCompany, setSelectedCompany] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingCompany, setEditingCompany] = useState<{ id: string; name: string; cnpj: string; segmento: string; regime_tributario: string } | null>(null);
+  const [responsavelModalOpen, setResponsavelModalOpen] = useState(false);
+  const [selectedResponsavelCompany, setSelectedResponsavelCompany] = useState<any>(null);
+  const [newResponsavelName, setNewResponsavelName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: companies, isLoading } = useCompanies();
   const { data: segments = [] } = useSegments();
+  const { data: responsaveis = [] } = useResponsaveis();
+  const createResponsavelMutation = useCreateResponsavel();
+  const updateLucroRealResponsavelMutation = useUpdateLucroRealResponsavel();
   const deleteCompanyMutation = useDeleteCompany();
   const importMutation = useImportLucroRealExcel();
   const updateCompanyMutation = useUpdateCompanyStatus();
@@ -143,6 +150,53 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
         setEditingCompany(null);
       }
     });
+  };
+
+  const handleResponsavelClick = (company: any) => {
+    setSelectedResponsavelCompany(company);
+    setResponsavelModalOpen(true);
+  };
+
+  const handleResponsavelChange = async (responsavelId: string) => {
+    if (!selectedResponsavelCompany) return;
+
+    updateLucroRealResponsavelMutation.mutate({
+      companyId: selectedResponsavelCompany.id,
+      responsavelId: responsavelId === 'none' ? null : responsavelId
+    }, {
+      onSuccess: () => {
+        setResponsavelModalOpen(false);
+        setSelectedResponsavelCompany(null);
+      }
+    });
+  };
+
+  const handleCreateResponsavel = async () => {
+    if (!newResponsavelName.trim()) {
+      toast({
+        title: "Erro",
+        description: "Digite o nome do responsável.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createResponsavelMutation.mutate(newResponsavelName, {
+      onSuccess: (data) => {
+        setNewResponsavelName('');
+        if (selectedResponsavelCompany) {
+          handleResponsavelChange(data.id);
+        }
+      }
+    });
+  };
+
+  const getResponsavelNome = (company: any) => {
+    if (!company.lucro_real_data || company.lucro_real_data.length === 0) return null;
+    const responsavelId = company.lucro_real_data[0]?.responsavel_id;
+    if (!responsavelId) return null;
+    const responsavel = responsaveis.find((r: any) => r.id === responsavelId);
+    return responsavel?.nome || null;
   };
 
   const handlePasswordSuccess = () => {
@@ -405,6 +459,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                   <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Empresa</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-40 hidden sm:table-cell">CNPJ</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-36">Segmento</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-36">Responsável</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
                   <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
                 </TableRow>
@@ -412,7 +467,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
               <TableBody>
                 {filteredCompanies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
                         <p>
@@ -454,6 +509,19 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                             {company.segmento}
                           </Badge>
                         ) : 'N/A'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-center w-36">
+                        <div
+                          className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer hover:opacity-80 transition-all duration-200 hover:scale-105 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleResponsavelClick(company);
+                          }}
+                          title="Clique para selecionar ou criar responsável"
+                        >
+                          <User className="h-3 w-3 mr-1.5" />
+                          {getResponsavelNome(company) || 'Selecionar'}
+                        </div>
                       </TableCell>
                       <TableCell className="border-r border-border text-center w-24">
                         <div
@@ -719,6 +787,78 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
               disabled={updateCompanyMutation.isPending}
             >
               Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Seleção de Responsável */}
+      <Dialog open={responsavelModalOpen} onOpenChange={setResponsavelModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
+              Selecionar Responsável
+            </DialogTitle>
+            <DialogDescription>
+              Selecione um responsável existente ou crie um novo para <strong>{selectedResponsavelCompany?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Responsável</Label>
+              <Select
+                value={getResponsavelNome(selectedResponsavelCompany) || 'none'}
+                onValueChange={handleResponsavelChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar responsável" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nenhum responsável</SelectItem>
+                  {responsaveis.map((resp: any) => (
+                    <SelectItem key={resp.id} value={resp.id}>
+                      {resp.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Label className="text-sm font-medium mb-2 block">Criar Novo Responsável</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Nome do responsável"
+                  value={newResponsavelName}
+                  onChange={(e) => setNewResponsavelName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      handleCreateResponsavel();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleCreateResponsavel}
+                  disabled={createResponsavelMutation.isPending || !newResponsavelName.trim()}
+                >
+                  {createResponsavelMutation.isPending ? 'Criando...' : 'Adicionar'}
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setResponsavelModalOpen(false);
+                setNewResponsavelName('');
+              }}
+              disabled={updateLucroRealResponsavelMutation.isPending || createResponsavelMutation.isPending}
+            >
+              Fechar
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -224,6 +224,7 @@ export type Database = {
           irpj_segundo_trimestre: number | null
           period: string
           pis: number | null
+          responsavel_id: string | null
           saidas: number | null
           servicos: number | null
           tvi: number | null
@@ -242,6 +243,7 @@ export type Database = {
           irpj_segundo_trimestre?: number | null
           period: string
           pis?: number | null
+          responsavel_id?: string | null
           saidas?: number | null
           servicos?: number | null
           tvi?: number | null
@@ -260,6 +262,7 @@ export type Database = {
           irpj_segundo_trimestre?: number | null
           period?: string
           pis?: number | null
+          responsavel_id?: string | null
           saidas?: number | null
           servicos?: number | null
           tvi?: number | null
@@ -271,6 +274,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lucro_real_data_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
             referencedColumns: ["id"]
           },
         ]
@@ -328,6 +338,27 @@ export type Database = {
           saidas?: number | null
           servicos?: number | null
           tvi?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      responsaveis: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
           updated_at?: string
         }
         Relationships: []
