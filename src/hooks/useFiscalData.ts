@@ -1779,8 +1779,6 @@ export const useImportLucroRealExcel = () => {
 };
 
 // Lucro Presumido Data Hooks
-// COMENTADO TEMPORARIAMENTE ATÉ A MIGRAÇÃO SER EXECUTADA
-/*
 export interface LucroPresumidoData {
   id: string;
   company_id: string;
@@ -2014,68 +2012,127 @@ export const useDeleteLucroPresumidoData = () => {
   });
 };
 
-export const useLucroPresumidoEvolutionData = (companyId: string) => {
-  return useQuery({
-    queryKey: ['lucro-presumido-evolution', companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lucro_presumido_data')
-        .select(`
-          period,
-          entradas,
-          saidas,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre,
-          csll_primeiro_trimestre,
-          irpj_segundo_trimestre,
-          csll_segundo_trimestre
-        `)
-        .eq('company_id', companyId)
-        .order('period');
+export const useImportLucroPresumidoExcel = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: Array<{
+      empresa: string;
+      cnpj: string;
+      periodo: string;
+      entradas: number | null;
+      saidas: number | null;
+      servicos: number | null;
+      pis: number | null;
+      cofins: number | null;
+      icms: number | null;
+      irpj_primeiro_trimestre: number | null;
+      csll_primeiro_trimestre: number | null;
+      irpj_segundo_trimestre: number | null;
+      csll_segundo_trimestre: number | null;
+      tvi: number | null;
+      segmento?: string;
+    }>) => {
+      const validRows = data.filter(row => 
+        row.empresa && row.empresa.trim() !== ''
+      );
+
+      if (validRows.length === 0) {
+        throw new Error('Nenhum dado válido encontrado. Verifique se a coluna Empresa está preenchida.');
+      }
+
+      // Process companies first
+      const companiesMap = new Map<string, string>();
       
-      if (error) throw error;
-      
-      const evolutionData = data?.map(item => {
-        const entradas = Number(item.entradas) || 0;
-        const saidas = Number(item.saidas) || 0;
-        const pis = Number(item.pis) || 0;
-        const cofins = Number(item.cofins) || 0;
-        const icms = Number(item.icms) || 0;
-        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
-        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
-        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
-        const csll2 = Number(item.csll_segundo_trimestre) || 0;
+      for (const row of validRows) {
+        const companyName = row.empresa.trim();
+        const cnpj = row.cnpj?.replace(/\D/g, '') || null;
         
-        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
-        
-        return {
-          period: item.period,
-          entrada: entradas,
-          saida: saidas,
-          imposto: totalImpostos,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre: irpj1,
-          csll_primeiro_trimestre: csll1,
-          irpj_segundo_trimestre: irpj2,
-          csll_segundo_trimestre: csll2,
-          saldo: entradas - saidas
-        };
-      }).sort((a, b) => {
-        const dateA = parsePeriodToDate(a.period);
-        const dateB = parsePeriodToDate(b.period);
-        return dateA.getTime() - dateB.getTime();
-      }) || [];
-      
-      return evolutionData;
+        if (!companiesMap.has(companyName)) {
+          // Check if company exists
+          const { data: existingCompany } = await supabase
+            .from('companies')
+            .select('id')
+            .eq('name', companyName)
+            .maybeSingle();
+
+          if (existingCompany) {
+            companiesMap.set(companyName, existingCompany.id);
+          } else {
+            // Create new company with Lucro Presumido regime
+            const { data: newCompany, error: companyError } = await supabase
+              .from('companies')
+              .insert({
+                name: companyName,
+                cnpj: cnpj,
+                regime_tributario: 'lucro_presumido',
+                segmento: row.segmento?.trim() || null,
+              })
+              .select('id')
+              .single();
+
+            if (companyError) throw companyError;
+            companiesMap.set(companyName, newCompany.id);
+          }
+        }
+      }
+
+      // Process lucro presumido data
+      const lucroPresumidoDataRows = validRows
+        .filter(row => row.periodo && row.periodo.trim())
+        .map(row => ({
+          company_id: companiesMap.get(row.empresa.trim())!,
+          period: row.periodo.trim(),
+          entradas: row.entradas,
+          saidas: row.saidas,
+          servicos: row.servicos,
+          pis: row.pis,
+          cofins: row.cofins,
+          icms: row.icms,
+          irpj_primeiro_trimestre: row.irpj_primeiro_trimestre,
+          csll_primeiro_trimestre: row.csll_primeiro_trimestre,
+          irpj_segundo_trimestre: row.irpj_segundo_trimestre,
+          csll_segundo_trimestre: row.csll_segundo_trimestre,
+          tvi: row.tvi,
+        }));
+
+      // Insert lucro presumido data
+      if (lucroPresumidoDataRows.length > 0) {
+        const { error: lucroPresumidoError } = await supabase
+          .from('lucro_presumido_data')
+          .upsert(lucroPresumidoDataRows, { onConflict: 'company_id,period' });
+
+        if (lucroPresumidoError) throw lucroPresumidoError;
+      }
+
+      return { 
+        importedRecords: lucroPresumidoDataRows.length,
+        skippedRecords: data.length - lucroPresumidoDataRows.length
+      };
     },
-    enabled: !!companyId,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data'] });
+      
+      let description = `${result.importedRecords} registros de Lucro Presumido importados com sucesso.`;
+      if (result.skippedRecords > 0) {
+        description += ` ${result.skippedRecords} registros foram ignorados por falta de dados essenciais.`;
+      }
+      
+      toast({
+        title: 'Importação concluída',
+        description,
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro na importação',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro durante a importação.',
+        variant: 'destructive',
+      });
+    },
   });
 };
-*/
 
 // Produtor Rural hooks
 export interface ProdutorRuralData {

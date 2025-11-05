@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, ArrowUpDown, ArrowLeft, CheckCircle, AlertCircle, PauseCircle, Settings } from 'lucide-react';
 import { useCompanyWithData, useLucroPresumidoDataByCompany, useAddLucroPresumidoData, useUpdateLucroPresumidoData, useDeleteLucroPresumidoData, useImportLucroPresumidoExcel, useDeleteCompany, useUpdateCompanyStatus } from '@/hooks/useFiscalData';
 import { CompanyLucroPresumidoEvolutionChart } from './CompanyLucroPresumidoEvolutionChart';
@@ -271,7 +271,7 @@ export const CompanyLucroPresumidoDetails = ({
 
     updateStatusMutation.mutate({
       companyId: selectedCompany.id,
-      status: newStatus
+      sem_movimento: newStatus === 'sem_movimento'
     }, {
       onSuccess: () => {
         setStatusModalOpen(false);
@@ -322,6 +322,8 @@ export const CompanyLucroPresumidoDetails = ({
         };
 
         return {
+          empresa: company?.name || '',
+          cnpj: company?.cnpj || '',
           periodo: String(row.Período || row.periodo || row.Periodo || '').trim(),
           entradas: parseNumber(row.Entradas || row.entradas),
           saidas: parseNumber(row.Saídas || row.saidas || row.Saidas),
@@ -346,10 +348,7 @@ export const CompanyLucroPresumidoDetails = ({
         return;
       }
 
-      await importMutation.mutateAsync({
-        companyId,
-        data: validRows
-      });
+      await importMutation.mutateAsync(validRows);
 
       setIsImportDialogOpen(false);
     } catch (error) {
