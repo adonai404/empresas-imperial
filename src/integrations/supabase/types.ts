@@ -19,21 +19,21 @@ export type Database = {
           cnpj: string
           created_at: string
           id: string
-          regime_tributario: Database["public"]["Enums"]["regime_tributario_type"]
+          regime_tributario: Database["public"]["Enums"]["regime_tributario"]
           updated_at: string
         }
         Insert: {
           cnpj: string
           created_at?: string
           id?: string
-          regime_tributario: Database["public"]["Enums"]["regime_tributario_type"]
+          regime_tributario: Database["public"]["Enums"]["regime_tributario"]
           updated_at?: string
         }
         Update: {
           cnpj?: string
           created_at?: string
           id?: string
-          regime_tributario?: Database["public"]["Enums"]["regime_tributario_type"]
+          regime_tributario?: Database["public"]["Enums"]["regime_tributario"]
           updated_at?: string
         }
         Relationships: []
@@ -45,7 +45,7 @@ export type Database = {
           id: string
           name: string
           regime_tributario:
-            | Database["public"]["Enums"]["regime_tributario_type"]
+            | Database["public"]["Enums"]["regime_tributario"]
             | null
           segmento: string | null
           sem_movimento: boolean | null
@@ -57,7 +57,7 @@ export type Database = {
           id?: string
           name: string
           regime_tributario?:
-            | Database["public"]["Enums"]["regime_tributario_type"]
+            | Database["public"]["Enums"]["regime_tributario"]
             | null
           segmento?: string | null
           sem_movimento?: boolean | null
@@ -69,7 +69,7 @@ export type Database = {
           id?: string
           name?: string
           regime_tributario?:
-            | Database["public"]["Enums"]["regime_tributario_type"]
+            | Database["public"]["Enums"]["regime_tributario"]
             | null
           segmento?: string | null
           sem_movimento?: boolean | null
@@ -361,6 +361,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      regime_tributario:
+        | "lucro_real"
+        | "lucro_presumido"
+        | "simples_nacional"
+        | "produtor_rural"
       regime_tributario_type:
         | "lucro_real"
         | "lucro_presumido"
@@ -493,6 +498,12 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      regime_tributario: [
+        "lucro_real",
+        "lucro_presumido",
+        "simples_nacional",
+        "produtor_rural",
+      ],
       regime_tributario_type: [
         "lucro_real",
         "lucro_presumido",
