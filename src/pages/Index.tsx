@@ -42,7 +42,7 @@ const Index = () => {
       case 'settings':
         return <Settings />;
       default:
-        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} />;
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} />;
     }
   };
   return <SidebarProvider>

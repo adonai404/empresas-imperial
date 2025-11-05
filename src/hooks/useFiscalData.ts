@@ -79,7 +79,7 @@ export interface Company {
   cnpj: string;
   sem_movimento?: boolean;
   segmento?: string;
-  regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
+  regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
   created_at: string;
   updated_at: string;
 }
@@ -346,7 +346,7 @@ export const useAddCompany = () => {
       cnpj?: string; 
       sem_movimento?: boolean;
       segmento?: string;
-      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
+      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
     }) => {
       let finalRegime = companyData.regime_tributario;
 
@@ -588,7 +588,7 @@ export const useUpdateCompany = () => {
       name: string; 
       cnpj?: string;
       segmento?: string;
-      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
+      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
     }) => {
       const { data, error } = await supabase
         .from('companies')
@@ -1016,7 +1016,7 @@ export const useSaveCnpjRegime = () => {
   return useMutation({
     mutationFn: async ({ cnpj, regime }: {
       cnpj: string;
-      regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'mei';
+      regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
     }) => {
       // Verificar se já existe um regime para este CNPJ
       const { data: existingRegime } = await supabase

@@ -606,8 +606,9 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             { id: 'lucro_real', label: 'Lucro Real', description: 'Empresas do regime de Lucro Real', icon: FileText, color: 'green' },
+            { id: 'lucro_presumido', label: 'Lucro Presumido', description: 'Empresas do regime de Lucro Presumido', icon: FileText, color: 'blue' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
-            { id: 'mei', label: 'MEI', description: 'Empresas do regime MEI', icon: FileText, color: 'pink' }
+            { id: 'produtor_rural', label: 'Produtor Rural', description: 'Empresas do regime Produtor Rural', icon: FileText, color: 'orange' }
           ].map((regime) => {
             const IconComponent = regime.icon;
             const companyCount = getRegimeCompanies(regime.id).length;
@@ -646,18 +647,22 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{getRegimeCompanies('lucro_real').length}</p>
                 <p className="text-sm text-muted-foreground">Lucro Real</p>
+              </div>
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">{getRegimeCompanies('lucro_presumido').length}</p>
+                <p className="text-sm text-muted-foreground">Lucro Presumido</p>
               </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">{getRegimeCompanies('simples_nacional').length}</p>
                 <p className="text-sm text-muted-foreground">Simples Nacional</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-pink-600">{getRegimeCompanies('mei').length}</p>
-                <p className="text-sm text-muted-foreground">MEI</p>
+                <p className="text-2xl font-bold text-orange-600">{getRegimeCompanies('produtor_rural').length}</p>
+                <p className="text-sm text-muted-foreground">Produtor Rural</p>
               </div>
             </div>
           </CardContent>
@@ -799,7 +804,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
                       <SelectItem value="lucro_real">Lucro Real</SelectItem>
                       <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
                       <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                      <SelectItem value="mei">MEI</SelectItem>
+                      <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1331,7 +1336,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
                 <SelectItem value="lucro_real">Lucro Real</SelectItem>
                 <SelectItem value="lucro_presumido">Lucro Presumido</SelectItem>
                 <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                <SelectItem value="mei">MEI</SelectItem>
+                <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
               </SelectContent>
             </Select>
           </div>
