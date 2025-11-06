@@ -12,6 +12,7 @@ import { Building2, Plus, FileText, Calendar, Upload, Download, Edit3, Trash2, A
 import { useCompanyWithData, useLucroRealDataByCompany, useAddLucroRealData, useUpdateLucroRealData, useDeleteLucroRealData, useImportLucroRealExcel, useDeleteCompany, useUpdateCompanyStatus } from '@/hooks/useFiscalData';
 import { CompanyLucroRealEvolutionChart } from './CompanyLucroRealEvolutionChart';
 import * as XLSX from 'xlsx';
+import { periodToDate } from '@/lib/periodUtils';
 interface CompanyLucroRealDetailsProps {
   companyId: string;
   onCompanyDeleted?: () => void;
@@ -125,8 +126,11 @@ export const CompanyProdutorRuralDetails = ({
     let aValue: any, bValue: any;
     switch (sortField) {
       case 'period':
-        aValue = a.period || '';
-        bValue = b.period || '';
+        // Converter períodos para datas para ordenação correta
+        const dateA = periodToDate(a.period) || new Date(0);
+        const dateB = periodToDate(b.period) || new Date(0);
+        aValue = dateA.getTime();
+        bValue = dateB.getTime();
         break;
       case 'entradas':
         aValue = a.entradas || 0;
@@ -173,8 +177,11 @@ export const CompanyProdutorRuralDetails = ({
         bValue = b.tvi || 0;
         break;
       default:
-        aValue = a.period || '';
-        bValue = b.period || '';
+        // Para o período por padrão, também converter para datas
+        const defaultDateA = periodToDate(a.period) || new Date(0);
+        const defaultDateB = periodToDate(b.period) || new Date(0);
+        aValue = defaultDateA.getTime();
+        bValue = defaultDateB.getTime();
     }
     if (sortDirection === 'asc') {
       return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;

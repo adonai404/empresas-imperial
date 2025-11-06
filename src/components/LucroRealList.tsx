@@ -192,7 +192,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
   };
 
   const getResponsavelNome = (company: any) => {
-    if (!company.lucro_real_data || company.lucro_real_data.length === 0) return null;
+    if (!company || !company.lucro_real_data || company.lucro_real_data.length === 0) return null;
     const responsavelId = company.lucro_real_data[0]?.responsavel_id;
     if (!responsavelId) return null;
     const responsavel = responsaveis.find((r: any) => r.id === responsavelId);
@@ -303,6 +303,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
           periodo: String(row.Competência || row.competência || row.competencia || row.Período || row.periodo || row.Periodo || '').trim(),
           entradas: parseNumber(row.Entradas || row.entradas),
           saidas: parseNumber(row.Saídas || row.saídas || row.saidas || row.Saidas),
+          servicos: parseNumber(row.Serviços || row.servicos || row.Servicos),
           pis: parseNumber(row.PIS || row.pis),
           cofins: parseNumber(row.COFINS || row.cofins),
           icms: parseNumber(row.ICMS || row.icms),
@@ -310,6 +311,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
           csll_primeiro_trimestre: parseNumber(row['CSLL 1º trimestre'] || row['csll_primeiro_trimestre'] || row['CSLL_1_trimestre']),
           irpj_segundo_trimestre: parseNumber(row['IRPJ 2º trimestre'] || row['irpj_segundo_trimestre'] || row['IRPJ_2_trimestre']),
           csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre']),
+          tvi: parseNumber(row.TVI || row.tvi),
           segmento: String(row.Segmento || row.segmento || '').trim(),
         };
       });
@@ -665,7 +667,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
               <h4 className="font-semibold mb-2">Formato da Planilha:</h4>
               <div className="text-sm text-muted-foreground space-y-1">
                 <p><strong>Colunas obrigatórias:</strong> Empresa, CNPJ, Competência</p>
-                <p><strong>Colunas opcionais:</strong> Entradas, Saídas, PIS, COFINS, ICMS, IRPJ 1º trimestre, CSLL 1º trimestre, IRPJ 2º trimestre, CSLL 2º trimestre, Segmento</p>
+                <p><strong>Colunas opcionais:</strong> Entradas, Saídas, Serviços, PIS, COFINS, ICMS, IRPJ 1º trimestre, CSLL 1º trimestre, IRPJ 2º trimestre, CSLL 2º trimestre, TVI, Segmento</p>
                 <p><strong>Detecção flexível:</strong> O sistema aceita variações nos nomes das colunas</p>
               </div>
             </div>

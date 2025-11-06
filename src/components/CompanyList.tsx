@@ -18,6 +18,7 @@ import { LucroRealList } from './LucroRealList';
 import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
+import { periodToDate } from '@/lib/periodUtils';
 
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
@@ -177,8 +178,11 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
         bValue = b.latest_fiscal_data?.imposto || 0;
         break;
       case 'periodo':
-        aValue = a.latest_fiscal_data?.period || '';
-        bValue = b.latest_fiscal_data?.period || '';
+        // Converter períodos para datas para ordenação correta
+        const dateA = periodToDate(a.latest_fiscal_data?.period || '') || new Date(0);
+        const dateB = periodToDate(b.latest_fiscal_data?.period || '') || new Date(0);
+        aValue = dateA.getTime();
+        bValue = dateB.getTime();
         break;
       default:
         aValue = a.name.toLowerCase();

@@ -48,6 +48,7 @@ export const ExcelUpload = () => {
             periodo: String(row.Competência || row.competência || row.competencia || row.Período || row.periodo || row.Periodo || '').trim(),
             entradas: parseNumber(row.Entradas || row.entradas),
             saidas: parseNumber(row.Saídas || row.saídas || row.saidas || row.Saidas),
+            servicos: parseNumber(row.Serviços || row.servicos || row.Servicos),
             pis: parseNumber(row.PIS || row.pis),
             cofins: parseNumber(row.COFINS || row.cofins),
             icms: parseNumber(row.ICMS || row.icms),
@@ -55,6 +56,7 @@ export const ExcelUpload = () => {
             csll_primeiro_trimestre: parseNumber(row['CSLL 1º trimestre'] || row['csll_primeiro_trimestre'] || row['CSLL_1_trimestre']),
             irpj_segundo_trimestre: parseNumber(row['IRPJ 2º trimestre'] || row['irpj_segundo_trimestre'] || row['IRPJ_2_trimestre']),
             csll_segundo_trimestre: parseNumber(row['CSLL 2º trimestre'] || row['csll_segundo_trimestre'] || row['CSLL_2_trimestre']),
+            tvi: parseNumber(row.TVI || row.tvi),
             segmento: String(row.Segmento || row.segmento || '').trim(),
           };
         });
@@ -284,7 +286,7 @@ export const ExcelUpload = () => {
             </div>
             <div>
               <p className="font-medium">Lucro Real:</p>
-              <p><strong>Colunas:</strong> Empresa, CNPJ, Competência, Entradas, Saídas, PIS, COFINS, ICMS, IRPJ 1º trimestre, CSLL 1º trimestre, IRPJ 2º trimestre, CSLL 2º trimestre, Segmento</p>
+              <p><strong>Colunas:</strong> Empresa, CNPJ, Competência, Entradas, Saídas, Serviços, PIS, COFINS, ICMS, IRPJ 1º trimestre, CSLL 1º trimestre, IRPJ 2º trimestre, CSLL 2º trimestre, TVI, Segmento</p>
             </div>
             <div>
               <p><strong>Detecção automática:</strong> O sistema detecta automaticamente o tipo de dados baseado nas colunas presentes</p>

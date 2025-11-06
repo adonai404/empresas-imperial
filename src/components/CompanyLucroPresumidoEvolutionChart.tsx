@@ -4,7 +4,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { useLucroRealEvolutionData } from '@/hooks/useFiscalData';
+import { useLucroPresumidoEvolutionData } from '@/hooks/useFiscalData';
 import { TrendingUp, TrendingDown, Filter, X, Building2 } from 'lucide-react';
 
 const chartConfig = {
@@ -59,18 +59,18 @@ const chartConfig = {
   },
 };
 
-interface CompanyLucroRealEvolutionChartProps {
+interface CompanyLucroPresumidoEvolutionChartProps {
   companyId: string;
   companyName: string;
   className?: string;
 }
 
-export const CompanyLucroRealEvolutionChart = ({ 
+export const CompanyLucroPresumidoEvolutionChart = ({ 
   companyId, 
   companyName, 
   className 
-}: CompanyLucroRealEvolutionChartProps) => {
-  const { data: evolutionData, isLoading, error } = useLucroRealEvolutionData(companyId);
+}: CompanyLucroPresumidoEvolutionChartProps) => {
+  const { data: evolutionData, isLoading, error } = useLucroPresumidoEvolutionData(companyId);
   const [yearFilter, setYearFilter] = useState<string>('todos');
   const [showFilters, setShowFilters] = useState(false);
   const [showDetailedTaxes, setShowDetailedTaxes] = useState(false);

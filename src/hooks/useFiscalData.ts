@@ -2,76 +2,9 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { periodToDate } from '@/lib/periodUtils';
 
-// Helper function to parse fiscal period to Date for comparison
-const parsePeriodToDate = (period: string): Date => {
-  if (!period || period.trim() === '') {
-    return new Date(0); // Return epoch for invalid periods
-  }
 
-  const periodStr = period.toLowerCase().trim();
-  
-  // Month names mapping
-  const monthNames: { [key: string]: number } = {
-    'janeiro': 0, 'fevereiro': 1, 'março': 2, 'marco': 2, 'abril': 3,
-    'maio': 4, 'junho': 5, 'julho': 6, 'agosto': 7,
-    'setembro': 8, 'outubro': 9, 'novembro': 10, 'dezembro': 11,
-    'jan': 0, 'fev': 1, 'mar': 2, 'abr': 3, 'mai': 4, 'jun': 5,
-    'jul': 6, 'ago': 7, 'set': 8, 'out': 9, 'nov': 10, 'dez': 11
-  };
-
-  // Try different patterns
-  const patterns = [
-    // "Janeiro/2024", "Dezembro/2023"
-    /^([a-zç]+)\/(\d{4})$/,
-    // "Jan/2024", "Dez/2023"
-    /^([a-zç]+)\/(\d{4})$/,
-    // "01/2024", "12/2023"
-    /^(\d{1,2})\/(\d{4})$/,
-    // "2024-01", "2023-12"
-    /^(\d{4})-(\d{1,2})$/,
-    // "Janeiro 2024", "Dezembro 2023"
-    /^([a-zç]+)\s+(\d{4})$/,
-    // "Jan 2024", "Dez 2023"
-    /^([a-zç]+)\s+(\d{4})$/
-  ];
-
-  for (const pattern of patterns) {
-    const match = periodStr.match(pattern);
-    if (match) {
-      let month: number;
-      const year = parseInt(match[2], 10);
-
-      if (isNaN(year) || year < 1900 || year > 2100) {
-        continue;
-      }
-
-      // Check if first group is a month name
-      if (monthNames[match[1]]) {
-        month = monthNames[match[1]];
-      } else {
-        // Check if it's a numeric month
-        const numericMonth = parseInt(match[1], 10);
-        if (!isNaN(numericMonth) && numericMonth >= 1 && numericMonth <= 12) {
-          month = numericMonth - 1; // JavaScript months are 0-based
-        } else {
-          continue;
-        }
-      }
-
-      return new Date(year, month, 1);
-    }
-  }
-
-  // If no pattern matches, try to parse as a regular date
-  const fallbackDate = new Date(period);
-  if (!isNaN(fallbackDate.getTime())) {
-    return fallbackDate;
-  }
-
-  // Return epoch for unparseable periods
-  return new Date(0);
-};
 
 export interface Company {
   id: string;
@@ -192,8 +125,8 @@ export const useCompaniesWithLatestFiscalData = () => {
         if (company.fiscal_data && company.fiscal_data.length > 0) {
           // Sort by fiscal period to get the most recent
           const sortedFiscalData = company.fiscal_data.sort((a: any, b: any) => {
-            const dateA = parsePeriodToDate(a.period);
-            const dateB = parsePeriodToDate(b.period);
+            const dateA = periodToDate(a.period) || new Date(0);
+            const dateB = periodToDate(b.period) || new Date(0);
             return dateB.getTime() - dateA.getTime();
           });
           const latestData = sortedFiscalData[0];
@@ -891,8 +824,8 @@ export const useFiscalEvolutionData = () => {
           companiesCount: item.companies.size
         }))
         .sort((a, b) => {
-          const dateA = parsePeriodToDate(a.period);
-          const dateB = parsePeriodToDate(b.period);
+          const dateA = periodToDate(a.period) || new Date(0);
+          const dateB = periodToDate(b.period) || new Date(0);
           return dateA.getTime() - dateB.getTime();
         });
       
@@ -928,8 +861,8 @@ export const useCompanyFiscalEvolutionData = (companyId: string) => {
         rbt12: item.rbt12 || 0,
         saldo: (item.entrada || 0) - (item.saida || 0)
       })).sort((a, b) => {
-        const dateA = parsePeriodToDate(a.period);
-        const dateB = parsePeriodToDate(b.period);
+        const dateA = periodToDate(a.period) || new Date(0);
+        const dateB = periodToDate(b.period) || new Date(0);
         return dateA.getTime() - dateB.getTime();
       }) || [];
       
@@ -949,6 +882,7 @@ export const useLucroRealEvolutionData = (companyId: string) => {
           period,
           entradas,
           saidas,
+          servicos,
           pis,
           cofins,
           icms,
@@ -966,6 +900,7 @@ export const useLucroRealEvolutionData = (companyId: string) => {
       const evolutionData = data?.map(item => {
         const entradas = Number(item.entradas) || 0;
         const saidas = Number(item.saidas) || 0;
+        const servicos = Number(item.servicos) || 0;
         const pis = Number(item.pis) || 0;
         const cofins = Number(item.cofins) || 0;
         const icms = Number(item.icms) || 0;
@@ -980,6 +915,7 @@ export const useLucroRealEvolutionData = (companyId: string) => {
           period: item.period,
           entrada: entradas,
           saida: saidas,
+          servicos: servicos,
           imposto: totalImpostos,
           pis,
           cofins,
@@ -991,8 +927,8 @@ export const useLucroRealEvolutionData = (companyId: string) => {
           saldo: entradas - saidas
         };
       }).sort((a, b) => {
-        const dateA = parsePeriodToDate(a.period);
-        const dateB = parsePeriodToDate(b.period);
+        const dateA = periodToDate(a.period) || new Date(0);
+        const dateB = periodToDate(b.period) || new Date(0);
         return dateA.getTime() - dateB.getTime();
       }) || [];
       
@@ -1771,6 +1707,7 @@ export const useImportLucroRealExcel = () => {
       periodo: string;
       entradas: number | null;
       saidas: number | null;
+      servicos: number | null;
       pis: number | null;
       cofins: number | null;
       icms: number | null;
@@ -1778,6 +1715,7 @@ export const useImportLucroRealExcel = () => {
       csll_primeiro_trimestre: number | null;
       irpj_segundo_trimestre: number | null;
       csll_segundo_trimestre: number | null;
+      tvi: number | null;
       segmento?: string;
     }>) => {
       const validRows = data.filter(row => 
@@ -1832,6 +1770,7 @@ export const useImportLucroRealExcel = () => {
           period: row.periodo.trim(),
           entradas: row.entradas,
           saidas: row.saidas,
+          servicos: row.servicos,
           pis: row.pis,
           cofins: row.cofins,
           icms: row.icms,
@@ -1839,6 +1778,7 @@ export const useImportLucroRealExcel = () => {
           csll_primeiro_trimestre: row.csll_primeiro_trimestre,
           irpj_segundo_trimestre: row.irpj_segundo_trimestre,
           csll_segundo_trimestre: row.csll_segundo_trimestre,
+          tvi: row.tvi,
         }));
 
       // Insert lucro real data
@@ -2110,6 +2050,71 @@ export const useDeleteLucroPresumidoData = () => {
         variant: 'destructive',
       });
     },
+  });
+};
+
+export const useLucroPresumidoEvolutionData = (companyId: string) => {
+  return useQuery({
+    queryKey: ['lucro-presumido-evolution', companyId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('lucro_presumido_data')
+        .select(`
+          period,
+          entradas,
+          saidas,
+          servicos,
+          pis,
+          cofins,
+          icms,
+          irpj_primeiro_trimestre,
+          csll_primeiro_trimestre,
+          irpj_segundo_trimestre,
+          csll_segundo_trimestre
+        `)
+        .eq('company_id', companyId)
+        .order('period');
+      
+      if (error) throw error;
+      
+      const evolutionData = data?.map(item => {
+        const entradas = Number(item.entradas) || 0;
+        const saidas = Number(item.saidas) || 0;
+        const servicos = Number(item.servicos) || 0;
+        const pis = Number(item.pis) || 0;
+        const cofins = Number(item.cofins) || 0;
+        const icms = Number(item.icms) || 0;
+        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
+        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
+        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
+        const csll2 = Number(item.csll_segundo_trimestre) || 0;
+        
+        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
+        
+        return {
+          period: item.period,
+          entrada: entradas,
+          saida: saidas,
+          servicos: servicos,
+          imposto: totalImpostos,
+          pis,
+          cofins,
+          icms,
+          irpj_primeiro_trimestre: irpj1,
+          csll_primeiro_trimestre: csll1,
+          irpj_segundo_trimestre: irpj2,
+          csll_segundo_trimestre: csll2,
+          saldo: entradas - saidas
+        };
+      }).sort((a, b) => {
+        const dateA = periodToDate(a.period) || new Date(0);
+        const dateB = periodToDate(b.period) || new Date(0);
+        return dateA.getTime() - dateB.getTime();
+      }) || [];
+      
+      return evolutionData;
+    },
+    enabled: !!companyId,
   });
 };
 
@@ -2439,6 +2444,7 @@ export const useProdutorRuralEvolutionData = (companyId: string) => {
           period,
           entradas,
           saidas,
+          servicos,
           pis,
           cofins,
           icms,
@@ -2455,6 +2461,7 @@ export const useProdutorRuralEvolutionData = (companyId: string) => {
       const evolutionData = data?.map(item => {
         const entradas = Number(item.entradas) || 0;
         const saidas = Number(item.saidas) || 0;
+        const servicos = Number(item.servicos) || 0;
         const pis = Number(item.pis) || 0;
         const cofins = Number(item.cofins) || 0;
         const icms = Number(item.icms) || 0;
@@ -2469,6 +2476,7 @@ export const useProdutorRuralEvolutionData = (companyId: string) => {
           period: item.period,
           entrada: entradas,
           saida: saidas,
+          servicos: servicos,
           imposto: totalImpostos,
           pis,
           cofins,
@@ -2480,8 +2488,8 @@ export const useProdutorRuralEvolutionData = (companyId: string) => {
           saldo: entradas - saidas
         };
       }).sort((a, b) => {
-        const dateA = parsePeriodToDate(a.period);
-        const dateB = parsePeriodToDate(b.period);
+        const dateA = periodToDate(a.period) || new Date(0);
+        const dateB = periodToDate(b.period) || new Date(0);
         return dateA.getTime() - dateB.getTime();
       }) || [];
       

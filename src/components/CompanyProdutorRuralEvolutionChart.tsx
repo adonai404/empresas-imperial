@@ -22,6 +22,13 @@ const chartConfig = {
       dark: 'hsl(0, 84%, 60%)',
     },
   },
+  servicos: {
+    label: 'Serviços',
+    theme: {
+      light: 'hsl(270, 100%, 60%)',
+      dark: 'hsl(270, 100%, 60%)',
+    },
+  },
   imposto: {
     label: 'Total Impostos',
     theme: {
@@ -100,6 +107,7 @@ export const CompanyProdutorRuralEvolutionChart = ({
     if (!chartData.length) return { 
       entrada: 0, 
       saida: 0, 
+      servicos: 0,
       imposto: 0,
       pis: 0,
       cofins: 0,
@@ -114,6 +122,7 @@ export const CompanyProdutorRuralEvolutionChart = ({
       (acc, curr) => ({
         entrada: acc.entrada + curr.entrada,
         saida: acc.saida + curr.saida,
+        servicos: acc.servicos + curr.servicos,
         imposto: acc.imposto + curr.imposto,
         pis: acc.pis + curr.pis,
         cofins: acc.cofins + curr.cofins,
@@ -126,6 +135,7 @@ export const CompanyProdutorRuralEvolutionChart = ({
       { 
         entrada: 0, 
         saida: 0, 
+        servicos: 0,
         imposto: 0,
         pis: 0,
         cofins: 0,
@@ -260,7 +270,7 @@ export const CompanyProdutorRuralEvolutionChart = ({
           </div>
         )}
         
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <div className="w-3 h-3 rounded-full bg-green-500"></div>
@@ -282,6 +292,20 @@ export const CompanyProdutorRuralEvolutionChart = ({
             </div>
             <div className="text-lg font-semibold text-red-600 dark:text-red-400">
               {totals.saida.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+              })}
+            </div>
+          </div>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+              Total Serviços
+            </div>
+            <div className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+              {totals.servicos.toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -421,6 +445,14 @@ export const CompanyProdutorRuralEvolutionChart = ({
               strokeWidth={2}
               dot={{ fill: 'var(--color-saida)', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, stroke: 'var(--color-saida)', strokeWidth: 2 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="servicos"
+              stroke="var(--color-servicos)"
+              strokeWidth={2}
+              dot={{ fill: 'var(--color-servicos)', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: 'var(--color-servicos)', strokeWidth: 2 }}
             />
             {!showDetailedTaxes ? (
               <Line

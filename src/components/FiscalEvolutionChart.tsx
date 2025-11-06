@@ -22,6 +22,13 @@ const chartConfig = {
       dark: 'hsl(0, 84%, 60%)',
     },
   },
+  servicos: {
+    label: 'Serviços',
+    theme: {
+      light: 'hsl(270, 100%, 60%)',
+      dark: 'hsl(270, 100%, 60%)',
+    },
+  },
   imposto: {
     label: 'Impostos',
     theme: {
@@ -69,22 +76,25 @@ export const FiscalEvolutionChart = ({ className }: FiscalEvolutionChartProps) =
       period: item.period,
       entrada: item.entrada,
       saida: item.saida,
+      servicos: 0, // A tabela fiscal_data não tem a coluna servicos, definindo como 0
       imposto: item.imposto,
       saldo: item.entrada - item.saida,
+      companiesCount: item.companiesCount
     }));
   }, [evolutionData, yearFilter]);
 
   const totals = useMemo(() => {
-    if (!chartData.length) return { entrada: 0, saida: 0, imposto: 0, saldo: 0 };
+    if (!chartData.length) return { entrada: 0, saida: 0, servicos: 0, imposto: 0, saldo: 0 };
     
     return chartData.reduce(
       (acc, curr) => ({
         entrada: acc.entrada + curr.entrada,
         saida: acc.saida + curr.saida,
+        servicos: acc.servicos + curr.servicos,
         imposto: acc.imposto + curr.imposto,
         saldo: acc.saldo + curr.saldo,
       }),
-      { entrada: 0, saida: 0, imposto: 0, saldo: 0 }
+      { entrada: 0, saida: 0, servicos: 0, imposto: 0, saldo: 0 }
     );
   }, [chartData]);
 
@@ -231,11 +241,11 @@ export const FiscalEvolutionChart = ({ className }: FiscalEvolutionChartProps) =
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-              Total Impostos
+              <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+              Total Serviços
             </div>
-            <div className="text-lg font-semibold text-orange-600 dark:text-orange-400">
-              {totals.imposto.toLocaleString('pt-BR', {
+            <div className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+              {totals.servicos.toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -245,11 +255,11 @@ export const FiscalEvolutionChart = ({ className }: FiscalEvolutionChartProps) =
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <DollarSign className="h-3 w-3" />
-              Saldo Líquido
+              <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+              Total Impostos
             </div>
-            <div className={`text-lg font-semibold ${totals.saldo >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-              {totals.saldo.toLocaleString('pt-BR', {
+            <div className="text-lg font-semibold text-orange-600 dark:text-orange-400">
+              {totals.imposto.toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -313,6 +323,14 @@ export const FiscalEvolutionChart = ({ className }: FiscalEvolutionChartProps) =
               strokeWidth={2}
               dot={{ fill: 'var(--color-saida)', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, stroke: 'var(--color-saida)', strokeWidth: 2 }}
+            />
+            <Line
+              type="monotone"
+              dataKey="servicos"
+              stroke="var(--color-servicos)"
+              strokeWidth={2}
+              dot={{ fill: 'var(--color-servicos)', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: 'var(--color-servicos)', strokeWidth: 2 }}
             />
             <Line
               type="monotone"
