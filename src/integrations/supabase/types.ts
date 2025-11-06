@@ -110,40 +110,37 @@ export type Database = {
       }
       fiscal_data: {
         Row: {
-          aliquota: number | null
-          base_calculo: number | null
           company_id: string
           created_at: string | null
-          deducoes: number | null
+          entrada: number
           id: string
+          imposto: number
           period: string
-          receita_bruta: number | null
+          rbt12: number
+          saida: number
           updated_at: string | null
-          valor_devido: number | null
         }
         Insert: {
-          aliquota?: number | null
-          base_calculo?: number | null
           company_id: string
           created_at?: string | null
-          deducoes?: number | null
+          entrada?: number
           id?: string
+          imposto?: number
           period: string
-          receita_bruta?: number | null
+          rbt12?: number
+          saida?: number
           updated_at?: string | null
-          valor_devido?: number | null
         }
         Update: {
-          aliquota?: number | null
-          base_calculo?: number | null
           company_id?: string
           created_at?: string | null
-          deducoes?: number | null
+          entrada?: number
           id?: string
+          imposto?: number
           period?: string
-          receita_bruta?: number | null
+          rbt12?: number
+          saida?: number
           updated_at?: string | null
-          valor_devido?: number | null
         }
         Relationships: [
           {
