@@ -19,19 +19,19 @@ export type Database = {
           cnpj: string
           created_at: string | null
           id: string
-          regime: string
+          regime_tributario: string
         }
         Insert: {
           cnpj: string
           created_at?: string | null
           id?: string
-          regime: string
+          regime_tributario: string
         }
         Update: {
           cnpj?: string
           created_at?: string | null
           id?: string
-          regime?: string
+          regime_tributario?: string
         }
         Relationships: []
       }
@@ -41,8 +41,9 @@ export type Database = {
           created_at: string | null
           id: string
           name: string
-          regime: string
-          segment_id: string | null
+          regime_tributario: string
+          responsavel_id: string | null
+          segmento: string | null
           sem_movimento: boolean | null
           updated_at: string | null
         }
@@ -51,8 +52,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           name: string
-          regime: string
-          segment_id?: string | null
+          regime_tributario: string
+          responsavel_id?: string | null
+          segmento?: string | null
           sem_movimento?: boolean | null
           updated_at?: string | null
         }
@@ -61,17 +63,18 @@ export type Database = {
           created_at?: string | null
           id?: string
           name?: string
-          regime?: string
-          segment_id?: string | null
+          regime_tributario?: string
+          responsavel_id?: string | null
+          segmento?: string | null
           sem_movimento?: boolean | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "companies_segment_id_fkey"
-            columns: ["segment_id"]
+            foreignKeyName: "companies_responsavel_id_fkey"
+            columns: ["responsavel_id"]
             isOneToOne: false
-            referencedRelation: "segments"
+            referencedRelation: "responsaveis"
             referencedColumns: ["id"]
           },
         ]
