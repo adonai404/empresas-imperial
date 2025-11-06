@@ -183,6 +183,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
 
     createResponsavelMutation.mutate(newResponsavelName, {
       onSuccess: (data) => {
+        if (!data) return;
         setNewResponsavelName('');
         if (selectedResponsavelCompany) {
           handleResponsavelChange(data.id);

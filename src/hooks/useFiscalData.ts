@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase-client';
 import { toast } from '@/hooks/use-toast';
 import { periodToDate } from '@/lib/periodUtils';
 
@@ -96,7 +96,7 @@ export const useCompanies = () => {
         .order('name');
       
       if (error) throw error;
-      return data as Company[];
+      return data as any as Company[];
     },
   });
 };
@@ -113,7 +113,7 @@ export const useCompaniesWithLatestFiscalData = () => {
       if (error) throw error;
       
       // Process to get only the latest fiscal data for each company
-      const companiesWithLatestData: CompanyWithLatestData[] = data?.map(company => {
+      const companiesWithLatestData: CompanyWithLatestData[] = (data as any)?.map((company: any) => {
         if (company.fiscal_data && company.fiscal_data.length > 0) {
           // Sort by fiscal period to get the most recent
           const sortedFiscalData = company.fiscal_data.sort((a: any, b: any) => {
@@ -153,7 +153,7 @@ export const useCompanyWithData = (companyId: string) => {
         .single();
       
       if (error) throw error;
-      return data as CompanyWithData;
+      return data as any as CompanyWithData;
     },
     enabled: !!companyId,
   });
@@ -164,9 +164,9 @@ export const useFiscalStats = () => {
     queryKey: ['fiscal-stats'],
     queryFn: async () => {
       const [companiesResult, fiscalDataResult] = await Promise.all([
-        supabase.from('companies').select('id, sem_movimento', { count: 'exact' }) as any,
-        supabase.from('fiscal_data').select('entrada, saida, imposto, company_id') as any,
-      ]);
+        supabase.from('companies').select('id, sem_movimento', { count: 'exact' }),
+        supabase.from('fiscal_data').select('entrada, saida, imposto, company_id'),
+      ]) as any;
 
       if (companiesResult.error) throw companiesResult.error;
       if (fiscalDataResult.error) throw fiscalDataResult.error;
@@ -182,20 +182,20 @@ export const useFiscalStats = () => {
       // Filtrar dados de empresas protegidas por senha
       const companiesWithPasswords = await supabase
         .from('companies')
-        .select('id, name, company_passwords!left(id)') as any;
+        .select('id, name, company_passwords!left(id)');
 
-      const protectedCompanyIds = new Set(companiesWithPasswords.data?.map((c: any) => c.id) || []);
+      const protectedCompanyIds = new Set((companiesWithPasswords.data as any)?.map((c: any) => c.id) || []);
       
       // Verificar quais empresas protegidas estão autenticadas
       const authenticatedProtectedIds = new Set();
-      companiesWithPasswords.data?.forEach((company: any) => {
+      (companiesWithPasswords.data as any)?.forEach((company: any) => {
         if (localStorage.getItem(`company_auth_${company.name}`) === 'true') {
           authenticatedProtectedIds.add(company.id);
         }
       });
 
       // Filtrar dados fiscais para incluir apenas empresas não protegidas ou autenticadas
-      const filteredFiscalData = fiscalDataResult.data?.filter((data: any) => {
+      const filteredFiscalData = (fiscalDataResult.data as any)?.filter((data: any) => {
         // Se a empresa não tem senha, incluir
         if (!protectedCompanyIds.has(data.company_id)) {
           return true;
@@ -231,16 +231,16 @@ export const useDeleteCompany = () => {
   return useMutation({
     mutationFn: async (companyId: string) => {
       // First delete all fiscal data for this company
-      const { error: fiscalError } = await supabase
-        .from('fiscal_data')
+      const { error: fiscalError } = await (supabase
+        .from('fiscal_data') as any)
         .delete()
         .eq('company_id', companyId);
 
       if (fiscalError) throw fiscalError;
 
       // Then delete the company
-      const { error: companyError } = await supabase
-        .from('companies')
+      const { error: companyError} = await (supabase
+        .from('companies') as any)
         .delete()
         .eq('id', companyId);
 
@@ -286,13 +286,13 @@ export const useAddCompany = () => {
         console.log('🔍 Procurando regime para CNPJ (sem formatação):', cnpjToSearch);
         
         // Debug: listar todos os CNPJs na tabela de regimes
-        const { data: allRegimes } = await supabase
-          .from('cnpj_regimes')
+        const { data: allRegimes } = await (supabase
+          .from('cnpj_regimes') as any)
           .select('cnpj, regime_tributario');
         console.log('📊 Todos os regimes cadastrados:', allRegimes);
         
-        const { data: cnpjRegime, error: regimeError } = await supabase
-          .from('cnpj_regimes')
+        const { data: cnpjRegime, error: regimeError } = await (supabase
+          .from('cnpj_regimes') as any)
           .select('regime_tributario')
           .eq('cnpj', cnpjToSearch)
           .maybeSingle();
@@ -300,7 +300,7 @@ export const useAddCompany = () => {
         console.log('📋 Resultado da busca:', { cnpjRegime, regimeError });
 
         if (cnpjRegime) {
-          finalRegime = cnpjRegime.regime_tributario;
+          finalRegime = (cnpjRegime as any).regime_tributario;
           console.log('✅ Regime encontrado e aplicado:', finalRegime);
         } else {
           console.log('❌ Nenhum regime encontrado para o CNPJ');
@@ -313,8 +313,8 @@ export const useAddCompany = () => {
         regime_tributario: finalRegime || null
       });
 
-      const { data, error } = await supabase
-        .from('companies')
+      const { data, error } = await (supabase
+        .from('companies') as any)
         .insert({
           name: companyData.name.trim(),
           cnpj: companyData.cnpj?.trim() || null,
@@ -361,8 +361,8 @@ export const useAddFiscalData = () => {
       saida: number;
       imposto: number;
     }) => {
-      const { data: result, error } = await supabase
-        .from('fiscal_data')
+      const { data: result, error } = await (supabase
+        .from('fiscal_data') as any)
         .insert({
           company_id: data.company_id,
           period: data.period.trim(),
@@ -431,8 +431,8 @@ export const useImportCompanyExcel = () => {
       }));
 
       // Insert fiscal data (using upsert to handle duplicates)
-      const { error: fiscalError } = await supabase
-        .from('fiscal_data')
+      const { error: fiscalError } = await (supabase
+        .from('fiscal_data') as any)
         .upsert(fiscalDataRows, { onConflict: 'company_id,period' });
 
       if (fiscalError) throw fiscalError;
@@ -473,8 +473,8 @@ export const useUpdateCompanyStatus = () => {
 
   return useMutation({
     mutationFn: async ({ companyId, sem_movimento }: { companyId: string; sem_movimento: boolean }) => {
-      const { data, error } = await supabase
-        .from('companies')
+      const { data, error } = await (supabase
+        .from('companies') as any)
         .update({ sem_movimento })
         .eq('id', companyId)
         .select()

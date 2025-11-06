@@ -403,6 +403,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
     
     createSegmentMutation.mutate(newSegmentNameFromEdit, {
       onSuccess: (data) => {
+        if (!data) return;
         // Atribuir o novo segmento à empresa que está sendo editada
         setValueEdit('segmento', data.name);
         setIsCreateSegmentFromEditOpen(false);
@@ -417,6 +418,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
     
     createSegmentMutation.mutate(newSegmentNameFromAdd, {
       onSuccess: (data) => {
+        if (!data) return;
         // Atribuir o novo segmento à empresa que está sendo adicionada
         setValue('segmento', data.name);
         setIsCreateSegmentFromAddOpen(false);

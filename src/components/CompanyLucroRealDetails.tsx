@@ -485,12 +485,12 @@ export const CompanyLucroRealDetails = ({
               <Building2 className="h-8 w-8 text-primary" />
               <div>
                 <CardTitle className="text-2xl">{company.name}</CardTitle>
-                <p className="text-muted-foreground">
-                  {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'CNPJ não informado'}
-                  {company.segmento && <span className="ml-2">
-                      <Badge variant="secondary">{company.segmento}</Badge>
-                    </span>}
-                </p>
+                <div className="text-muted-foreground flex items-center gap-2 flex-wrap">
+                  <span>
+                    {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'CNPJ não informado'}
+                  </span>
+                  {company.segmento && <Badge variant="secondary">{company.segmento}</Badge>}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-2">

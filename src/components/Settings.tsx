@@ -370,6 +370,7 @@ export const Settings = ({}: SettingsProps) => {
     
     createSegmentMutation.mutate(newSegmentName, {
       onSuccess: (data) => {
+        if (!data) return;
         // Se havia uma empresa selecionada, atribuir o novo segmento a ela
         if (selectedCompanyForSegment) {
           updateCompanySegmentMutation.mutate({
