@@ -210,48 +210,57 @@ export type Database = {
           cofins: number | null
           company_id: string
           created_at: string | null
-          csll: number | null
-          custos: number | null
-          despesas: number | null
+          csll_primeiro_trimestre: number | null
+          csll_segundo_trimestre: number | null
+          entradas: number | null
+          icms: number | null
           id: string
-          irpj: number | null
-          lucro_liquido: number | null
+          irpj_primeiro_trimestre: number | null
+          irpj_segundo_trimestre: number | null
           period: string
           pis: number | null
-          receita_bruta: number | null
           responsavel_id: string | null
+          saidas: number | null
+          servicos: number | null
+          tvi: number | null
           updated_at: string | null
         }
         Insert: {
           cofins?: number | null
           company_id: string
           created_at?: string | null
-          csll?: number | null
-          custos?: number | null
-          despesas?: number | null
+          csll_primeiro_trimestre?: number | null
+          csll_segundo_trimestre?: number | null
+          entradas?: number | null
+          icms?: number | null
           id?: string
-          irpj?: number | null
-          lucro_liquido?: number | null
+          irpj_primeiro_trimestre?: number | null
+          irpj_segundo_trimestre?: number | null
           period: string
           pis?: number | null
-          receita_bruta?: number | null
           responsavel_id?: string | null
+          saidas?: number | null
+          servicos?: number | null
+          tvi?: number | null
           updated_at?: string | null
         }
         Update: {
           cofins?: number | null
           company_id?: string
           created_at?: string | null
-          csll?: number | null
-          custos?: number | null
-          despesas?: number | null
+          csll_primeiro_trimestre?: number | null
+          csll_segundo_trimestre?: number | null
+          entradas?: number | null
+          icms?: number | null
           id?: string
-          irpj?: number | null
-          lucro_liquido?: number | null
+          irpj_primeiro_trimestre?: number | null
+          irpj_segundo_trimestre?: number | null
           period?: string
           pis?: number | null
-          receita_bruta?: number | null
           responsavel_id?: string | null
+          saidas?: number | null
+          servicos?: number | null
+          tvi?: number | null
           updated_at?: string | null
         }
         Relationships: [
