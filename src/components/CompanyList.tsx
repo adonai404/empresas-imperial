@@ -643,7 +643,7 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
                     </div>
                     {regime.id !== 'responsavel' && (
                       <Badge variant="secondary" className="text-sm">
-                        {companyCount.length} empresa{companyCount.length !== 1 ? 's' : ''}
+                        {Array.isArray(companyCount) ? companyCount.length : 0} empresa{(Array.isArray(companyCount) ? companyCount.length : 0) !== 1 ? 's' : ''}
                       </Badge>
                     )}
                   </div>
