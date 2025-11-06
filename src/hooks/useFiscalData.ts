@@ -1818,17 +1818,12 @@ export interface LucroPresumidoData {
   id: string;
   company_id: string;
   period: string;
-  entradas: number | null;
-  saidas: number | null;
-  servicos: number | null;
+  receita_bruta: number | null;
+  base_calculo: number | null;
   pis: number | null;
   cofins: number | null;
-  icms: number | null;
-  irpj_primeiro_trimestre: number | null;
-  csll_primeiro_trimestre: number | null;
-  irpj_segundo_trimestre: number | null;
-  csll_segundo_trimestre: number | null;
-  tvi: number | null;
+  irpj: number | null;
+  csll: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -1893,34 +1888,24 @@ export const useAddLucroPresumidoData = () => {
     mutationFn: async (data: {
       company_id: string;
       period: string;
-      entradas?: number;
-      saidas?: number;
-      servicos?: number;
+      receita_bruta?: number;
+      base_calculo?: number;
       pis?: number;
       cofins?: number;
-      icms?: number;
-      irpj_primeiro_trimestre?: number;
-      csll_primeiro_trimestre?: number;
-      irpj_segundo_trimestre?: number;
-      csll_segundo_trimestre?: number;
-      tvi?: number;
+      irpj?: number;
+      csll?: number;
     }) => {
       const { data: result, error } = await supabase
         .from('lucro_presumido_data')
         .insert({
           company_id: data.company_id,
           period: data.period.trim(),
-          entradas: data.entradas || null,
-          saidas: data.saidas || null,
-          servicos: data.servicos || null,
+          receita_bruta: data.receita_bruta || null,
+          base_calculo: data.base_calculo || null,
           pis: data.pis || null,
           cofins: data.cofins || null,
-          icms: data.icms || null,
-          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre || null,
-          csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
-          irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
-          csll_segundo_trimestre: data.csll_segundo_trimestre || null,
-          tvi: data.tvi || null,
+          irpj: data.irpj || null,
+          csll: data.csll || null,
         })
         .select()
         .single();
@@ -1954,33 +1939,23 @@ export const useUpdateLucroPresumidoData = () => {
     mutationFn: async (data: {
       id: string;
       period: string;
-      entradas?: number;
-      saidas?: number;
-      servicos?: number;
+      receita_bruta?: number;
+      base_calculo?: number;
       pis?: number;
       cofins?: number;
-      icms?: number;
-      irpj_primeiro_trimestre?: number;
-      csll_primeiro_trimestre?: number;
-      irpj_segundo_trimestre?: number;
-      csll_segundo_trimestre?: number;
-      tvi?: number;
+      irpj?: number;
+      csll?: number;
     }) => {
       const { data: result, error } = await supabase
         .from('lucro_presumido_data')
         .update({
           period: data.period.trim(),
-          entradas: data.entradas || null,
-          saidas: data.saidas || null,
-          servicos: data.servicos || null,
+          receita_bruta: data.receita_bruta || null,
+          base_calculo: data.base_calculo || null,
           pis: data.pis || null,
           cofins: data.cofins || null,
-          icms: data.icms || null,
-          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre || null,
-          csll_primeiro_trimestre: data.csll_primeiro_trimestre || null,
-          irpj_segundo_trimestre: data.irpj_segundo_trimestre || null,
-          csll_segundo_trimestre: data.csll_segundo_trimestre || null,
-          tvi: data.tvi || null,
+          irpj: data.irpj || null,
+          csll: data.csll || null,
         })
         .eq('id', data.id)
         .select()
@@ -2047,40 +2022,36 @@ export const useLucroPresumidoEvolutionData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lucro_presumido_data')
-        .select('period, entradas, saidas, servicos, pis, cofins, icms, irpj_primeiro_trimestre, csll_primeiro_trimestre, irpj_segundo_trimestre, csll_segundo_trimestre')
+        .select('period, receita_bruta, base_calculo, pis, cofins, irpj, csll')
         .eq('company_id', companyId)
         .order('period');
       
       if (error) throw error;
       
       const evolutionData = data?.map(item => {
-        const entradas = Number(item.entradas) || 0;
-        const saidas = Number(item.saidas) || 0;
-        const servicos = Number(item.servicos) || 0;
+        const receitaBruta = Number(item.receita_bruta) || 0;
+        const baseCalculo = Number(item.base_calculo) || 0;
         const pis = Number(item.pis) || 0;
         const cofins = Number(item.cofins) || 0;
-        const icms = Number(item.icms) || 0;
-        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
-        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
-        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
-        const csll2 = Number(item.csll_segundo_trimestre) || 0;
+        const irpj = Number(item.irpj) || 0;
+        const csll = Number(item.csll) || 0;
         
-        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
+        const totalImpostos = pis + cofins + irpj + csll;
         
         return {
           period: item.period,
-          entrada: entradas,
-          saida: saidas,
-          servicos: servicos,
+          entrada: receitaBruta,
+          saida: 0,
+          servicos: 0,
           imposto: totalImpostos,
           pis,
           cofins,
-          icms,
-          irpj_primeiro_trimestre: irpj1,
-          csll_primeiro_trimestre: csll1,
-          irpj_segundo_trimestre: irpj2,
-          csll_segundo_trimestre: csll2,
-          saldo: entradas - saidas
+          icms: 0,
+          irpj_primeiro_trimestre: irpj,
+          csll_primeiro_trimestre: csll,
+          irpj_segundo_trimestre: 0,
+          csll_segundo_trimestre: 0,
+          saldo: receitaBruta
         };
       }).sort((a, b) => {
         const dateA = periodToDate(a.period) || new Date(0);
@@ -2102,17 +2073,12 @@ export const useImportLucroPresumidoExcel = () => {
       empresa: string;
       cnpj: string;
       periodo: string;
-      entradas: number | null;
-      saidas: number | null;
-      servicos: number | null;
+      receita_bruta: number | null;
+      base_calculo: number | null;
       pis: number | null;
       cofins: number | null;
-      icms: number | null;
-      irpj_primeiro_trimestre: number | null;
-      csll_primeiro_trimestre: number | null;
-      irpj_segundo_trimestre: number | null;
-      csll_segundo_trimestre: number | null;
-      tvi: number | null;
+      irpj: number | null;
+      csll: number | null;
       segmento?: string;
     }>) => {
       const validRows = data.filter(row => 
@@ -2165,17 +2131,12 @@ export const useImportLucroPresumidoExcel = () => {
         .map(row => ({
           company_id: companiesMap.get(row.empresa.trim())!,
           period: row.periodo.trim(),
-          entradas: row.entradas,
-          saidas: row.saidas,
-          servicos: row.servicos,
+          receita_bruta: row.receita_bruta,
+          base_calculo: row.base_calculo,
           pis: row.pis,
           cofins: row.cofins,
-          icms: row.icms,
-          irpj_primeiro_trimestre: row.irpj_primeiro_trimestre,
-          csll_primeiro_trimestre: row.csll_primeiro_trimestre,
-          irpj_segundo_trimestre: row.irpj_segundo_trimestre,
-          csll_segundo_trimestre: row.csll_segundo_trimestre,
-          tvi: row.tvi,
+          irpj: row.irpj,
+          csll: row.csll,
         }));
 
       // Insert lucro presumido data
@@ -2221,17 +2182,11 @@ export interface ProdutorRuralData {
   id: string;
   company_id: string;
   period: string;
-  entradas: number | null;
-  saidas: number | null;
-  servicos: number | null;
-  pis: number | null;
-  cofins: number | null;
-  icms: number | null;
-  irpj_primeiro_trimestre: number | null;
-  csll_primeiro_trimestre: number | null;
-  irpj_segundo_trimestre: number | null;
-  csll_segundo_trimestre: number | null;
-  tvi: number | null;
+  receita_bruta: number | null;
+  despesas: number | null;
+  resultado: number | null;
+  funrural: number | null;
+  senar: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -2371,17 +2326,11 @@ export const useImportProdutorRuralExcel = () => {
       const transformedData = dataRows.map(item => ({
         company_id: item.company_id,
         period: item.periodo,
-        entradas: item.entradas ?? null,
-        saidas: item.saidas ?? null,
-        servicos: item.servicos ?? null,
-        pis: item.pis ?? null,
-        cofins: item.cofins ?? null,
-        icms: item.icms ?? null,
-        irpj_primeiro_trimestre: item.irpj_primeiro_trimestre ?? null,
-        csll_primeiro_trimestre: item.csll_primeiro_trimestre ?? null,
-        irpj_segundo_trimestre: item.irpj_segundo_trimestre ?? null,
-        csll_segundo_trimestre: item.csll_segundo_trimestre ?? null,
-        tvi: item.tvi ?? null
+        receita_bruta: item.receita_bruta ?? null,
+        despesas: item.despesas ?? null,
+        resultado: item.resultado ?? null,
+        funrural: item.funrural ?? null,
+        senar: item.senar ?? null,
       }));
       
       const { data, error } = await supabase
@@ -2416,40 +2365,35 @@ export const useProdutorRuralEvolutionData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('produtor_rural_data')
-        .select('period, entradas, saidas, servicos, pis, cofins, icms, irpj_primeiro_trimestre, csll_primeiro_trimestre, irpj_segundo_trimestre, csll_segundo_trimestre')
+        .select('period, receita_bruta, despesas, resultado, funrural, senar')
         .eq('company_id', companyId)
         .order('period');
       
       if (error) throw error;
       
       const evolutionData = data?.map(item => {
-        const entradas = Number(item.entradas) || 0;
-        const saidas = Number(item.saidas) || 0;
-        const servicos = Number(item.servicos) || 0;
-        const pis = Number(item.pis) || 0;
-        const cofins = Number(item.cofins) || 0;
-        const icms = Number(item.icms) || 0;
-        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
-        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
-        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
-        const csll2 = Number(item.csll_segundo_trimestre) || 0;
+        const receitaBruta = Number(item.receita_bruta) || 0;
+        const despesas = Number(item.despesas) || 0;
+        const resultado = Number(item.resultado) || 0;
+        const funrural = Number(item.funrural) || 0;
+        const senar = Number(item.senar) || 0;
         
-        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
+        const totalImpostos = funrural + senar;
         
         return {
           period: item.period,
-          entrada: entradas,
-          saida: saidas,
-          servicos: servicos,
+          entrada: receitaBruta,
+          saida: despesas,
+          servicos: 0,
           imposto: totalImpostos,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre: irpj1,
-          csll_primeiro_trimestre: csll1,
-          irpj_segundo_trimestre: irpj2,
-          csll_segundo_trimestre: csll2,
-          saldo: entradas - saidas
+          pis: funrural,
+          cofins: senar,
+          icms: 0,
+          irpj_primeiro_trimestre: 0,
+          csll_primeiro_trimestre: 0,
+          irpj_segundo_trimestre: 0,
+          csll_segundo_trimestre: 0,
+          saldo: resultado
         };
       }).sort((a, b) => {
         const dateA = periodToDate(a.period) || new Date(0);
