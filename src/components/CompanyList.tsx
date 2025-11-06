@@ -10,11 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment } from '@/hooks/useFiscalData';
-import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet } from 'lucide-react';
+import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { LucroRealList } from './LucroRealList';
+import { ResponsavelList } from './ResponsavelList';
 import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
@@ -604,14 +605,30 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
         </div>
 
         {/* Cards de seleção de regime */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { id: 'lucro_real', label: 'Normais', description: 'Empresas do regime Normal', icon: FileText, color: 'green' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
-            { id: 'produtor_rural', label: 'Produtor Rural', description: 'Empresas do regime Produtor Rural', icon: FileText, color: 'orange' }
+            { id: 'produtor_rural', label: 'Produtor Rural', description: 'Empresas do regime Produtor Rural', icon: FileText, color: 'orange' },
+            { id: 'responsavel', label: 'Por Responsável', description: 'Empresas agrupadas por responsável', icon: User, color: 'blue' }
           ].map((regime) => {
             const IconComponent = regime.icon;
-            const companyCount = getRegimeCompanies(regime.id).length;
+            const companyCount = regime.id === 'responsavel' ? 0 : getRegimeCompanies(regime.id);
+            
+            // Get color classes dynamically
+            const bgColorClass = `p-3 rounded-lg ${
+              regime.color === 'green' ? 'bg-green-100 dark:bg-green-900/20' :
+              regime.color === 'purple' ? 'bg-purple-100 dark:bg-purple-900/20' :
+              regime.color === 'orange' ? 'bg-orange-100 dark:bg-orange-900/20' :
+              'bg-blue-100 dark:bg-blue-900/20'
+            }`;
+            
+            const textColorClass = `${
+              regime.color === 'green' ? 'text-green-600 dark:text-green-400' :
+              regime.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
+              regime.color === 'orange' ? 'text-orange-600 dark:text-orange-400' :
+              'text-blue-600 dark:text-blue-400'
+            }`;
             
             return (
               <Card 
@@ -621,12 +638,14 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <div className={`p-3 rounded-lg bg-${regime.color}-100 dark:bg-${regime.color}-900/20`}>
-                      <IconComponent className={`h-6 w-6 text-${regime.color}-600 dark:text-${regime.color}-400`} />
+                    <div className={bgColorClass}>
+                      <IconComponent className={`h-6 w-6 ${textColorClass}`} />
                     </div>
-                    <Badge variant="secondary" className="text-sm">
-                      {companyCount} empresa{companyCount !== 1 ? 's' : ''}
-                    </Badge>
+                    {regime.id !== 'responsavel' && (
+                      <Badge variant="secondary" className="text-sm">
+                        {companyCount.length} empresa{companyCount.length !== 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -665,6 +684,11 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
         </Card>
       </div>
     );
+  }
+
+  // Se o regime selecionado for "responsavel", mostrar o ResponsavelList
+  if (selectedRegime === 'responsavel') {
+    return <ResponsavelList onSelectCompany={onSelectCompany} onBack={handleBackToRegimeSelection} />;
   }
 
   // Se o regime selecionado for "lucro_real", mostrar o LucroRealList

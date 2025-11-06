@@ -92,11 +92,7 @@ export const useCompanies = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          lucro_real_data(responsavel_id),
-          company_passwords!left(id, password_hash, created_at, updated_at)
-        `)
+        .select('*, lucro_real_data(responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at)')
         .order('name');
       
       if (error) throw error;
@@ -111,11 +107,7 @@ export const useCompaniesWithLatestFiscalData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          fiscal_data(rbt12, entrada, saida, imposto, period, created_at),
-          company_passwords!left(id, password_hash, created_at, updated_at)
-        `)
+        .select('*, fiscal_data(rbt12, entrada, saida, imposto, period, created_at), company_passwords!left(id, password_hash, created_at, updated_at)')
         .order('name');
       
       if (error) throw error;
@@ -156,10 +148,7 @@ export const useCompanyWithData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          fiscal_data(*)
-        `)
+        .select('*, fiscal_data(*)')
         .eq('id', companyId)
         .single();
       
@@ -175,8 +164,8 @@ export const useFiscalStats = () => {
     queryKey: ['fiscal-stats'],
     queryFn: async () => {
       const [companiesResult, fiscalDataResult] = await Promise.all([
-        supabase.from('companies').select('id, sem_movimento', { count: 'exact' }),
-        supabase.from('fiscal_data').select('entrada, saida, imposto, company_id'),
+        supabase.from('companies').select('id, sem_movimento', { count: 'exact' }) as any,
+        supabase.from('fiscal_data').select('entrada, saida, imposto, company_id') as any,
       ]);
 
       if (companiesResult.error) throw companiesResult.error;
@@ -186,32 +175,27 @@ export const useFiscalStats = () => {
       const totalRecords = fiscalDataResult.data?.length || 0;
       
       // Calcular empresas por status
-      const empresasAtivas = companiesResult.data?.filter(company => !company.sem_movimento).length || 0;
+      const empresasAtivas = companiesResult.data?.filter((company: any) => !company.sem_movimento).length || 0;
       const empresasParalisadas = 0; // Por enquanto, todas as empresas com sem_movimento são consideradas "sem movimento"
-      const empresasSemMovimento = companiesResult.data?.filter(company => company.sem_movimento).length || 0;
+      const empresasSemMovimento = companiesResult.data?.filter((company: any) => company.sem_movimento).length || 0;
       
       // Filtrar dados de empresas protegidas por senha
       const companiesWithPasswords = await supabase
         .from('companies')
-        .select(`
-          id,
-          name,
-          company_passwords!left(id)
-        `)
-        .not('company_passwords.id', 'is', null);
+        .select('id, name, company_passwords!left(id)') as any;
 
-      const protectedCompanyIds = new Set(companiesWithPasswords.data?.map(c => c.id) || []);
+      const protectedCompanyIds = new Set(companiesWithPasswords.data?.map((c: any) => c.id) || []);
       
       // Verificar quais empresas protegidas estão autenticadas
       const authenticatedProtectedIds = new Set();
-      companiesWithPasswords.data?.forEach(company => {
+      companiesWithPasswords.data?.forEach((company: any) => {
         if (localStorage.getItem(`company_auth_${company.name}`) === 'true') {
           authenticatedProtectedIds.add(company.id);
         }
       });
 
       // Filtrar dados fiscais para incluir apenas empresas não protegidas ou autenticadas
-      const filteredFiscalData = fiscalDataResult.data?.filter(data => {
+      const filteredFiscalData = fiscalDataResult.data?.filter((data: any) => {
         // Se a empresa não tem senha, incluir
         if (!protectedCompanyIds.has(data.company_id)) {
           return true;
@@ -221,7 +205,7 @@ export const useFiscalStats = () => {
       }) || [];
       
       const totals = filteredFiscalData.reduce(
-        (acc, curr) => ({
+        (acc: any, curr: any) => ({
           entrada: acc.entrada + (curr.entrada || 0),
           saida: acc.saida + (curr.saida || 0),
           imposto: acc.imposto + (curr.imposto || 0),
@@ -751,39 +735,28 @@ export const useFiscalEvolutionData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fiscal_data')
-        .select(`
-          period,
-          entrada,
-          saida,
-          imposto,
-          companies!inner(id, name)
-        `)
-        .order('period');
+        .select('period, entrada, saida, imposto, companies!inner(id, name)')
+        .order('period') as any;
       
       if (error) throw error;
       
       // Filtrar dados de empresas protegidas por senha
       const companiesWithPasswords = await supabase
         .from('companies')
-        .select(`
-          id,
-          name,
-          company_passwords!left(id)
-        `)
-        .not('company_passwords.id', 'is', null);
+        .select('id, name, company_passwords!left(id)') as any;
 
-      const protectedCompanyIds = new Set(companiesWithPasswords.data?.map(c => c.id) || []);
+      const protectedCompanyIds = new Set(companiesWithPasswords.data?.map((c: any) => c.id) || []);
       
       // Verificar quais empresas protegidas estão autenticadas
       const authenticatedProtectedIds = new Set();
-      companiesWithPasswords.data?.forEach(company => {
+      companiesWithPasswords.data?.forEach((company: any) => {
         if (localStorage.getItem(`company_auth_${company.name}`) === 'true') {
           authenticatedProtectedIds.add(company.id);
         }
       });
 
       // Filtrar dados fiscais para incluir apenas empresas não protegidas ou autenticadas
-      const filteredData = data?.filter(item => {
+      const filteredData = data?.filter((item: any) => {
         // Se a empresa não tem senha, incluir
         if (!protectedCompanyIds.has(item.companies.id)) {
           return true;
@@ -795,7 +768,7 @@ export const useFiscalEvolutionData = () => {
       // Agrupar dados por período e calcular totais
       const periodTotals = new Map();
       
-      filteredData.forEach(item => {
+      filteredData.forEach((item: any) => {
         const period = item.period;
         if (!periodTotals.has(period)) {
           periodTotals.set(period, {
@@ -816,14 +789,14 @@ export const useFiscalEvolutionData = () => {
       
       // Converter para array e ordenar por período
       const evolutionData = Array.from(periodTotals.values())
-        .map(item => ({
+        .map((item: any) => ({
           period: item.period,
           entrada: item.entrada,
           saida: item.saida,
           imposto: item.imposto,
           companiesCount: item.companies.size
         }))
-        .sort((a, b) => {
+        .sort((a: any, b: any) => {
           const dateA = periodToDate(a.period) || new Date(0);
           const dateB = periodToDate(b.period) || new Date(0);
           return dateA.getTime() - dateB.getTime();
@@ -840,27 +813,21 @@ export const useCompanyFiscalEvolutionData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('fiscal_data')
-        .select(`
-          period,
-          entrada,
-          saida,
-          imposto,
-          rbt12
-        `)
+        .select('period, entrada, saida, imposto, rbt12')
         .eq('company_id', companyId)
-        .order('period');
+        .order('period') as any;
       
       if (error) throw error;
       
       // Ordenar dados por período
-      const evolutionData = data?.map(item => ({
+      const evolutionData = data?.map((item: any) => ({
         period: item.period,
         entrada: item.entrada || 0,
         saida: item.saida || 0,
         imposto: item.imposto || 0,
         rbt12: item.rbt12 || 0,
         saldo: (item.entrada || 0) - (item.saida || 0)
-      })).sort((a, b) => {
+      })).sort((a: any, b: any) => {
         const dateA = periodToDate(a.period) || new Date(0);
         const dateB = periodToDate(b.period) || new Date(0);
         return dateA.getTime() - dateB.getTime();
@@ -872,61 +839,94 @@ export const useCompanyFiscalEvolutionData = (companyId: string) => {
   });
 };
 
+// Hook para buscar empresas por responsável
+export const useCompaniesByResponsavel = (responsavelId: string) => {
+  return useQuery({
+    queryKey: ['companies-by-responsavel', responsavelId],
+    queryFn: async () => {
+      // Primeiro buscar os IDs das empresas associadas ao responsável
+      const { data: lucroRealData, error: lucroRealError } = await supabase
+        .from('lucro_real_data')
+        .select('company_id')
+        .eq('responsavel_id', responsavelId);
+
+      if (lucroRealError) throw lucroRealError;
+
+      // Extrair os IDs das empresas
+      const companyIds = lucroRealData.map(item => item.company_id);
+
+      // Se não houver empresas associadas, retornar array vazio
+      if (companyIds.length === 0) {
+        return [];
+      }
+
+      // Buscar as empresas com base nos IDs
+      const { data: companies, error: companiesError } = await supabase
+        .from('companies')
+        .select('*')
+        .in('id', companyIds)
+        .order('name');
+
+      if (companiesError) throw companiesError;
+      
+      // Para cada empresa, buscar os dados de lucro_real_data e company_passwords
+      const companiesWithDetails = await Promise.all(companies.map(async (company: any) => {
+        // Buscar dados de lucro_real_data
+        const { data: lucroRealData, error: lucroRealError } = await supabase
+          .from('lucro_real_data')
+          .select('responsavel_id')
+          .eq('company_id', company.id)
+          .maybeSingle();
+        
+        // Buscar dados de company_passwords
+        const { data: passwordData, error: passwordError } = await supabase
+          .from('company_passwords')
+          .select('id, password_hash, created_at, updated_at')
+          .eq('company_id', company.id)
+          .maybeSingle();
+        
+        return {
+          ...company,
+          lucro_real_data: lucroRealData ? [lucroRealData] : [],
+          company_passwords: passwordData || null
+        };
+      }));
+      
+      return companiesWithDetails || [];
+    },
+    enabled: !!responsavelId,
+  });
+};
+
 export const useLucroRealEvolutionData = (companyId: string) => {
   return useQuery({
     queryKey: ['lucro-real-evolution', companyId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lucro_real_data')
-        .select(`
-          period,
-          entradas,
-          saidas,
-          servicos,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre,
-          csll_primeiro_trimestre,
-          irpj_segundo_trimestre,
-          csll_segundo_trimestre
-        `)
+        .select('period, entradas, saidas, servicos, pis, cofins, icms, irpj_primeiro_trimestre, csll_primeiro_trimestre, irpj_segundo_trimestre, csll_segundo_trimestre, tvi, responsavel_id')
         .eq('company_id', companyId)
-        .order('period');
+        .order('period') as any;
       
       if (error) throw error;
       
-      // Ordenar dados por período e calcular totais
-      const evolutionData = data?.map(item => {
-        const entradas = Number(item.entradas) || 0;
-        const saidas = Number(item.saidas) || 0;
-        const servicos = Number(item.servicos) || 0;
-        const pis = Number(item.pis) || 0;
-        const cofins = Number(item.cofins) || 0;
-        const icms = Number(item.icms) || 0;
-        const irpj1 = Number(item.irpj_primeiro_trimestre) || 0;
-        const csll1 = Number(item.csll_primeiro_trimestre) || 0;
-        const irpj2 = Number(item.irpj_segundo_trimestre) || 0;
-        const csll2 = Number(item.csll_segundo_trimestre) || 0;
-        
-        const totalImpostos = pis + cofins + icms + irpj1 + csll1 + irpj2 + csll2;
-        
-        return {
-          period: item.period,
-          entrada: entradas,
-          saida: saidas,
-          servicos: servicos,
-          imposto: totalImpostos,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre: irpj1,
-          csll_primeiro_trimestre: csll1,
-          irpj_segundo_trimestre: irpj2,
-          csll_segundo_trimestre: csll2,
-          saldo: entradas - saidas
-        };
-      }).sort((a, b) => {
+      // Ordenar dados por período
+      const evolutionData = data?.map((item: any) => ({
+        period: item.period,
+        entradas: item.entradas || 0,
+        saidas: item.saidas || 0,
+        servicos: item.servicos || 0,
+        pis: item.pis || 0,
+        cofins: item.cofins || 0,
+        icms: item.icms || 0,
+        irpj_primeiro_trimestre: item.irpj_primeiro_trimestre || 0,
+        csll_primeiro_trimestre: item.csll_primeiro_trimestre || 0,
+        irpj_segundo_trimestre: item.irpj_segundo_trimestre || 0,
+        csll_segundo_trimestre: item.csll_segundo_trimestre || 0,
+        tvi: item.tvi || 0,
+        responsavel_id: item.responsavel_id || null,
+        saldo: (item.entradas || 0) - (item.saidas || 0)
+      })).sort((a: any, b: any) => {
         const dateA = periodToDate(a.period) || new Date(0);
         const dateB = periodToDate(b.period) || new Date(0);
         return dateA.getTime() - dateB.getTime();
@@ -1109,7 +1109,7 @@ export const useAutoAssignRegimes = () => {
       if (result.updated > 0) {
         toast({
           title: 'Regimes aplicados',
-          description: `${result.updated} empresas tiveram seus regimes aplicados automaticamente.`,
+          description: result.updated + ' empresas tiveram seus regimes aplicados automaticamente.',
         });
       }
     },
@@ -1213,7 +1213,7 @@ export const useResponsaveis = () => {
         .order('nome', { ascending: true });
       
       if (error) throw error;
-      return data || [];
+      return (data || []) as Responsavel[];
     },
   });
 };
@@ -1346,7 +1346,7 @@ export const useImportExcel = () => {
 
       for (const row of validRows) {
         // Use CNPJ if available, otherwise generate a unique key from company name
-        const companyKey = row.cnpj && row.cnpj.trim() ? row.cnpj.trim() : `company_${row.empresa.trim().toLowerCase().replace(/\s+/g, '_')}`;
+        const companyKey = row.cnpj && row.cnpj.trim() ? row.cnpj.trim() : 'company_' + row.empresa.trim().toLowerCase().replace(/\s+/g, '_');
         
         if (!companiesMap.has(companyKey)) {
           companiesMap.set(companyKey, {
@@ -1430,13 +1430,13 @@ export const useImportExcel = () => {
       // Create a map of company key to company ID
       const companyKeyToIdMap = new Map();
       companies?.forEach(company => {
-        const companyKey = company.cnpj ? company.cnpj : `company_${company.name.toLowerCase().replace(/\s+/g, '_')}`;
+        const companyKey = company.cnpj ? company.cnpj : 'company_' + company.name.toLowerCase().replace(/\s+/g, '_');
         companyKeyToIdMap.set(companyKey, company.id);
       });
 
       // Prepare fiscal data with null/0 handling
       const fiscalDataRows = validRows.map(row => {
-        const companyKey = row.cnpj && row.cnpj.trim() ? row.cnpj.trim() : `company_${row.empresa.trim().toLowerCase().replace(/\s+/g, '_')}`;
+        const companyKey = row.cnpj && row.cnpj.trim() ? row.cnpj.trim() : 'company_' + row.empresa.trim().toLowerCase().replace(/\s+/g, '_');
         return {
           company_id: companyKeyToIdMap.get(companyKey),
           period: row.periodo || 'Não informado',
@@ -1465,9 +1465,9 @@ export const useImportExcel = () => {
       queryClient.invalidateQueries({ queryKey: ['fiscal-stats'] });
       queryClient.invalidateQueries({ queryKey: ['fiscal-evolution-data'] });
       
-      let description = `${result.importedRecords} registros importados com sucesso.`;
+      let description = result.importedRecords + ' registros importados com sucesso.';
       if (result.skippedRecords > 0) {
-        description += ` ${result.skippedRecords} registros foram ignorados por falta de dados essenciais.`;
+        description += ' ' + result.skippedRecords + ' registros foram ignorados por falta de dados essenciais.';
       }
       
       toast({
@@ -1493,10 +1493,7 @@ export const useLucroRealData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lucro_real_data')
-        .select(`
-          *,
-          companies(id, name, cnpj, segmento)
-        `)
+        .select('*, companies(id, name, cnpj, segmento)')
         .order('period', { ascending: false });
       
       if (error) throw error;
@@ -1511,10 +1508,7 @@ export const useCompanyWithLucroRealData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          lucro_real_data(*)
-        `)
+        .select('*, lucro_real_data(*)')
         .eq('id', companyId)
         .maybeSingle();
       
@@ -1799,9 +1793,9 @@ export const useImportLucroRealExcel = () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['lucro-real-data'] });
       
-      let description = `${result.importedRecords} registros de Lucro Real importados com sucesso.`;
+      let description = result.importedRecords + ' registros de Lucro Real importados com sucesso.';
       if (result.skippedRecords > 0) {
-        description += ` ${result.skippedRecords} registros foram ignorados por falta de dados essenciais.`;
+        description += ' ' + result.skippedRecords + ' registros foram ignorados por falta de dados essenciais.';
       }
       
       toast({
@@ -1849,10 +1843,7 @@ export const useLucroPresumidoData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lucro_presumido_data')
-        .select(`
-          *,
-          companies(id, name, cnpj, segmento)
-        `)
+        .select('*, companies(id, name, cnpj, segmento)')
         .order('period', { ascending: false });
       
       if (error) throw error;
@@ -1867,10 +1858,7 @@ export const useCompanyWithLucroPresumidoData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select(`
-          *,
-          lucro_presumido_data(*)
-        `)
+        .select('*, lucro_presumido_data(*)')
         .eq('id', companyId)
         .maybeSingle();
       
@@ -2059,19 +2047,7 @@ export const useLucroPresumidoEvolutionData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('lucro_presumido_data')
-        .select(`
-          period,
-          entradas,
-          saidas,
-          servicos,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre,
-          csll_primeiro_trimestre,
-          irpj_segundo_trimestre,
-          csll_segundo_trimestre
-        `)
+        .select('period, entradas, saidas, servicos, pis, cofins, icms, irpj_primeiro_trimestre, csll_primeiro_trimestre, irpj_segundo_trimestre, csll_segundo_trimestre')
         .eq('company_id', companyId)
         .order('period');
       
@@ -2220,9 +2196,9 @@ export const useImportLucroPresumidoExcel = () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['lucro-presumido-data'] });
       
-      let description = `${result.importedRecords} registros de Lucro Presumido importados com sucesso.`;
+      let description = result.importedRecords + ' registros de Lucro Presumido importados com sucesso.';
       if (result.skippedRecords > 0) {
-        description += ` ${result.skippedRecords} registros foram ignorados por falta de dados essenciais.`;
+        description += ' ' + result.skippedRecords + ' registros foram ignorados por falta de dados essenciais.';
       }
       
       toast({
@@ -2440,19 +2416,7 @@ export const useProdutorRuralEvolutionData = (companyId: string) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('produtor_rural_data')
-        .select(`
-          period,
-          entradas,
-          saidas,
-          servicos,
-          pis,
-          cofins,
-          icms,
-          irpj_primeiro_trimestre,
-          csll_primeiro_trimestre,
-          irpj_segundo_trimestre,
-          csll_segundo_trimestre
-        `)
+        .select('period, entradas, saidas, servicos, pis, cofins, icms, irpj_primeiro_trimestre, csll_primeiro_trimestre, irpj_segundo_trimestre, csll_segundo_trimestre')
         .eq('company_id', companyId)
         .order('period');
       
