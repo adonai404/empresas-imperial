@@ -61,6 +61,8 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
     
     // Ordenar por período (mais recente primeiro)
     const sortedData = [...company.lucro_real_data].sort((a, b) => {
+      // Validar se ambos os períodos existem
+      if (!a.period || !b.period) return 0;
       return b.period.localeCompare(a.period);
     });
     
