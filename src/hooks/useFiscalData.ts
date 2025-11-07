@@ -107,13 +107,18 @@ export const useCompaniesWithLatestFiscalData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, fiscal_data(rbt12, entrada, saida, imposto, period, created_at), company_passwords!left(id, password_hash, created_at, updated_at)')
+        .select('*, fiscal_data(rbt12, entrada, saida, imposto, period, created_at), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id), produtor_rural_data(id)')
         .order('name');
       
       if (error) throw error;
       
       // Process to get only the latest fiscal data for each company
       const companiesWithLatestData: CompanyWithLatestData[] = (data as any)?.map((company: any) => {
+        // Obter responsavel_id dos dados de lucro_real_data
+        const responsavelId = company.lucro_real_data && company.lucro_real_data.length > 0 
+          ? company.lucro_real_data[0]?.responsavel_id 
+          : null;
+        
         if (company.fiscal_data && company.fiscal_data.length > 0) {
           // Sort by fiscal period to get the most recent
           const sortedFiscalData = company.fiscal_data.sort((a: any, b: any) => {
@@ -125,6 +130,7 @@ export const useCompaniesWithLatestFiscalData = () => {
           
           return {
             ...company,
+            responsavel_id: responsavelId,
             latest_fiscal_data: {
               rbt12: latestData.rbt12 || 0,
               entrada: latestData.entrada || 0,
@@ -134,7 +140,10 @@ export const useCompaniesWithLatestFiscalData = () => {
             }
           };
         }
-        return company;
+        return {
+          ...company,
+          responsavel_id: responsavelId
+        };
       }) || [];
       
       return companiesWithLatestData;
@@ -844,7 +853,7 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
   return useQuery({
     queryKey: ['companies-by-responsavel', responsavelId],
     queryFn: async () => {
-      // Primeiro buscar os IDs das empresas associadas ao responsável
+      // Primeiro buscar os IDs das empresas associadas ao responsável via lucro_real_data
       const { data: lucroRealData, error: lucroRealError } = await supabase
         .from('lucro_real_data')
         .select('company_id')
@@ -852,11 +861,21 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
 
       if (lucroRealError) throw lucroRealError;
 
-      // Extrair os IDs das empresas
-      const companyIds = lucroRealData.map(item => item.company_id);
+      // Buscar os IDs das empresas associadas ao responsável via fiscal_data (para simples nacional)
+      const { data: fiscalData, error: fiscalError } = await supabase
+        .from('fiscal_data')
+        .select('company_id')
+        .eq('responsavel_id', responsavelId);
+
+      if (fiscalError) throw fiscalError;
+
+      // Combinar os IDs das empresas
+      const lucroRealCompanyIds = lucroRealData.map(item => item.company_id);
+      const fiscalCompanyIds = fiscalData?.map((item: any) => item.company_id) || [];
+      const allCompanyIds = [...new Set([...lucroRealCompanyIds, ...fiscalCompanyIds])];
 
       // Se não houver empresas associadas, retornar array vazio
-      if (companyIds.length === 0) {
+      if (allCompanyIds.length === 0) {
         return [];
       }
 
@@ -864,7 +883,7 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
       const { data: companies, error: companiesError } = await supabase
         .from('companies')
         .select('*')
-        .in('id', companyIds)
+        .in('id', allCompanyIds)
         .order('name');
 
       if (companiesError) throw companiesError;

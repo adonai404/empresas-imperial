@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment, useResponsaveis } from '@/hooks/useFiscalData';
 import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
@@ -106,6 +106,7 @@ export const CompanyList = ({
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: segments = [] } = useSegments();
+  const { data: responsaveis = [] } = useResponsaveis();
   const deleteCompanyMutation = useDeleteCompany();
   const addCompanyMutation = useAddCompany();
   const updateCompanyMutation = useUpdateCompany();
@@ -1054,6 +1055,7 @@ export const CompanyList = ({
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Responsável</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
@@ -1095,6 +1097,14 @@ export const CompanyList = ({
                   <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
                     <span className="truncate block text-xs">
                       {company.segmento || 'N/A'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
+                    <span className="truncate block text-xs">
+                      {(() => {
+                        const responsavel = responsaveis.find((r: any) => r.id === (company as any).responsavel_id);
+                        return responsavel?.nome || 'N/A';
+                      })()}
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
