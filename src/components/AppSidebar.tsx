@@ -80,7 +80,6 @@ export function AppSidebar({
                   <SidebarMenuItem key={responsavel.id}>
                     <SidebarMenuButton 
                       onClick={() => {
-                        onSectionChange('companies');
                         // Usar um pequeno atraso para garantir que a seção seja alterada antes de selecionar o responsável
                         setTimeout(() => {
                           if (onResponsavelSelect) {

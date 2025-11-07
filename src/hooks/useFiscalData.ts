@@ -334,7 +334,10 @@ export const useAddCompany = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao salvar empresa:', error);
+        throw error;
+      }
       console.log('✅ Empresa salva com sucesso:', data);
       return data;
     },
@@ -349,6 +352,7 @@ export const useAddCompany = () => {
       });
     },
     onError: (error) => {
+      console.error('❌ Erro detalhado no hook useAddCompany:', error);
       toast({
         title: 'Erro ao adicionar empresa',
         description: error instanceof Error ? error.message : 'Ocorreu um erro ao cadastrar a empresa.',
@@ -867,7 +871,8 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
         .select('company_id')
         .eq('responsavel_id', responsavelId);
 
-      if (fiscalError) throw fiscalError;
+      // Não vamos lançar erro se não houver fiscal_data, pois nem todas as empresas têm dados fiscais nesta tabela
+      // if (fiscalError) throw fiscalError;
 
       // Combinar os IDs das empresas
       const lucroRealCompanyIds = lucroRealData.map(item => item.company_id);

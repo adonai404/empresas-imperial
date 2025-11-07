@@ -305,7 +305,7 @@ export const ResponsavelList = ({
                           </TableCell>
                           <TableCell className="border-r border-border text-center text-foreground w-24">
                             <Badge variant="secondary">
-                              {responsavel.id ? 'Carregando...' : '0'}
+                              {companies.length}
                             </Badge>
                           </TableCell>
                         </TableRow>

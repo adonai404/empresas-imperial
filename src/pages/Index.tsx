@@ -35,8 +35,8 @@ const Index = () => {
   
   const handleResponsavelSelect = (responsavelId: string) => {
     setSelectedResponsavelId(responsavelId);
-    // Forçar a atualização da lista de empresas
-    setActiveSection('companies');
+    // Quando um responsável é selecionado, vamos para a seção de responsáveis
+    setActiveSection('responsavel');
   };
   
   const renderContent = () => {
@@ -63,6 +63,7 @@ const Index = () => {
           onLucroRealSelect={() => setIsLucroRealSection(true)} 
           onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} 
           defaultRegime="responsavel"
+          selectedResponsavelId={selectedResponsavelId}
         />;
       case 'companies':
         if (selectedCompanyId) {
