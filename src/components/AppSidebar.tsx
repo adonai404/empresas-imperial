@@ -1,12 +1,16 @@
 import { useState } from "react";
-import { Upload, Building2, Settings } from "lucide-react";
+import { Upload, Building2, Settings, User } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./ThemeToggle";
+import { useResponsaveis } from "@/hooks/useFiscalData";
+
 interface AppSidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  onResponsavelSelect?: (responsavelId: string) => void;
 }
+
 const sections = [{
   id: "companies",
   title: "Empresas",
@@ -20,9 +24,11 @@ const sections = [{
   title: "Opções",
   icon: Settings
 }];
+
 export function AppSidebar({
   activeSection,
-  onSectionChange
+  onSectionChange,
+  onResponsavelSelect
 }: AppSidebarProps) {
   const {
     state
@@ -30,12 +36,17 @@ export function AppSidebar({
   const location = useLocation();
   const isActive = (sectionId: string) => activeSection === sectionId;
   const isCollapsed = state === 'collapsed';
-  return <Sidebar collapsible="icon" variant="inset" className="border-r border-border w-56 data-[state=collapsed]:w-16">
+  
+  const { data: responsaveis } = useResponsaveis();
+
+  return (
+    <Sidebar collapsible="icon" variant="inset" className="border-r border-border w-56 data-[state=collapsed]:w-16">
       <SidebarHeader className="flex flex-row items-center justify-between p-4">
-        {!isCollapsed && <div>
+        {!isCollapsed && (
+          <div>
             <h2 className="text-lg font-semibold text-sidebar-foreground">Empresas</h2>
-            
-          </div>}
+          </div>
+        )}
         <ThemeToggle />
       </SidebarHeader>
 
@@ -44,15 +55,52 @@ export function AppSidebar({
           <SidebarGroupLabel>Navegação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {sections.map(section => <SidebarMenuItem key={section.id}>
-                  <SidebarMenuButton onClick={() => onSectionChange(section.id)} isActive={isActive(section.id)} className="w-full justify-start">
+              {sections.map(section => (
+                <SidebarMenuItem key={section.id}>
+                  <SidebarMenuButton 
+                    onClick={() => onSectionChange(section.id)} 
+                    isActive={isActive(section.id)} 
+                    className="w-full justify-start"
+                  >
                     <section.icon className="h-4 w-4" />
                     {!isCollapsed && <span>{section.title}</span>}
                   </SidebarMenuButton>
-                </SidebarMenuItem>)}
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        {responsaveis && responsaveis.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Por Responsável</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {responsaveis.map(responsavel => (
+                  <SidebarMenuItem key={responsavel.id}>
+                    <SidebarMenuButton 
+                      onClick={() => {
+                        onSectionChange('companies');
+                        // Usar um pequeno atraso para garantir que a seção seja alterada antes de selecionar o responsável
+                        setTimeout(() => {
+                          if (onResponsavelSelect) {
+                            onResponsavelSelect(responsavel.id);
+                          }
+                        }, 100);
+                      }} 
+                      isActive={false}
+                      className="w-full justify-start"
+                    >
+                      <User className="h-4 w-4" />
+                      {!isCollapsed && <span className="truncate">{responsavel.nome}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
-    </Sidebar>;
+    </Sidebar>
+  );
 }

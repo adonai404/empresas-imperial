@@ -8,14 +8,14 @@ import { useLucroRealEvolutionData } from '@/hooks/useFiscalData';
 import { TrendingUp, TrendingDown, Filter, X, Building2 } from 'lucide-react';
 
 const chartConfig = {
-  entrada: {
+  entradas: {
     label: 'Entradas',
     theme: {
       light: 'hsl(142, 76%, 36%)',
       dark: 'hsl(142, 70%, 45%)',
     },
   },
-  saida: {
+  saidas: {
     label: 'Saídas',
     theme: {
       light: 'hsl(0, 84%, 60%)',
@@ -105,8 +105,8 @@ export const CompanyLucroRealEvolutionChart = ({
 
   const totals = useMemo(() => {
     if (!chartData.length) return { 
-      entrada: 0, 
-      saida: 0, 
+      entradas: 0, 
+      saidas: 0, 
       servicos: 0,
       imposto: 0,
       pis: 0,
@@ -120,21 +120,21 @@ export const CompanyLucroRealEvolutionChart = ({
     
     return chartData.reduce(
       (acc, curr) => ({
-        entrada: acc.entrada + curr.entrada,
-        saida: acc.saida + curr.saida,
-        servicos: acc.servicos + curr.servicos,
-        imposto: acc.imposto + curr.imposto,
-        pis: acc.pis + curr.pis,
-        cofins: acc.cofins + curr.cofins,
-        icms: acc.icms + curr.icms,
-        irpj_primeiro_trimestre: acc.irpj_primeiro_trimestre + curr.irpj_primeiro_trimestre,
-        csll_primeiro_trimestre: acc.csll_primeiro_trimestre + curr.csll_primeiro_trimestre,
-        irpj_segundo_trimestre: acc.irpj_segundo_trimestre + curr.irpj_segundo_trimestre,
-        csll_segundo_trimestre: acc.csll_segundo_trimestre + curr.csll_segundo_trimestre,
+        entradas: acc.entradas + (curr.entradas || 0),
+        saidas: acc.saidas + (curr.saidas || 0),
+        servicos: acc.servicos + (curr.servicos || 0),
+        imposto: acc.imposto + (curr.imposto || 0),
+        pis: acc.pis + (curr.pis || 0),
+        cofins: acc.cofins + (curr.cofins || 0),
+        icms: acc.icms + (curr.icms || 0),
+        irpj_primeiro_trimestre: acc.irpj_primeiro_trimestre + (curr.irpj_primeiro_trimestre || 0),
+        csll_primeiro_trimestre: acc.csll_primeiro_trimestre + (curr.csll_primeiro_trimestre || 0),
+        irpj_segundo_trimestre: acc.irpj_segundo_trimestre + (curr.irpj_segundo_trimestre || 0),
+        csll_segundo_trimestre: acc.csll_segundo_trimestre + (curr.csll_segundo_trimestre || 0),
       }),
       { 
-        entrada: 0, 
-        saida: 0, 
+        entradas: 0, 
+        saidas: 0, 
         servicos: 0,
         imposto: 0,
         pis: 0,
@@ -277,7 +277,7 @@ export const CompanyLucroRealEvolutionChart = ({
               Total Entradas
             </div>
             <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-              {totals.entrada.toLocaleString('pt-BR', {
+              {(totals.entradas || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -291,7 +291,7 @@ export const CompanyLucroRealEvolutionChart = ({
               Total Saídas
             </div>
             <div className="text-lg font-semibold text-red-600 dark:text-red-400">
-              {totals.saida.toLocaleString('pt-BR', {
+              {(totals.saidas || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -305,7 +305,7 @@ export const CompanyLucroRealEvolutionChart = ({
               Total Serviços
             </div>
             <div className="text-lg font-semibold text-purple-600 dark:text-purple-400">
-              {totals.servicos.toLocaleString('pt-BR', {
+              {(totals.servicos || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -319,7 +319,7 @@ export const CompanyLucroRealEvolutionChart = ({
               Total Impostos
             </div>
             <div className="text-lg font-semibold text-orange-600 dark:text-orange-400">
-              {totals.imposto.toLocaleString('pt-BR', {
+              {(totals.imposto || 0).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
                 minimumFractionDigits: 0,
@@ -337,7 +337,7 @@ export const CompanyLucroRealEvolutionChart = ({
                 PIS
               </div>
               <div className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                {totals.pis.toLocaleString('pt-BR', {
+                {(totals.pis || 0).toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
                   minimumFractionDigits: 0,
@@ -351,7 +351,7 @@ export const CompanyLucroRealEvolutionChart = ({
                 COFINS
               </div>
               <div className="text-sm font-semibold text-purple-600 dark:text-purple-400">
-                {totals.cofins.toLocaleString('pt-BR', {
+                {(totals.cofins || 0).toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
                   minimumFractionDigits: 0,
@@ -365,7 +365,7 @@ export const CompanyLucroRealEvolutionChart = ({
                 ICMS
               </div>
               <div className="text-sm font-semibold text-orange-600 dark:text-orange-400">
-                {totals.icms.toLocaleString('pt-BR', {
+                {(totals.icms || 0).toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
                   minimumFractionDigits: 0,
@@ -379,7 +379,7 @@ export const CompanyLucroRealEvolutionChart = ({
                 IRPJ + CSLL
               </div>
               <div className="text-sm font-semibold text-yellow-600 dark:text-yellow-400">
-                {(totals.irpj_primeiro_trimestre + totals.csll_primeiro_trimestre + totals.irpj_segundo_trimestre + totals.csll_segundo_trimestre).toLocaleString('pt-BR', {
+                {((totals.irpj_primeiro_trimestre || 0) + (totals.csll_primeiro_trimestre || 0) + (totals.irpj_segundo_trimestre || 0) + (totals.csll_segundo_trimestre || 0)).toLocaleString('pt-BR', {
                   style: 'currency',
                   currency: 'BRL',
                   minimumFractionDigits: 0,
@@ -432,19 +432,19 @@ export const CompanyLucroRealEvolutionChart = ({
             />
             <Line
               type="monotone"
-              dataKey="entrada"
-              stroke="var(--color-entrada)"
+              dataKey="entradas"
+              stroke="var(--color-entradas)"
               strokeWidth={2}
-              dot={{ fill: 'var(--color-entrada)', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: 'var(--color-entrada)', strokeWidth: 2 }}
+              dot={{ fill: 'var(--color-entradas)', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: 'var(--color-entradas)', strokeWidth: 2 }}
             />
             <Line
               type="monotone"
-              dataKey="saida"
-              stroke="var(--color-saida)"
+              dataKey="saidas"
+              stroke="var(--color-saidas)"
               strokeWidth={2}
-              dot={{ fill: 'var(--color-saida)', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: 'var(--color-saida)', strokeWidth: 2 }}
+              dot={{ fill: 'var(--color-saidas)', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, stroke: 'var(--color-saidas)', strokeWidth: 2 }}
             />
             <Line
               type="monotone"

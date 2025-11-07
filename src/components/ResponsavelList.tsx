@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -16,9 +16,18 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface ResponsavelListProps {
   onSelectCompany?: (companyId: string) => void;
   onBack?: () => void;
+  onLucroRealSelect?: () => void;
+  onProdutorRuralSelect?: () => void;
+  defaultResponsavelId?: string; // Nova propriedade
 }
 
-export const ResponsavelList = ({ onSelectCompany, onBack }: ResponsavelListProps) => {
+export const ResponsavelList = ({ 
+  onSelectCompany, 
+  onBack, 
+  onLucroRealSelect, 
+  onProdutorRuralSelect,
+  defaultResponsavelId
+}: ResponsavelListProps) => {
   const [selectedResponsavel, setSelectedResponsavel] = useState<any>(null);
   const [passwordAuthCompany, setPasswordAuthCompany] = useState<{ id: string; name: string } | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -68,7 +77,23 @@ export const ResponsavelList = ({ onSelectCompany, onBack }: ResponsavelListProp
     
     // Prosseguir normalmente (empresa sem senha)
     if (onSelectCompany) {
-      onSelectCompany(company.id);
+      // Verificar o regime tributário da empresa e direcionar para a aba correta
+      if (company.regime_tributario === 'lucro_real' && onLucroRealSelect) {
+        onLucroRealSelect();
+        // Pequeno atraso para garantir que o estado seja atualizado antes de selecionar a empresa
+        setTimeout(() => {
+          onSelectCompany(company.id);
+        }, 0);
+      } else if (company.regime_tributario === 'produtor_rural' && onProdutorRuralSelect) {
+        onProdutorRuralSelect();
+        // Pequeno atraso para garantir que o estado seja atualizado antes de selecionar a empresa
+        setTimeout(() => {
+          onSelectCompany(company.id);
+        }, 0);
+      } else {
+        // Para empresas de outros regimes (incluindo simples_nacional), abrir na aba padrão
+        onSelectCompany(company.id);
+      }
     }
   };
 
@@ -198,6 +223,16 @@ export const ResponsavelList = ({ onSelectCompany, onBack }: ResponsavelListProp
       </Card>
     );
   }
+
+  // Efeito para selecionar automaticamente um responsável se fornecido
+  useEffect(() => {
+    if (defaultResponsavelId && responsaveis) {
+      const responsavel = responsaveis.find(r => r.id === defaultResponsavelId);
+      if (responsavel) {
+        setSelectedResponsavel(responsavel);
+      }
+    }
+  }, [defaultResponsavelId, responsaveis]);
 
   // Tela inicial de seleção de responsável
   if (!selectedResponsavel) {

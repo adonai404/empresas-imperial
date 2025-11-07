@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,9 @@ interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
   onLucroRealSelect?: () => void;
   onProdutorRuralSelect?: () => void;
+  defaultRegime?: string;
+  selectedResponsavelId?: string | null;
+  onResponsavelBack?: () => void;
 }
 
 interface AddCompanyForm {
@@ -51,8 +54,15 @@ interface FilterState {
   sortOrder: 'asc' | 'desc';
 }
 
-export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRuralSelect }: CompanyListProps) => {
-  const [selectedRegime, setSelectedRegime] = useState<string | null>(null);
+export const CompanyList = ({ 
+  onSelectCompany, 
+  onLucroRealSelect, 
+  onProdutorRuralSelect, 
+  defaultRegime,
+  selectedResponsavelId,
+  onResponsavelBack
+}: CompanyListProps) => {
+  const [selectedRegime, setSelectedRegime] = useState<string | null>(defaultRegime || null);
   const [filters, setFilters] = useState<FilterState>({
     search: '',
     status: 'todas',
@@ -85,6 +95,14 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
   // Estados para funcionalidades de importação/exportação  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Efeito para lidar com a seleção de responsável
+  useEffect(() => {
+    if (selectedResponsavelId) {
+      // Quando um responsável é selecionado, mostrar a lista de responsáveis
+      setSelectedRegime('responsavel');
+    }
+  }, [selectedResponsavelId]);
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: segments = [] } = useSegments();
@@ -690,7 +708,15 @@ export const CompanyList = ({ onSelectCompany, onLucroRealSelect, onProdutorRura
 
   // Se o regime selecionado for "responsavel", mostrar o ResponsavelList
   if (selectedRegime === 'responsavel') {
-    return <ResponsavelList onSelectCompany={onSelectCompany} onBack={handleBackToRegimeSelection} />;
+    return (
+      <ResponsavelList 
+        onSelectCompany={onSelectCompany} 
+        onBack={handleBackToRegimeSelection} 
+        onLucroRealSelect={onLucroRealSelect}
+        onProdutorRuralSelect={onProdutorRuralSelect}
+        defaultResponsavelId={selectedResponsavelId || undefined}
+      />
+    );
   }
 
   // Se o regime selecionado for "lucro_real", mostrar o LucroRealList

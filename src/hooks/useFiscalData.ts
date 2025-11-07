@@ -869,14 +869,21 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
 
       if (companiesError) throw companiesError;
       
-      // Para cada empresa, buscar os dados de lucro_real_data e company_passwords
+      // Para cada empresa, buscar os dados de lucro_real_data, fiscal_data e company_passwords
       const companiesWithDetails = await Promise.all(companies.map(async (company: any) => {
         // Buscar dados de lucro_real_data
-        const { data: lucroRealData, error: lucroRealError } = await supabase
+        const { data: lucroRealDataDetails, error: lucroRealError } = await supabase
           .from('lucro_real_data')
           .select('responsavel_id')
           .eq('company_id', company.id)
           .maybeSingle();
+        
+        // Buscar dados fiscais da empresa
+        const { data: fiscalData, error: fiscalError } = await supabase
+          .from('fiscal_data')
+          .select('*')
+          .eq('company_id', company.id)
+          .order('period', { ascending: false });
         
         // Buscar dados de company_passwords
         const { data: passwordData, error: passwordError } = await supabase
@@ -887,7 +894,8 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
         
         return {
           ...company,
-          lucro_real_data: lucroRealData ? [lucroRealData] : [],
+          lucro_real_data: lucroRealDataDetails ? [lucroRealDataDetails] : [],
+          fiscal_data: fiscalData || [],
           company_passwords: passwordData || null
         };
       }));
@@ -913,19 +921,20 @@ export const useLucroRealEvolutionData = (companyId: string) => {
       // Ordenar dados por período
       const evolutionData = data?.map((item: any) => ({
         period: item.period,
-        entradas: item.entradas || 0,
-        saidas: item.saidas || 0,
-        servicos: item.servicos || 0,
-        pis: item.pis || 0,
-        cofins: item.cofins || 0,
-        icms: item.icms || 0,
-        irpj_primeiro_trimestre: item.irpj_primeiro_trimestre || 0,
-        csll_primeiro_trimestre: item.csll_primeiro_trimestre || 0,
-        irpj_segundo_trimestre: item.irpj_segundo_trimestre || 0,
-        csll_segundo_trimestre: item.csll_segundo_trimestre || 0,
-        tvi: item.tvi || 0,
+        entradas: item.entradas !== null ? item.entradas : 0,
+        saidas: item.saidas !== null ? item.saidas : 0,
+        servicos: item.servicos !== null ? item.servicos : 0,
+        pis: item.pis !== null ? item.pis : 0,
+        cofins: item.cofins !== null ? item.cofins : 0,
+        icms: item.icms !== null ? item.icms : 0,
+        irpj_primeiro_trimestre: item.irpj_primeiro_trimestre !== null ? item.irpj_primeiro_trimestre : 0,
+        csll_primeiro_trimestre: item.csll_primeiro_trimestre !== null ? item.csll_primeiro_trimestre : 0,
+        irpj_segundo_trimestre: item.irpj_segundo_trimestre !== null ? item.irpj_segundo_trimestre : 0,
+        csll_segundo_trimestre: item.csll_segundo_trimestre !== null ? item.csll_segundo_trimestre : 0,
+        tvi: item.tvi !== null ? item.tvi : 0,
         responsavel_id: item.responsavel_id || null,
-        saldo: (item.entradas || 0) - (item.saidas || 0)
+        saldo: (item.entradas !== null ? item.entradas : 0) - (item.saidas !== null ? item.saidas : 0),
+        imposto: (item.pis !== null ? item.pis : 0) + (item.cofins !== null ? item.cofins : 0) + (item.icms !== null ? item.icms : 0) + (item.irpj_primeiro_trimestre !== null ? item.irpj_primeiro_trimestre : 0) + (item.csll_primeiro_trimestre !== null ? item.csll_primeiro_trimestre : 0) + (item.irpj_segundo_trimestre !== null ? item.irpj_segundo_trimestre : 0) + (item.csll_segundo_trimestre !== null ? item.csll_segundo_trimestre : 0)
       })).sort((a: any, b: any) => {
         const dateA = periodToDate(a.period) || new Date(0);
         const dateB = periodToDate(b.period) || new Date(0);
