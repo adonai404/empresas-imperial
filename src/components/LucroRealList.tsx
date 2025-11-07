@@ -53,6 +53,20 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
   // Filtrar apenas empresas do regime lucro_real
   const lucroRealCompanies = companies?.filter(company => company.regime_tributario === 'lucro_real') || [];
 
+  // Função para obter os dados mais recentes de lucro_real_data
+  const getLatestLucroRealData = (company: any) => {
+    if (!company.lucro_real_data || company.lucro_real_data.length === 0) {
+      return null;
+    }
+    
+    // Ordenar por período (mais recente primeiro)
+    const sortedData = [...company.lucro_real_data].sort((a, b) => {
+      return b.period.localeCompare(a.period);
+    });
+    
+    return sortedData[0];
+  };
+
   // Aplicar filtros de busca e segmento
   const filteredCompanies = lucroRealCompanies.filter(company => {
     const matchesSearch = !searchTerm || 
@@ -461,6 +475,9 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                   <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Empresa</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-40 hidden sm:table-cell">CNPJ</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 text-right">Entrada</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 text-right">Saída</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 text-right">Serviços</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-36">Segmento</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-36">Responsável</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
@@ -470,7 +487,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
               <TableBody>
                 {filteredCompanies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
                         <p>
@@ -483,7 +500,10 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredCompanies.map((company, index) => (
+                  filteredCompanies.map((company, index) => {
+                    const latestData = getLatestLucroRealData(company);
+                    
+                    return (
                     <TableRow 
                       key={company.id}
                       className="cursor-pointer hover:bg-accent transition-colors border-b border-border bg-muted/30"
@@ -505,6 +525,21 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                       </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm hidden sm:table-cell whitespace-nowrap">
                         {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'N/A'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
+                        {latestData?.entradas != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.entradas)
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
+                        {latestData?.saidas != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.saidas)
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
+                        {latestData?.servicos != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.servicos)
+                          : '-'}
                       </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm">
                         {company.segmento ? (
@@ -569,7 +604,8 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

@@ -92,7 +92,7 @@ export const useCompanies = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, lucro_real_data(responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at)')
+        .select('*, lucro_real_data(responsavel_id, period, entradas, saidas, servicos), company_passwords!left(id, password_hash, created_at, updated_at)')
         .order('name');
       
       if (error) throw error;
