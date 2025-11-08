@@ -37,33 +37,33 @@ export type Database = {
       }
       companies: {
         Row: {
-          cnpj: string
+          cnpj: string | null
           created_at: string | null
           id: string
           name: string
-          regime_tributario: string
+          regime_tributario: string | null
           responsavel_id: string | null
           segmento: string | null
           sem_movimento: boolean | null
           updated_at: string | null
         }
         Insert: {
-          cnpj: string
+          cnpj?: string | null
           created_at?: string | null
           id?: string
           name: string
-          regime_tributario: string
+          regime_tributario?: string | null
           responsavel_id?: string | null
           segmento?: string | null
           sem_movimento?: boolean | null
           updated_at?: string | null
         }
         Update: {
-          cnpj?: string
+          cnpj?: string | null
           created_at?: string | null
           id?: string
           name?: string
-          regime_tributario?: string
+          regime_tributario?: string | null
           responsavel_id?: string | null
           segmento?: string | null
           sem_movimento?: boolean | null
