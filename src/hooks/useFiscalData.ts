@@ -286,33 +286,22 @@ export const useAddCompany = () => {
       segmento?: string;
       regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
     }) => {
+      // Usar o regime especificado pelo usuário como prioridade
       let finalRegime = companyData.regime_tributario;
 
       // Se não foi especificado um regime e há um CNPJ, verificar se existe regime definido para este CNPJ
       if (!finalRegime && companyData.cnpj) {
         // Remover formatação do CNPJ (pontos, traços, espaços) para comparar apenas números
         const cnpjToSearch = companyData.cnpj.replace(/\D/g, '');
-        console.log('🔍 Procurando regime para CNPJ (sem formatação):', cnpjToSearch);
         
-        // Debug: listar todos os CNPJs na tabela de regimes
-        const { data: allRegimes } = await (supabase
-          .from('cnpj_regimes') as any)
-          .select('cnpj, regime_tributario');
-        console.log('📊 Todos os regimes cadastrados:', allRegimes);
-        
-        const { data: cnpjRegime, error: regimeError } = await (supabase
+        const { data: cnpjRegime } = await (supabase
           .from('cnpj_regimes') as any)
           .select('regime_tributario')
           .eq('cnpj', cnpjToSearch)
           .maybeSingle();
 
-        console.log('📋 Resultado da busca:', { cnpjRegime, regimeError });
-
         if (cnpjRegime) {
           finalRegime = (cnpjRegime as any).regime_tributario;
-          console.log('✅ Regime encontrado e aplicado:', finalRegime);
-        } else {
-          console.log('❌ Nenhum regime encontrado para o CNPJ');
         }
       }
 
