@@ -895,12 +895,12 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
       
       // Para cada empresa, buscar os dados de lucro_real_data, fiscal_data e company_passwords
       const companiesWithDetails = await Promise.all(companies.map(async (company: any) => {
-        // Buscar dados de lucro_real_data
+        // Buscar dados de lucro_real_data com todas as colunas necessárias
         const { data: lucroRealDataDetails, error: lucroRealError } = await supabase
           .from('lucro_real_data')
-          .select('responsavel_id')
+          .select('responsavel_id, period, entradas, saidas, servicos')
           .eq('company_id', company.id)
-          .maybeSingle();
+          .order('period', { ascending: false });
         
         // Buscar dados fiscais da empresa
         const { data: fiscalData, error: fiscalError } = await supabase
@@ -918,7 +918,7 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
         
         return {
           ...company,
-          lucro_real_data: lucroRealDataDetails ? [lucroRealDataDetails] : [],
+          lucro_real_data: lucroRealDataDetails || [],
           fiscal_data: fiscalData || [],
           company_passwords: passwordData || null
         };

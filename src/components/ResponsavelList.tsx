@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Edit, Lock, Trash2, ArrowLeft, Search, Filter, CheckCircle, PauseCircle, AlertCircle, User } from 'lucide-react';
+import { Building2, Edit, Lock, Trash2, ArrowLeft, Search, Filter, CheckCircle, PauseCircle, AlertCircle, User, DollarSign } from 'lucide-react';
 import { useResponsaveis, useCompaniesByResponsavel, useDeleteCompany, useUpdateCompanyStatus, useUpdateCompany, useSegments, useCreateResponsavel } from '@/hooks/useFiscalData';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
@@ -390,8 +390,12 @@ export const ResponsavelList = ({
                   <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Empresa</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-40 hidden sm:table-cell">CNPJ</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 text-right">Entrada</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 text-right">Saída</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-32 text-right">Serviços</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-36">Segmento</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-36">Regime Tributário</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-36">Responsável</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
                   <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
                 </TableRow>
@@ -399,7 +403,7 @@ export const ResponsavelList = ({
               <TableBody>
                 {filteredCompanies.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Building2 className="h-8 w-8 text-muted-foreground/50" />
                         <p>
@@ -412,7 +416,21 @@ export const ResponsavelList = ({
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredCompanies.map((company: any, index: number) => (
+                  filteredCompanies.map((company: any, index: number) => {
+                    // Função para obter os dados mais recentes de lucro_real_data
+                    const getLatestLucroRealData = () => {
+                      if (!company.lucro_real_data || company.lucro_real_data.length === 0) {
+                        return null;
+                      }
+                      
+                      // Os dados já estão ordenados do mais recente para o mais antigo
+                      // então o primeiro elemento é o mais recente
+                      return company.lucro_real_data[0];
+                    };
+
+                    const latestData = getLatestLucroRealData();
+                    
+                    return (
                     <TableRow 
                       key={company.id}
                       className="cursor-pointer hover:bg-accent transition-colors border-b border-border bg-muted/30"
@@ -435,6 +453,21 @@ export const ResponsavelList = ({
                       <TableCell className="border-r border-border text-muted-foreground text-sm hidden sm:table-cell whitespace-nowrap">
                         {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'N/A'}
                       </TableCell>
+                      <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
+                        {latestData?.entradas != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.entradas)
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
+                        {latestData?.saidas != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.saidas)
+                          : '-'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
+                        {latestData?.servicos != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.servicos)
+                          : '-'}
+                      </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm">
                         {company.segmento ? (
                           <Badge variant="secondary" className="text-xs">
@@ -448,6 +481,12 @@ export const ResponsavelList = ({
                             {company.regime_tributario.replace('_', ' ')}
                           </Badge>
                         ) : 'N/A'}
+                      </TableCell>
+                      <TableCell className="border-r border-border text-center w-36">
+                        <div className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400">
+                          <User className="h-3 w-3 mr-1.5" />
+                          {selectedResponsavel?.nome || 'N/A'}
+                        </div>
                       </TableCell>
                       <TableCell className="border-r border-border text-center w-24">
                         <div
@@ -492,7 +531,8 @@ export const ResponsavelList = ({
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
+                    );
+                  })
                 )}
               </TableBody>
             </Table>

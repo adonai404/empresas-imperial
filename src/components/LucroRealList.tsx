@@ -14,6 +14,7 @@ import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
+import { periodToDate } from '@/lib/periodUtils';
 
 interface LucroRealListProps {
   onSelectCompany?: (companyId: string) => void;
@@ -59,11 +60,20 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
       return null;
     }
     
-    // Ordenar por período (mais recente primeiro)
+    // Ordenar por período (mais recente primeiro) usando a função periodToDate
     const sortedData = [...company.lucro_real_data].sort((a, b) => {
       // Validar se ambos os períodos existem
       if (!a.period || !b.period) return 0;
-      return b.period.localeCompare(a.period);
+      
+      // Converter períodos para datas e comparar
+      const dateA = periodToDate(a.period);
+      const dateB = periodToDate(b.period);
+      
+      // Se alguma data for inválida, manter ordem original
+      if (!dateA || !dateB) return 0;
+      
+      // Ordenar em ordem decrescente (mais recente primeiro)
+      return dateB.getTime() - dateA.getTime();
     });
     
     return sortedData[0];
