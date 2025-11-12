@@ -675,7 +675,9 @@ export const useUpdateFiscalData = () => {
       rbt12: number;
       entrada: number;
       saida: number;
+      servicos: number;
       imposto: number;
+      difal: number;
     }) => {
       const { data: result, error } = await supabase
         .from('fiscal_data')
@@ -684,7 +686,9 @@ export const useUpdateFiscalData = () => {
           rbt12: data.rbt12 || 0,
           entrada: data.entrada || 0,
           saida: data.saida || 0,
+          servicos: data.servicos || 0,
           imposto: data.imposto || 0,
+          difal: data.difal || 0,
         })
         .eq('id', data.id)
         .select()
