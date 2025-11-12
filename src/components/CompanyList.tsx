@@ -1112,12 +1112,12 @@ export const CompanyList = ({
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
-                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Responsável</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Saída</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">Imposto</TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Responsável</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
                 <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
               </TableRow>
@@ -1155,18 +1155,6 @@ export const CompanyList = ({
                     <span className="truncate block text-xs">
                       {company.segmento || 'N/A'}
                     </span>
-                  </TableCell>
-                  <TableCell 
-                    className="border-r border-border text-foreground w-24 hidden lg:table-cell cursor-pointer hover:bg-accent/50 transition-colors"
-                    onClick={(e) => handleResponsavelClick(company, e)}
-                    title="Clique para selecionar ou criar responsável"
-                  >
-                    <div className="flex items-center gap-1.5">
-                      <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
-                      <span className="truncate block text-xs">
-                        {getResponsavelNome(company) || 'Selecionar'}
-                      </span>
-                    </div>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
                     <span className="truncate block text-xs">
@@ -1230,6 +1218,18 @@ export const CompanyList = ({
                         }) : 'N/A'
                       }
                     </span>
+                  </TableCell>
+                  <TableCell 
+                    className="border-r border-border text-foreground w-24 hidden lg:table-cell cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={(e) => handleResponsavelClick(company, e)}
+                    title="Clique para selecionar ou criar responsável"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate block text-xs">
+                        {getResponsavelNome(company) || 'Selecionar'}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="border-r border-border text-center w-24">
                     <div
