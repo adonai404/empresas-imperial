@@ -36,7 +36,9 @@ export interface FiscalData {
   rbt12: number;
   entrada: number;
   saida: number;
+  servicos: number;
   imposto: number;
+  difal: number;
   created_at: string;
   updated_at: string;
 }
@@ -81,7 +83,9 @@ export interface CompanyWithLatestData extends Company {
     rbt12: number;
     entrada: number;
     saida: number;
+    servicos: number;
     imposto: number;
+    difal: number;
     period: string;
   };
 }
@@ -107,7 +111,7 @@ export const useCompaniesWithLatestFiscalData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, fiscal_data(rbt12, entrada, saida, imposto, period, created_at), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id), produtor_rural_data(id)')
+        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id), produtor_rural_data(id)')
         .order('name');
       
       if (error) throw error;
@@ -135,7 +139,9 @@ export const useCompaniesWithLatestFiscalData = () => {
               rbt12: latestData.rbt12 || 0,
               entrada: latestData.entrada || 0,
               saida: latestData.saida || 0,
+              servicos: latestData.servicos || 0,
               imposto: latestData.imposto || 0,
+              difal: latestData.difal || 0,
               period: latestData.period || 'N/A'
             }
           };
@@ -361,7 +367,9 @@ export const useAddFiscalData = () => {
       rbt12: number;
       entrada: number;
       saida: number;
+      servicos: number;
       imposto: number;
+      difal: number;
     }) => {
       const { data: result, error } = await (supabase
         .from('fiscal_data') as any)
@@ -371,7 +379,9 @@ export const useAddFiscalData = () => {
           rbt12: data.rbt12 || 0,
           entrada: data.entrada || 0,
           saida: data.saida || 0,
+          servicos: data.servicos || 0,
           imposto: data.imposto || 0,
+          difal: data.difal || 0,
         })
         .select()
         .single();
@@ -410,7 +420,9 @@ export const useImportCompanyExcel = () => {
         rbt12: number | null;
         entrada: number | null;
         saida: number | null;
+        servicos: number | null;
         imposto: number | null;
+        difal: number | null;
       }>
     }) => {
       // Filter out rows without essential data
@@ -429,7 +441,9 @@ export const useImportCompanyExcel = () => {
         rbt12: row.rbt12 || 0,
         entrada: row.entrada || 0,
         saida: row.saida || 0,
+        servicos: row.servicos || 0,
         imposto: row.imposto || 0,
+        difal: row.difal || 0,
       }));
 
       // Insert fiscal data (using upsert to handle duplicates)
