@@ -115,34 +115,43 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string | null
+          difal: number | null
           entrada: number
           id: string
           imposto: number
           period: string
           rbt12: number
+          responsavel_id: string | null
           saida: number
+          servicos: number | null
           updated_at: string | null
         }
         Insert: {
           company_id: string
           created_at?: string | null
+          difal?: number | null
           entrada?: number
           id?: string
           imposto?: number
           period: string
           rbt12?: number
+          responsavel_id?: string | null
           saida?: number
+          servicos?: number | null
           updated_at?: string | null
         }
         Update: {
           company_id?: string
           created_at?: string | null
+          difal?: number | null
           entrada?: number
           id?: string
           imposto?: number
           period?: string
           rbt12?: number
+          responsavel_id?: string | null
           saida?: number
+          servicos?: number | null
           updated_at?: string | null
         }
         Relationships: [
@@ -151,6 +160,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscal_data_responsavel_id_fkey"
+            columns: ["responsavel_id"]
+            isOneToOne: false
+            referencedRelation: "responsaveis"
             referencedColumns: ["id"]
           },
         ]

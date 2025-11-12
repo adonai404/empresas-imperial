@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment, useResponsaveis } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment, useResponsaveis, useCreateResponsavel, useUpdateFiscalDataResponsavel } from '@/hooks/useFiscalData';
 import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
@@ -96,6 +96,11 @@ export const CompanyList = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   
+  // Estados para gerenciamento de responsáveis
+  const [responsavelModalOpen, setResponsavelModalOpen] = useState(false);
+  const [selectedResponsavelCompany, setSelectedResponsavelCompany] = useState<any>(null);
+  const [newResponsavelName, setNewResponsavelName] = useState('');
+  
   // Efeito para lidar com a seleção de responsável
   useEffect(() => {
     if (selectedResponsavelId) {
@@ -113,6 +118,8 @@ export const CompanyList = ({
   const updateStatusMutation = useUpdateCompanyStatus();
   const autoAssignRegimesMutation = useAutoAssignRegimes();
   const createSegmentMutation = useCreateSegment();
+  const createResponsavelMutation = useCreateResponsavel();
+  const updateFiscalDataResponsavelMutation = useUpdateFiscalDataResponsavel();
 
   // Aplicar regimes automaticamente quando as empresas carregarem
   React.useEffect(() => {
@@ -463,6 +470,56 @@ export const CompanyList = ({
     localStorage.removeItem(`company_auth_${companyName}`);
     // Recarregar a página para atualizar o estado
     window.location.reload();
+  };
+
+  // Funções para gerenciar responsáveis
+  const handleResponsavelClick = (company: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedResponsavelCompany(company);
+    setResponsavelModalOpen(true);
+  };
+
+  const handleResponsavelChange = async (responsavelId: string) => {
+    if (!selectedResponsavelCompany) return;
+
+    updateFiscalDataResponsavelMutation.mutate({
+      companyId: selectedResponsavelCompany.id,
+      responsavelId: responsavelId === 'none' ? null : responsavelId
+    }, {
+      onSuccess: () => {
+        setResponsavelModalOpen(false);
+        setSelectedResponsavelCompany(null);
+      }
+    });
+  };
+
+  const handleCreateResponsavel = async () => {
+    if (!newResponsavelName.trim()) {
+      toast({
+        title: "Erro",
+        description: "Digite o nome do responsável.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createResponsavelMutation.mutate(newResponsavelName, {
+      onSuccess: (data) => {
+        if (!data) return;
+        setNewResponsavelName('');
+        if (selectedResponsavelCompany) {
+          handleResponsavelChange(data.id);
+        }
+      }
+    });
+  };
+
+  const getResponsavelNome = (company: any) => {
+    if (!company) return null;
+    const responsavelId = company.responsavel_id;
+    if (!responsavelId) return null;
+    const responsavel = responsaveis.find((r: any) => r.id === responsavelId);
+    return responsavel?.nome || null;
   };
 
   // Funções para gerenciar regimes
@@ -1099,13 +1156,17 @@ export const CompanyList = ({
                       {company.segmento || 'N/A'}
                     </span>
                   </TableCell>
-                  <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
-                    <span className="truncate block text-xs">
-                      {(() => {
-                        const responsavel = responsaveis.find((r: any) => r.id === (company as any).responsavel_id);
-                        return responsavel?.nome || 'N/A';
-                      })()}
-                    </span>
+                  <TableCell 
+                    className="border-r border-border text-foreground w-24 hidden lg:table-cell cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={(e) => handleResponsavelClick(company, e)}
+                    title="Clique para selecionar ou criar responsável"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <User className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate block text-xs">
+                        {getResponsavelNome(company) || 'Selecionar'}
+                      </span>
+                    </div>
                   </TableCell>
                   <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
                     <span className="truncate block text-xs">
@@ -1601,6 +1662,81 @@ export const CompanyList = ({
             className="min-w-[120px]"
           >
             {createSegmentMutation.isPending ? 'Criando...' : 'Criar e Atribuir'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Modal de Seleção de Responsável */}
+    <Dialog open={responsavelModalOpen} onOpenChange={setResponsavelModalOpen}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            Selecionar Responsável
+          </DialogTitle>
+          <DialogDescription>
+            Selecione um responsável existente ou crie um novo para <strong>{selectedResponsavelCompany?.name}</strong>
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Responsável</Label>
+            <Select
+              value={getResponsavelNome(selectedResponsavelCompany) || 'none'}
+              onValueChange={handleResponsavelChange}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um responsável" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhum</SelectItem>
+                {responsaveis.map((responsavel: any) => (
+                  <SelectItem key={responsavel.id} value={responsavel.id}>
+                    {responsavel.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <Label htmlFor="newResponsavel">Criar Novo Responsável</Label>
+            <div className="flex gap-2">
+              <Input
+                id="newResponsavel"
+                placeholder="Nome do responsável"
+                value={newResponsavelName}
+                onChange={(e) => setNewResponsavelName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && newResponsavelName.trim()) {
+                    handleCreateResponsavel();
+                  }
+                }}
+              />
+              <Button
+                onClick={handleCreateResponsavel}
+                disabled={!newResponsavelName.trim() || createResponsavelMutation.isPending}
+              >
+                {createResponsavelMutation.isPending ? 'Criando...' : 'Criar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setResponsavelModalOpen(false);
+              setSelectedResponsavelCompany(null);
+              setNewResponsavelName('');
+            }}
+          >
+            Fechar
           </Button>
         </DialogFooter>
       </DialogContent>

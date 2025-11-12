@@ -111,17 +111,20 @@ export const useCompaniesWithLatestFiscalData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id), produtor_rural_data(id)')
+        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at, responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id), produtor_rural_data(id)')
         .order('name');
       
       if (error) throw error;
       
       // Process to get only the latest fiscal data for each company
       const companiesWithLatestData: CompanyWithLatestData[] = (data as any)?.map((company: any) => {
-        // Obter responsavel_id dos dados de lucro_real_data
-        const responsavelId = company.lucro_real_data && company.lucro_real_data.length > 0 
-          ? company.lucro_real_data[0]?.responsavel_id 
-          : null;
+        // Obter responsavel_id dos dados de lucro_real_data ou fiscal_data
+        let responsavelId = null;
+        if (company.lucro_real_data && company.lucro_real_data.length > 0) {
+          responsavelId = company.lucro_real_data[0]?.responsavel_id;
+        } else if (company.fiscal_data && company.fiscal_data.length > 0) {
+          responsavelId = company.fiscal_data[0]?.responsavel_id;
+        }
         
         if (company.fiscal_data && company.fiscal_data.length > 0) {
           // Sort by fiscal period to get the most recent
@@ -1298,6 +1301,39 @@ export const useUpdateLucroRealResponsavel = () => {
     mutationFn: async ({ companyId, responsavelId }: { companyId: string; responsavelId: string | null }) => {
       const { data, error } = await supabase
         .from('lucro_real_data')
+        .update({ responsavel_id: responsavelId })
+        .eq('company_id', companyId)
+        .select();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['companies-with-latest-data'] });
+      toast({
+        title: "Sucesso",
+        description: "Responsável atualizado com sucesso.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar responsável.",
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+// Hook para atualizar responsável em fiscal_data (Simples Nacional)
+export const useUpdateFiscalDataResponsavel = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: async ({ companyId, responsavelId }: { companyId: string; responsavelId: string | null }) => {
+      const { data, error } = await supabase
+        .from('fiscal_data')
         .update({ responsavel_id: responsavelId })
         .eq('company_id', companyId)
         .select();
