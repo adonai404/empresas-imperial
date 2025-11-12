@@ -26,7 +26,9 @@ interface AddFiscalDataForm {
   rbt12: string;
   entrada: string;
   saida: string;
+  servicos: string;
   imposto: string;
+  difal: string;
 }
 
 interface EditFiscalDataForm {
@@ -34,7 +36,9 @@ interface EditFiscalDataForm {
   rbt12: string;
   entrada: string;
   saida: string;
+  servicos: string;
   imposto: string;
+  difal: string;
 }
 
 export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
@@ -158,16 +162,18 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
   }, [company?.fiscal_data, sortField, sortDirection, filterPeriod, filterYear]);
 
   const totals = useMemo(() => {
-    if (!sortedAndFilteredData) return { entrada: 0, saida: 0, imposto: 0, rbt12: 0 };
+    if (!sortedAndFilteredData) return { entrada: 0, saida: 0, servicos: 0, imposto: 0, difal: 0, rbt12: 0 };
     
     return sortedAndFilteredData.reduce(
       (acc, curr) => ({
         entrada: acc.entrada + (curr.entrada || 0),
         saida: acc.saida + (curr.saida || 0),
+        servicos: acc.servicos + (curr.servicos || 0),
         imposto: acc.imposto + (curr.imposto || 0),
+        difal: acc.difal + (curr.difal || 0),
         rbt12: acc.rbt12 + (curr.rbt12 || 0),
       }),
-      { entrada: 0, saida: 0, imposto: 0, rbt12: 0 }
+      { entrada: 0, saida: 0, servicos: 0, imposto: 0, difal: 0, rbt12: 0 }
     );
   }, [sortedAndFilteredData]);
 
@@ -194,7 +200,9 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
       rbt12: parseFloat(data.rbt12) || 0,
       entrada: parseFloat(data.entrada) || 0,
       saida: parseFloat(data.saida) || 0,
+      servicos: parseFloat(data.servicos) || 0,
       imposto: parseFloat(data.imposto) || 0,
+      difal: parseFloat(data.difal) || 0,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -212,7 +220,9 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
       rbt12: parseFloat(data.rbt12) || 0,
       entrada: parseFloat(data.entrada) || 0,
       saida: parseFloat(data.saida) || 0,
+      servicos: parseFloat(data.servicos) || 0,
       imposto: parseFloat(data.imposto) || 0,
+      difal: parseFloat(data.difal) || 0,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -228,7 +238,9 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
     setValue('rbt12', fiscalData.rbt12?.toString() || '');
     setValue('entrada', fiscalData.entrada?.toString() || '');
     setValue('saida', fiscalData.saida?.toString() || '');
+    setValue('servicos', fiscalData.servicos?.toString() || '');
     setValue('imposto', fiscalData.imposto?.toString() || '');
+    setValue('difal', fiscalData.difal?.toString() || '');
     setIsEditDialogOpen(true);
   };
 
@@ -243,14 +255,18 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
         'RBT12': 100000,
         'Entrada': 50000,
         'Saída': 30000,
-        'Imposto': 5000
+        'Serviços': 10000,
+        'Imposto': 5000,
+        'Difal': 1000
       },
       {
         'Período': 'Fevereiro/2024',
         'RBT12': 120000,
         'Entrada': 60000,
         'Saída': 35000,
-        'Imposto': 6000
+        'Serviços': 12000,
+        'Imposto': 6000,
+        'Difal': 1200
       }
     ];
 
@@ -288,7 +304,9 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
           rbt12: parseNumber(row.RBT12 || row.rbt12),
           entrada: parseNumber(row.Entrada || row.entrada),
           saida: parseNumber(row.Saída || row.saida || row.Saida),
+          servicos: parseNumber(row.Serviços || row.servicos || row.Servicos),
           imposto: parseNumber(row.Imposto || row.imposto),
+          difal: parseNumber(row.Difal || row.difal || row.DIFAL),
         };
       });
 
@@ -470,7 +488,7 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                   <div className="mt-4 p-3 bg-muted/50 rounded-lg">
                     <h4 className="font-semibold mb-2 text-sm">Formato aceito:</h4>
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p><strong>Colunas:</strong> Período, RBT12, Entrada, Saída, Imposto</p>
+                      <p><strong>Colunas:</strong> Período, RBT12, Entrada, Saída, Serviços, Imposto, Difal</p>
                       <p><strong>Obrigatório:</strong> Apenas o Período é obrigatório</p>
                       <p><strong>Valores:</strong> Números em branco serão tratados como 0</p>
                     </div>
@@ -545,12 +563,32 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                         />
                       </div>
                       <div className="space-y-2">
+                        <Label htmlFor="servicos">Serviços</Label>
+                        <Input
+                          id="servicos"
+                          type="number"
+                          step="0.01"
+                          {...register('servicos')}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
                         <Label htmlFor="imposto">Imposto</Label>
                         <Input
                           id="imposto"
                           type="number"
                           step="0.01"
                           {...register('imposto')}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="difal">Difal</Label>
+                        <Input
+                          id="difal"
+                          type="number"
+                          step="0.01"
+                          {...register('difal')}
                           placeholder="0.00"
                         />
                       </div>
@@ -588,7 +626,9 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                   <TableHead className="text-right">RBT12</TableHead>
                   <TableHead className="text-right">Entrada</TableHead>
                   <TableHead className="text-right">Saída</TableHead>
+                  <TableHead className="text-right">Serviços</TableHead>
                   <TableHead className="text-right">Imposto</TableHead>
+                  <TableHead className="text-right">Difal</TableHead>
                   <TableHead className="w-24">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -603,8 +643,14 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                     <TableCell className="text-right text-red-600 dark:text-red-400">
                       {formatCurrency(item.saida || 0)}
                     </TableCell>
+                    <TableCell className="text-right text-blue-600 dark:text-blue-400">
+                      {formatCurrency(item.servicos || 0)}
+                    </TableCell>
                     <TableCell className="text-right text-orange-600 dark:text-orange-400">
                       {formatCurrency(item.imposto || 0)}
+                    </TableCell>
+                    <TableCell className="text-right text-purple-600 dark:text-purple-400">
+                      {formatCurrency(item.difal || 0)}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -653,7 +699,7 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                 ))}
                 {sortedAndFilteredData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       <Calculator className="h-12 w-12 mx-auto mb-4" />
                       <p>Nenhum dado fiscal encontrado</p>
                     </TableCell>
@@ -718,12 +764,32 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                 />
               </div>
               <div className="space-y-2">
+                <Label htmlFor="edit-servicos">Serviços</Label>
+                <Input
+                  id="edit-servicos"
+                  type="number"
+                  step="0.01"
+                  {...registerEdit('servicos')}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
                 <Label htmlFor="edit-imposto">Imposto</Label>
                 <Input
                   id="edit-imposto"
                   type="number"
                   step="0.01"
                   {...registerEdit('imposto')}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-difal">Difal</Label>
+                <Input
+                  id="edit-difal"
+                  type="number"
+                  step="0.01"
+                  {...registerEdit('difal')}
                   placeholder="0.00"
                 />
               </div>
