@@ -115,34 +115,40 @@ export type Database = {
         Row: {
           company_id: string
           created_at: string | null
+          difal: number | null
           entrada: number
           id: string
           imposto: number
           period: string
           rbt12: number
           saida: number
+          servicos: number | null
           updated_at: string | null
         }
         Insert: {
           company_id: string
           created_at?: string | null
+          difal?: number | null
           entrada?: number
           id?: string
           imposto?: number
           period: string
           rbt12?: number
           saida?: number
+          servicos?: number | null
           updated_at?: string | null
         }
         Update: {
           company_id?: string
           created_at?: string | null
+          difal?: number | null
           entrada?: number
           id?: string
           imposto?: number
           period?: string
           rbt12?: number
           saida?: number
+          servicos?: number | null
           updated_at?: string | null
         }
         Relationships: [
