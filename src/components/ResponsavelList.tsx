@@ -417,18 +417,43 @@ export const ResponsavelList = ({
                   </TableRow>
                 ) : (
                   filteredCompanies.map((company: any, index: number) => {
-                    // Função para obter os dados mais recentes de lucro_real_data
-                    const getLatestLucroRealData = () => {
-                      if (!company.lucro_real_data || company.lucro_real_data.length === 0) {
-                        return null;
+                    // Função para obter os dados mais recentes baseado no regime tributário
+                    const getLatestData = () => {
+                      const regime = company.regime_tributario;
+                      
+                      if (regime === 'lucro_real') {
+                        if (!company.lucro_real_data || company.lucro_real_data.length === 0) {
+                          return null;
+                        }
+                        return {
+                          entrada: company.lucro_real_data[0]?.entradas,
+                          saida: company.lucro_real_data[0]?.saidas,
+                          servicos: company.lucro_real_data[0]?.servicos
+                        };
+                      } else if (regime === 'simples_nacional' || regime === 'lucro_presumido') {
+                        if (!company.fiscal_data || company.fiscal_data.length === 0) {
+                          return null;
+                        }
+                        return {
+                          entrada: company.fiscal_data[0]?.entrada,
+                          saida: company.fiscal_data[0]?.saida,
+                          servicos: company.fiscal_data[0]?.servicos
+                        };
+                      } else if (regime === 'produtor_rural') {
+                        if (!company.produtor_rural_data || company.produtor_rural_data.length === 0) {
+                          return null;
+                        }
+                        return {
+                          entrada: company.produtor_rural_data[0]?.despesas,
+                          saida: company.produtor_rural_data[0]?.receita_bruta,
+                          servicos: null // Produtor Rural não tem serviços
+                        };
                       }
                       
-                      // Os dados já estão ordenados do mais recente para o mais antigo
-                      // então o primeiro elemento é o mais recente
-                      return company.lucro_real_data[0];
+                      return null;
                     };
 
-                    const latestData = getLatestLucroRealData();
+                    const latestData = getLatestData();
                     
                     return (
                     <TableRow 
@@ -454,13 +479,13 @@ export const ResponsavelList = ({
                         {company.cnpj ? company.cnpj.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5') : 'N/A'}
                       </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
-                        {latestData?.entradas != null 
-                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.entradas)
+                        {latestData?.entrada != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.entrada)
                           : '-'}
                       </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm text-right">
-                        {latestData?.saidas != null 
-                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.saidas)
+                        {latestData?.saida != null 
+                          ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(latestData.saida)
                           : '-'}
                       </TableCell>
                       <TableCell className="border-r border-border text-muted-foreground text-sm text-right">

@@ -867,7 +867,16 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
   return useQuery({
     queryKey: ['companies-by-responsavel', responsavelId],
     queryFn: async () => {
-      // Primeiro buscar os IDs das empresas associadas ao responsável via lucro_real_data
+      // Buscar empresas diretamente pelo responsavel_id na tabela companies
+      const { data: companiesByResponsavel, error: companiesError } = await supabase
+        .from('companies')
+        .select('*')
+        .eq('responsavel_id', responsavelId)
+        .order('name');
+
+      if (companiesError) throw companiesError;
+
+      // Buscar os IDs das empresas associadas ao responsável via lucro_real_data
       const { data: lucroRealData, error: lucroRealError } = await supabase
         .from('lucro_real_data')
         .select('company_id')
@@ -875,52 +884,57 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
 
       if (lucroRealError) throw lucroRealError;
 
-      // Buscar os IDs das empresas associadas ao responsável via fiscal_data (para simples nacional)
+      // Buscar os IDs das empresas associadas ao responsável via fiscal_data
       const { data: fiscalData, error: fiscalError } = await supabase
         .from('fiscal_data')
         .select('company_id')
         .eq('responsavel_id', responsavelId);
 
-      // Não vamos lançar erro se não houver fiscal_data, pois nem todas as empresas têm dados fiscais nesta tabela
-      // if (fiscalError) throw fiscalError;
-
-      // Combinar os IDs das empresas
-      const lucroRealCompanyIds = lucroRealData.map(item => item.company_id);
+      // Combinar os IDs das empresas de todas as fontes
+      const companiesFromTable = companiesByResponsavel?.map(c => c.id) || [];
+      const lucroRealCompanyIds = lucroRealData?.map(item => item.company_id) || [];
       const fiscalCompanyIds = fiscalData?.map((item: any) => item.company_id) || [];
-      const allCompanyIds = [...new Set([...lucroRealCompanyIds, ...fiscalCompanyIds])];
+      const allCompanyIds = [...new Set([...companiesFromTable, ...lucroRealCompanyIds, ...fiscalCompanyIds])];
 
       // Se não houver empresas associadas, retornar array vazio
       if (allCompanyIds.length === 0) {
         return [];
       }
 
-      // Buscar as empresas com base nos IDs
-      const { data: companies, error: companiesError } = await supabase
+      // Buscar todas as empresas pelos IDs combinados
+      const { data: companies, error: allCompaniesError } = await supabase
         .from('companies')
         .select('*')
         .in('id', allCompanyIds)
         .order('name');
 
-      if (companiesError) throw companiesError;
+      if (allCompaniesError) throw allCompaniesError;
       
-      // Para cada empresa, buscar os dados de lucro_real_data, fiscal_data e company_passwords
+      // Para cada empresa, buscar os dados de lucro_real_data, fiscal_data, produtor_rural_data e company_passwords
       const companiesWithDetails = await Promise.all(companies.map(async (company: any) => {
-        // Buscar dados de lucro_real_data com todas as colunas necessárias
-        const { data: lucroRealDataDetails, error: lucroRealError } = await supabase
+        // Buscar dados de lucro_real_data
+        const { data: lucroRealDataDetails } = await supabase
           .from('lucro_real_data')
           .select('responsavel_id, period, entradas, saidas, servicos')
           .eq('company_id', company.id)
           .order('period', { ascending: false });
         
-        // Buscar dados fiscais da empresa
-        const { data: fiscalData, error: fiscalError } = await supabase
+        // Buscar dados fiscais (Simples Nacional)
+        const { data: fiscalDataDetails } = await supabase
           .from('fiscal_data')
           .select('*')
           .eq('company_id', company.id)
           .order('period', { ascending: false });
         
+        // Buscar dados de produtor rural
+        const { data: produtorRuralDataDetails } = await supabase
+          .from('produtor_rural_data')
+          .select('*')
+          .eq('company_id', company.id)
+          .order('period', { ascending: false });
+        
         // Buscar dados de company_passwords
-        const { data: passwordData, error: passwordError } = await supabase
+        const { data: passwordData } = await supabase
           .from('company_passwords')
           .select('id, password_hash, created_at, updated_at')
           .eq('company_id', company.id)
@@ -929,7 +943,8 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
         return {
           ...company,
           lucro_real_data: lucroRealDataDetails || [],
-          fiscal_data: fiscalData || [],
+          fiscal_data: fiscalDataDetails || [],
+          produtor_rural_data: produtorRuralDataDetails || [],
           company_passwords: passwordData || null
         };
       }));
