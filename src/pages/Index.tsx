@@ -5,7 +5,6 @@ import { ExcelUpload } from '@/components/ExcelUpload';
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
 import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
-import { CompanyProdutorRuralDetails } from '@/components/CompanyProdutorRuralDetails';
 import { Settings } from '@/components/Settings';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -14,7 +13,6 @@ const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>();
   const [activeSection, setActiveSection] = useState('companies');
   const [isLucroRealSection, setIsLucroRealSection] = useState(false);
-  const [isProdutorRuralSection, setIsProdutorRuralSection] = useState(false);
   const [selectedResponsavelId, setSelectedResponsavelId] = useState<string | null>(null);
   
   const handleSelectCompany = (companyId: string) => {
@@ -24,13 +22,12 @@ const Index = () => {
   const handleBackToCompanies = () => {
     setSelectedCompanyId(undefined);
     setIsLucroRealSection(false);
-    setIsProdutorRuralSection(false);
   };
   
   // Nova função para voltar apenas para a empresa selecionada, mantendo o contexto da aba
   const handleBackToPrevious = () => {
     setSelectedCompanyId(undefined);
-    // Não resetamos isLucroRealSection e isProdutorRuralSection para manter o contexto da aba
+    // Não resetamos isLucroRealSection para manter o contexto da aba
   };
   
   const handleResponsavelSelect = (responsavelId: string) => {
@@ -50,8 +47,6 @@ const Index = () => {
             <div className="space-y-4">
               {isLucroRealSection ? (
                 <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} />
-              ) : isProdutorRuralSection ? (
-                <CompanyProdutorRuralDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} />
               ) : (
                 <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToPrevious} />
               )}
@@ -61,7 +56,6 @@ const Index = () => {
         return <CompanyList 
           onSelectCompany={handleSelectCompany} 
           onLucroRealSelect={() => setIsLucroRealSection(true)} 
-          onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} 
           defaultRegime="responsavel"
           selectedResponsavelId={selectedResponsavelId}
         />;
@@ -71,8 +65,6 @@ const Index = () => {
             <div className="space-y-4">
               {isLucroRealSection ? (
                 <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} />
-              ) : isProdutorRuralSection ? (
-                <CompanyProdutorRuralDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} />
               ) : (
                 <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToPrevious} />
               )}
@@ -83,7 +75,6 @@ const Index = () => {
           <CompanyList 
             onSelectCompany={handleSelectCompany} 
             onLucroRealSelect={() => setIsLucroRealSection(true)} 
-            onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} 
             selectedResponsavelId={selectedResponsavelId}
             onResponsavelBack={() => setSelectedResponsavelId(null)}
           />
@@ -95,7 +86,6 @@ const Index = () => {
           <CompanyList 
             onSelectCompany={handleSelectCompany} 
             onLucroRealSelect={() => setIsLucroRealSection(true)} 
-            onProdutorRuralSelect={() => setIsProdutorRuralSection(true)} 
             selectedResponsavelId={selectedResponsavelId}
             onResponsavelBack={() => setSelectedResponsavelId(null)}
           />

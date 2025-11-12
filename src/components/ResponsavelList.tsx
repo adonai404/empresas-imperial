@@ -17,7 +17,6 @@ interface ResponsavelListProps {
   onSelectCompany?: (companyId: string) => void;
   onBack?: () => void;
   onLucroRealSelect?: () => void;
-  onProdutorRuralSelect?: () => void;
   defaultResponsavelId?: string; // Nova propriedade
 }
 
@@ -25,7 +24,6 @@ export const ResponsavelList = ({
   onSelectCompany, 
   onBack, 
   onLucroRealSelect, 
-  onProdutorRuralSelect,
   defaultResponsavelId
 }: ResponsavelListProps) => {
   const [selectedResponsavel, setSelectedResponsavel] = useState<any>(null);
@@ -80,12 +78,6 @@ export const ResponsavelList = ({
       // Verificar o regime tributário da empresa e direcionar para a aba correta
       if (company.regime_tributario === 'lucro_real' && onLucroRealSelect) {
         onLucroRealSelect();
-        // Pequeno atraso para garantir que o estado seja atualizado antes de selecionar a empresa
-        setTimeout(() => {
-          onSelectCompany(company.id);
-        }, 0);
-      } else if (company.regime_tributario === 'produtor_rural' && onProdutorRuralSelect) {
-        onProdutorRuralSelect();
         // Pequeno atraso para garantir que o estado seja atualizado antes de selecionar a empresa
         setTimeout(() => {
           onSelectCompany(company.id);
@@ -159,7 +151,7 @@ export const ResponsavelList = ({
       name: editingCompany.name,
       cnpj: editingCompany.cnpj || undefined,
       segmento: editingCompany.segmento || undefined,
-      regime_tributario: editingCompany.regime_tributario as 'lucro_real' | 'simples_nacional' | 'produtor_rural' || undefined,
+      regime_tributario: editingCompany.regime_tributario as 'lucro_real' | 'simples_nacional' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -438,15 +430,6 @@ export const ResponsavelList = ({
                           entrada: company.fiscal_data[0]?.entrada,
                           saida: company.fiscal_data[0]?.saida,
                           servicos: company.fiscal_data[0]?.servicos
-                        };
-                      } else if (regime === 'produtor_rural') {
-                        if (!company.produtor_rural_data || company.produtor_rural_data.length === 0) {
-                          return null;
-                        }
-                        return {
-                          entrada: company.produtor_rural_data[0]?.despesas,
-                          saida: company.produtor_rural_data[0]?.receita_bruta,
-                          servicos: null // Produtor Rural não tem serviços
                         };
                       }
                       
@@ -786,7 +769,6 @@ export const ResponsavelList = ({
                   <SelectItem value="none">Nenhum</SelectItem>
                   <SelectItem value="lucro_real">Normais</SelectItem>
                   <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                  <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
                 </SelectContent>
               </Select>
             </div>

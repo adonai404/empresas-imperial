@@ -169,7 +169,7 @@ export const LucroRealList = ({ onSelectCompany, onBack }: LucroRealListProps) =
       name: editingCompany.name,
       cnpj: editingCompany.cnpj || undefined,
       segmento: editingCompany.segmento || undefined,
-      regime_tributario: editingCompany.regime_tributario as 'lucro_real' | 'simples_nacional' | 'produtor_rural' || undefined,
+      regime_tributario: editingCompany.regime_tributario as 'lucro_real' | 'simples_nacional' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);

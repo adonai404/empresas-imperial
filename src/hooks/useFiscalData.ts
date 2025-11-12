@@ -12,7 +12,7 @@ export interface Company {
   cnpj: string;
   sem_movimento?: boolean;
   segmento?: string;
-  regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
+  regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional';
   created_at: string;
   updated_at: string;
 }
@@ -111,7 +111,7 @@ export const useCompaniesWithLatestFiscalData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at, responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id), produtor_rural_data(id)')
+        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at, responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id)')
         .order('name');
       
       if (error) throw error;
@@ -293,7 +293,7 @@ export const useAddCompany = () => {
       cnpj?: string; 
       sem_movimento?: boolean;
       segmento?: string;
-      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
+      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional';
     }) => {
       // Usar o regime especificado pelo usuário como prioridade
       let finalRegime = companyData.regime_tributario;
@@ -536,7 +536,7 @@ export const useUpdateCompany = () => {
       name: string; 
       cnpj?: string;
       segmento?: string;
-      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
+      regime_tributario?: 'lucro_real' | 'lucro_presumido' | 'simples_nacional';
     }) => {
       const { data, error } = await supabase
         .from('companies')
@@ -910,7 +910,7 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
 
       if (allCompaniesError) throw allCompaniesError;
       
-      // Para cada empresa, buscar os dados de lucro_real_data, fiscal_data, produtor_rural_data e company_passwords
+      // Para cada empresa, buscar os dados de lucro_real_data, fiscal_data e company_passwords
       const companiesWithDetails = await Promise.all(companies.map(async (company: any) => {
         // Buscar dados de lucro_real_data
         const { data: lucroRealDataDetails } = await supabase
@@ -926,13 +926,6 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
           .eq('company_id', company.id)
           .order('period', { ascending: false });
         
-        // Buscar dados de produtor rural
-        const { data: produtorRuralDataDetails } = await supabase
-          .from('produtor_rural_data')
-          .select('*')
-          .eq('company_id', company.id)
-          .order('period', { ascending: false });
-        
         // Buscar dados de company_passwords
         const { data: passwordData } = await supabase
           .from('company_passwords')
@@ -944,7 +937,6 @@ export const useCompaniesByResponsavel = (responsavelId: string) => {
           ...company,
           lucro_real_data: lucroRealDataDetails || [],
           fiscal_data: fiscalDataDetails || [],
-          produtor_rural_data: produtorRuralDataDetails || [],
           company_passwords: passwordData || null
         };
       }));
@@ -1022,7 +1014,7 @@ export const useSaveCnpjRegime = () => {
   return useMutation({
     mutationFn: async ({ cnpj, regime }: {
       cnpj: string;
-      regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional' | 'produtor_rural';
+      regime: 'lucro_real' | 'lucro_presumido' | 'simples_nacional';
     }) => {
       // Verificar se já existe um regime para este CNPJ
       const { data: existingRegime } = await supabase
@@ -2275,231 +2267,4 @@ export const useImportLucroPresumidoExcel = () => {
 };
 
 // Produtor Rural hooks
-export interface ProdutorRuralData {
-  id: string;
-  company_id: string;
-  period: string;
-  receita_bruta: number | null;
-  despesas: number | null;
-  resultado: number | null;
-  funrural: number | null;
-  senar: number | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CompanyWithProdutorRuralData {
-  id: string;
-  name: string;
-  cnpj: string | null;
-  regime_tributario: string | null;
-  sem_movimento: boolean | null;
-  segmento: string | null;
-  produtor_rural_data?: ProdutorRuralData[];
-}
-
-// Hook to get Produtor Rural data by company
-export const useProdutorRuralDataByCompany = (companyId: string) => {
-  return useQuery({
-    queryKey: ['produtor-rural-data', companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('produtor_rural_data')
-        .select('*')
-        .eq('company_id', companyId)
-        .order('period', { ascending: false });
-      
-      if (error) throw error;
-      return data as ProdutorRuralData[];
-    },
-    enabled: !!companyId
-  });
-};
-
-export const useAddProdutorRuralData = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (data: Omit<ProdutorRuralData, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data: result, error } = await supabase
-        .from('produtor_rural_data')
-        .insert([data])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-data'] });
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-evolution'] });
-      
-      toast({
-        title: 'Dados de Produtor Rural adicionados',
-        description: 'Os dados foram adicionados com sucesso.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro ao adicionar dados',
-        description: error instanceof Error ? error.message : 'Ocorreu um erro ao adicionar os dados.',
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useUpdateProdutorRuralData = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ id, ...data }: Partial<ProdutorRuralData> & { id: string }) => {
-      const { data: result, error } = await supabase
-        .from('produtor_rural_data')
-        .update(data)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return result;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-data'] });
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-evolution'] });
-      
-      toast({
-        title: 'Dados de Produtor Rural atualizados',
-        description: 'Os dados foram atualizados com sucesso.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro ao atualizar dados',
-        description: error instanceof Error ? error.message : 'Ocorreu um erro ao atualizar os dados.',
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useDeleteProdutorRuralData = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('produtor_rural_data')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-data'] });
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-evolution'] });
-      
-      toast({
-        title: 'Dados de Produtor Rural excluídos',
-        description: 'Os dados foram excluídos com sucesso.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro ao excluir dados',
-        description: error instanceof Error ? error.message : 'Ocorreu um erro ao excluir os dados.',
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useImportProdutorRuralExcel = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (dataRows: any[]) => {
-      // Transform data to match the table structure
-      const transformedData = dataRows.map(item => ({
-        company_id: item.company_id,
-        period: item.periodo,
-        receita_bruta: item.receita_bruta ?? null,
-        despesas: item.despesas ?? null,
-        resultado: item.resultado ?? null,
-        funrural: item.funrural ?? null,
-        senar: item.senar ?? null,
-      }));
-      
-      const { data, error } = await supabase
-        .from('produtor_rural_data')
-        .insert(transformedData);
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-data'] });
-      queryClient.invalidateQueries({ queryKey: ['produtor-rural-evolution'] });
-      
-      toast({
-        title: 'Importação concluída',
-        description: 'Os dados foram importados com sucesso.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Erro na importação',
-        description: error instanceof Error ? error.message : 'Ocorreu um erro ao importar os dados.',
-        variant: 'destructive',
-      });
-    },
-  });
-};
-
-export const useProdutorRuralEvolutionData = (companyId: string) => {
-  return useQuery({
-    queryKey: ['produtor-rural-evolution', companyId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('produtor_rural_data')
-        .select('period, receita_bruta, despesas, resultado, funrural, senar')
-        .eq('company_id', companyId)
-        .order('period');
-      
-      if (error) throw error;
-      
-      const evolutionData = data?.map(item => {
-        const receitaBruta = Number(item.receita_bruta) || 0;
-        const despesas = Number(item.despesas) || 0;
-        const resultado = Number(item.resultado) || 0;
-        const funrural = Number(item.funrural) || 0;
-        const senar = Number(item.senar) || 0;
-        
-        const totalImpostos = funrural + senar;
-        
-        return {
-          period: item.period,
-          entrada: receitaBruta,
-          saida: despesas,
-          servicos: 0,
-          imposto: totalImpostos,
-          pis: funrural,
-          cofins: senar,
-          icms: 0,
-          irpj_primeiro_trimestre: 0,
-          csll_primeiro_trimestre: 0,
-          irpj_segundo_trimestre: 0,
-          csll_segundo_trimestre: 0,
-          saldo: resultado
-        };
-      }).sort((a, b) => {
-        const dateA = periodToDate(a.period) || new Date(0);
-        const dateB = periodToDate(b.period) || new Date(0);
-        return dateA.getTime() - dateB.getTime();
-      }) || [];
-      
-      return evolutionData;
-    },
-    enabled: !!companyId,
-  });
-};
+// Final do arquivo - hooks para Produtor Rural removidos

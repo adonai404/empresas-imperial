@@ -24,7 +24,6 @@ import { periodToDate } from '@/lib/periodUtils';
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
   onLucroRealSelect?: () => void;
-  onProdutorRuralSelect?: () => void;
   defaultRegime?: string;
   selectedResponsavelId?: string | null;
   onResponsavelBack?: () => void;
@@ -57,7 +56,6 @@ interface FilterState {
 export const CompanyList = ({ 
   onSelectCompany, 
   onLucroRealSelect, 
-  onProdutorRuralSelect, 
   defaultRegime,
   selectedResponsavelId,
   onResponsavelBack
@@ -144,8 +142,6 @@ export const CompanyList = ({
         return companies.filter(company => company.regime_tributario === 'lucro_real');
       case 'simples_nacional':
         return companies.filter(company => company.regime_tributario === 'simples_nacional');
-      case 'produtor_rural':
-        return companies.filter(company => company.regime_tributario === 'produtor_rural');
       default:
         return companies;
     }
@@ -245,7 +241,7 @@ export const CompanyList = ({
       cnpj: data.cnpj || undefined,
       sem_movimento: false,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'simples_nacional' | 'produtor_rural' || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'simples_nacional' || undefined,
     }, {
       onSuccess: () => {
         setIsAddDialogOpen(false);
@@ -262,7 +258,7 @@ export const CompanyList = ({
       name: data.name,
       cnpj: data.cnpj || undefined,
       segmento: data.segmento || undefined,
-      regime_tributario: data.regime_tributario as 'lucro_real' | 'simples_nacional' | 'produtor_rural' || undefined,
+      regime_tributario: data.regime_tributario as 'lucro_real' | 'simples_nacional' || undefined,
     }, {
       onSuccess: () => {
         setIsEditDialogOpen(false);
@@ -526,8 +522,7 @@ export const CompanyList = ({
   const getRegimeLabel = (regime: string) => {
     const labels = {
       'lucro_real': 'Normais',
-      'simples_nacional': 'Simples Nacional',
-      'produtor_rural': 'Produtor Rural'
+      'simples_nacional': 'Simples Nacional'
     };
     return labels[regime as keyof typeof labels] || regime;
   };
@@ -536,9 +531,6 @@ export const CompanyList = ({
     setSelectedRegime(regime);
     if (regime === 'lucro_real' && onLucroRealSelect) {
       onLucroRealSelect();
-    }
-    if (regime === 'produtor_rural' && onProdutorRuralSelect) {
-      onProdutorRuralSelect();
     }
   };
 
@@ -683,11 +675,10 @@ export const CompanyList = ({
         </div>
 
         {/* Cards de seleção de regime */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             { id: 'lucro_real', label: 'Normais', description: 'Empresas do regime Normal', icon: FileText, color: 'green' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
-            { id: 'produtor_rural', label: 'Produtor Rural', description: 'Empresas do regime Produtor Rural', icon: FileText, color: 'orange' },
             { id: 'responsavel', label: 'Por Responsável', description: 'Empresas agrupadas por responsável', icon: User, color: 'blue' }
           ].map((regime) => {
             const IconComponent = regime.icon;
@@ -744,7 +735,7 @@ export const CompanyList = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{getRegimeCompanies('lucro_real').length}</p>
                 <p className="text-sm text-muted-foreground">Normais</p>
@@ -752,10 +743,6 @@ export const CompanyList = ({
               <div className="text-center">
                 <p className="text-2xl font-bold text-purple-600">{getRegimeCompanies('simples_nacional').length}</p>
                 <p className="text-sm text-muted-foreground">Simples Nacional</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-orange-600">{getRegimeCompanies('produtor_rural').length}</p>
-                <p className="text-sm text-muted-foreground">Produtor Rural</p>
               </div>
             </div>
           </CardContent>
@@ -771,7 +758,6 @@ export const CompanyList = ({
         onSelectCompany={onSelectCompany} 
         onBack={handleBackToRegimeSelection} 
         onLucroRealSelect={onLucroRealSelect}
-        onProdutorRuralSelect={onProdutorRuralSelect}
         defaultResponsavelId={selectedResponsavelId || undefined}
       />
     );
@@ -909,7 +895,6 @@ export const CompanyList = ({
                     <SelectContent>
                       <SelectItem value="lucro_real">Normais</SelectItem>
                       <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                      <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1453,7 +1438,6 @@ export const CompanyList = ({
                 <SelectItem value="none">Nenhum</SelectItem>
                 <SelectItem value="lucro_real">Normais</SelectItem>
                 <SelectItem value="simples_nacional">Simples Nacional</SelectItem>
-                <SelectItem value="produtor_rural">Produtor Rural</SelectItem>
               </SelectContent>
             </Select>
           </div>
