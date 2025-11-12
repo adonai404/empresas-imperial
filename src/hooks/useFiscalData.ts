@@ -1339,6 +1339,12 @@ export const useUpdateFiscalDataResponsavel = () => {
         .select();
       
       if (error) throw error;
+      
+      // Verifica se algum registro foi atualizado
+      if (!data || data.length === 0) {
+        throw new Error('Esta empresa não possui dados fiscais cadastrados. Adicione dados fiscais antes de atribuir um responsável.');
+      }
+      
       return data;
     },
     onSuccess: () => {
