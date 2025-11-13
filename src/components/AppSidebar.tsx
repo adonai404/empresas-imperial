@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Building2, Settings, User } from "lucide-react";
+import { Upload, Building2, Settings, User, Wrench } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./ThemeToggle";
@@ -19,6 +19,10 @@ const sections = [{
   id: "import",
   title: "Importação",
   icon: Upload
+}, {
+  id: "utilities",
+  title: "Utilitários",
+  icon: Wrench
 }, {
   id: "settings",
   title: "Opções",
