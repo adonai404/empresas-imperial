@@ -80,7 +80,7 @@ const Index = () => {
             onResponsavelBack={() => setSelectedResponsavelId(null)}
           />
         );
-      case 'utilities':
+      case 'systems':
         return <Systems />;
       case 'settings':
         return <Settings />;
@@ -114,12 +114,14 @@ const Index = () => {
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas por Responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas')}
                 {activeSection === 'settings' && 'Configurações'}
+                {activeSection === 'systems' && 'Sistemas'}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {activeSection === 'import' && 'Importe dados de planilhas Excel'}
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por regime tributário')}
                 {activeSection === 'settings' && 'Gerencie senhas de acesso e configurações de segurança'}
+                {activeSection === 'systems' && 'Gerencie seus sistemas e links de acesso'}
               </p>
             </div>
           </header>

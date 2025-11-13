@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export interface SystemLink {
   id: string;
@@ -25,7 +26,7 @@ export const useSystems = () => {
     queryKey: ["systems"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("systems")
+        .from("systems" as any)
         .select(`
           *,
           system_links (*)
@@ -33,7 +34,7 @@ export const useSystems = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      return data as System[];
+      return data as unknown as System[];
     },
   });
 };
@@ -43,7 +44,7 @@ export const useAddSystem = () => {
   return useMutation({
     mutationFn: async (system: { title: string; description?: string }) => {
       const { data, error } = await supabase
-        .from("systems")
+        .from("systems" as any)
         .insert(system)
         .select()
         .single();
@@ -53,6 +54,10 @@ export const useAddSystem = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["systems"] });
+      toast.success("Sistema adicionado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao adicionar sistema");
     },
   });
 };
@@ -70,7 +75,7 @@ export const useUpdateSystem = () => {
       description?: string;
     }) => {
       const { data, error } = await supabase
-        .from("systems")
+        .from("systems" as any)
         .update({ title, description })
         .eq("id", id)
         .select()
@@ -81,6 +86,10 @@ export const useUpdateSystem = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["systems"] });
+      toast.success("Sistema atualizado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar sistema");
     },
   });
 };
@@ -89,12 +98,16 @@ export const useDeleteSystem = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("systems").delete().eq("id", id);
+      const { error } = await supabase.from("systems" as any).delete().eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["systems"] });
+      toast.success("Sistema deletado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao deletar sistema");
     },
   });
 };
@@ -109,7 +122,7 @@ export const useAddSystemLink = () => {
       icon?: string;
     }) => {
       const { data, error } = await supabase
-        .from("system_links")
+        .from("system_links" as any)
         .insert(link)
         .select()
         .single();
@@ -119,6 +132,10 @@ export const useAddSystemLink = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["systems"] });
+      toast.success("Link adicionado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao adicionar link");
     },
   });
 };
@@ -138,7 +155,7 @@ export const useUpdateSystemLink = () => {
       icon?: string;
     }) => {
       const { data, error } = await supabase
-        .from("system_links")
+        .from("system_links" as any)
         .update({ title, url, icon })
         .eq("id", id)
         .select()
@@ -149,6 +166,10 @@ export const useUpdateSystemLink = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["systems"] });
+      toast.success("Link atualizado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao atualizar link");
     },
   });
 };
@@ -157,12 +178,16 @@ export const useDeleteSystemLink = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("system_links").delete().eq("id", id);
+      const { error } = await supabase.from("system_links" as any).delete().eq("id", id);
 
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["systems"] });
+      toast.success("Link deletado com sucesso!");
+    },
+    onError: () => {
+      toast.error("Erro ao deletar link");
     },
   });
 };
