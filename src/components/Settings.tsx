@@ -67,10 +67,6 @@ export const Settings = ({}: SettingsProps) => {
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: cnpjRegimes = [] } = useCnpjRegimes();
   const { data: segments = [] } = useSegments();
-  
-  // Debug: verificar dados carregados
-  console.log('📊 Total de CNPJs carregados:', cnpjRegimes.length);
-  console.log('📋 Primeiros 5 registros:', cnpjRegimes.slice(0, 5));
   const setPasswordMutation = useSetCompanyPassword();
   const removePasswordMutation = useRemoveCompanyPassword();
   const saveCnpjRegimeMutation = useSaveCnpjRegime();
@@ -153,9 +149,7 @@ export const Settings = ({}: SettingsProps) => {
   };
 
   const getRegimeCompanies = (regime: string) => {
-    const filtered = cnpjRegimes.filter(cr => cr.regime === regime);
-    console.log(`🔍 Filtrando regime "${regime}":`, filtered.length, 'encontrados');
-    return filtered;
+    return cnpjRegimes.filter(cr => cr.regime === regime);
   };
 
   // Funções para Kanban
