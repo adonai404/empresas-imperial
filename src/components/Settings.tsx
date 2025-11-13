@@ -239,10 +239,13 @@ export const Settings = ({}: SettingsProps) => {
         const errors: string[] = [];
 
         jsonData.forEach((row: any, index: number) => {
-          const cnpj = String(row.CNPJ || '').replace(/\D/g, '');
+          const rawCnpj = String(row.CNPJ || '').replace(/\D/g, '');
+          
+          // Preencher com zeros à esquerda se necessário
+          const cnpj = rawCnpj.padStart(14, '0');
           const regime = String(row.Regime || '').toLowerCase().replace(/\s+/g, '_');
 
-          if (cnpj.length !== 14) {
+          if (cnpj.length !== 14 || rawCnpj.length > 14) {
             errors.push(`Linha ${index + 2}: CNPJ inválido (${row.CNPJ})`);
             return;
           }
@@ -252,8 +255,8 @@ export const Settings = ({}: SettingsProps) => {
             return;
           }
 
+          // Ignorar duplicatas silenciosamente ao invés de mostrar erro
           if (cnpjRegimes.some(cr => cr.cnpj === cnpj)) {
-            errors.push(`Linha ${index + 2}: CNPJ já existe (${cnpj})`);
             return;
           }
 
