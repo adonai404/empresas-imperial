@@ -998,12 +998,23 @@ export const useCnpjRegimes = () => {
         .select('cnpj, regime_tributario')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Erro ao buscar cnpj_regimes:', error);
+        throw error;
+      }
       
-      return data?.map(item => ({
+      console.log('✅ Dados brutos do banco:', data?.length, 'registros');
+      console.log('📝 Primeiros 3 registros brutos:', data?.slice(0, 3));
+      
+      const mapped = data?.map(item => ({
         cnpj: item.cnpj,
         regime: item.regime_tributario
       })) || [];
+      
+      console.log('🔄 Dados mapeados:', mapped.length, 'registros');
+      console.log('📝 Primeiros 3 mapeados:', mapped.slice(0, 3));
+      
+      return mapped;
     },
   });
 };
