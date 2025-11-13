@@ -29,6 +29,10 @@ const utilitiesSubSections = [{
   id: "systems",
   title: "Sistemas",
   icon: Wrench
+}, {
+  id: "pdf-import",
+  title: "Importar PDFs",
+  icon: Upload
 }];
 
 export function AppSidebar({

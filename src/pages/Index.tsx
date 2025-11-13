@@ -7,6 +7,7 @@ import { CompanyDetails } from '@/components/CompanyDetails';
 import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
 import { Settings } from '@/components/Settings';
 import { Systems } from '@/components/Systems';
+import { PdfBatchUpload } from '@/components/PdfBatchUpload';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -82,6 +83,8 @@ const Index = () => {
         );
       case 'systems':
         return <Systems />;
+      case 'pdf-import':
+        return <PdfBatchUpload />;
       case 'settings':
         return <Settings />;
       default:
