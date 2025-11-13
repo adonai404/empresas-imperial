@@ -196,8 +196,10 @@ export const Settings = ({}: SettingsProps) => {
   // Funções para importação/exportação
   const downloadTemplate = () => {
     const templateData = [
-      { CNPJ: '00000000000100', Regime: 'lucro_real' },
-      { CNPJ: '00000000000200', Regime: 'simples_nacional' }
+      { CNPJ: '00000000000100', Regime: 'Normais' },
+      { CNPJ: '00000000000200', Regime: 'Simples Nacional' },
+      { CNPJ: '12345678000195', Regime: 'Lucro Real' },
+      { CNPJ: '98765432000100', Regime: 'Simples' }
     ];
 
     const ws = XLSX.utils.json_to_sheet(templateData);
@@ -208,7 +210,7 @@ export const Settings = ({}: SettingsProps) => {
     
     toast({
       title: "Template baixado",
-      description: "O template foi baixado com sucesso. Preencha com os dados das suas empresas.",
+      description: "Aceita: Normais, Lucro Real, Simples Nacional ou Simples. CNPJs podem ter menos de 14 dígitos.",
     });
   };
 
@@ -234,36 +236,51 @@ export const Settings = ({}: SettingsProps) => {
           return;
         }
 
-        const validRegimes = ['lucro_real', 'simples_nacional'];
         const importedRegimes: Array<{ cnpj: string, regime: 'lucro_real' | 'simples_nacional' }> = [];
         const errors: string[] = [];
+        const skipped = { duplicates: 0, invalid: 0 };
 
         jsonData.forEach((row: any, index: number) => {
           const rawCnpj = String(row.CNPJ || '').replace(/\D/g, '');
           
           // Preencher com zeros à esquerda se necessário
           const cnpj = rawCnpj.padStart(14, '0');
-          const regime = String(row.Regime || '').toLowerCase().replace(/\s+/g, '_');
+          let regimeRaw = String(row.Regime || '').toLowerCase().trim();
+          
+          // Normalizar regime (aceitar diferentes formatos)
+          const regimeMap: Record<string, 'lucro_real' | 'simples_nacional'> = {
+            'lucro_real': 'lucro_real',
+            'lucro real': 'lucro_real',
+            'normais': 'lucro_real',
+            'normal': 'lucro_real',
+            'simples_nacional': 'simples_nacional',
+            'simples nacional': 'simples_nacional',
+            'simples': 'simples_nacional'
+          };
+          
+          const regime = regimeMap[regimeRaw];
 
-          if (cnpj.length !== 14 || rawCnpj.length > 14) {
-            errors.push(`Linha ${index + 2}: CNPJ inválido (${row.CNPJ})`);
+          // Validar CNPJ
+          if (cnpj.length !== 14 || rawCnpj.length > 14 || rawCnpj.length === 0) {
+            errors.push(`Linha ${index + 2}: CNPJ inválido (${row.CNPJ || 'vazio'})`);
+            skipped.invalid++;
             return;
           }
 
-          if (!validRegimes.includes(regime)) {
-            errors.push(`Linha ${index + 2}: Regime inválido (${row.Regime}). Use: Normais ou Simples Nacional`);
+          // Validar regime
+          if (!regime) {
+            errors.push(`Linha ${index + 2}: Regime inválido (${row.Regime}). Use: Normais, Lucro Real, Simples Nacional ou Simples`);
+            skipped.invalid++;
             return;
           }
 
-          // Ignorar duplicatas silenciosamente ao invés de mostrar erro
+          // Ignorar duplicatas silenciosamente
           if (cnpjRegimes.some(cr => cr.cnpj === cnpj)) {
+            skipped.duplicates++;
             return;
           }
 
-          importedRegimes.push({
-            cnpj,
-            regime: regime as 'lucro_real' | 'simples_nacional'
-          });
+          importedRegimes.push({ cnpj, regime });
         });
 
         // Salvar no banco de dados em lote
@@ -273,19 +290,26 @@ export const Settings = ({}: SettingsProps) => {
             saveCnpjRegimeMutation.mutate(regimeData);
           });
           
+          const summary = [`✓ ${importedRegimes.length} importado(s)`];
+          if (skipped.duplicates > 0) summary.push(`${skipped.duplicates} duplicata(s) ignorada(s)`);
+          if (errors.length > 0) summary.push(`${errors.length} com erro`);
+          
           toast({
-            title: "Importação iniciada",
-            description: `${importedRegimes.length} empresa(s) sendo processada(s).`,
+            title: "Importação concluída",
+            description: summary.join(' • '),
+          });
+        } else {
+          toast({
+            title: "Nenhum registro importado",
+            description: skipped.duplicates > 0 
+              ? `${skipped.duplicates} duplicata(s) ignorada(s). ${errors.length} com erro.`
+              : `${errors.length} registro(s) com erro.`,
+            variant: "destructive",
           });
         }
 
         if (errors.length > 0) {
-          toast({
-            title: "Avisos na importação",
-            description: `${errors.length} linha(s) com problemas. Verifique os dados.`,
-            variant: "destructive",
-          });
-          console.warn('Erros na importação:', errors);
+          console.warn('Detalhes dos erros:', errors);
         }
 
       } catch (error) {
