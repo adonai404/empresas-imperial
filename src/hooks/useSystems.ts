@@ -8,6 +8,8 @@ export interface SystemLink {
   title: string;
   url: string;
   icon?: string;
+  username?: string;
+  password?: string;
   order_index: number;
   created_at: string;
 }
@@ -120,6 +122,8 @@ export const useAddSystemLink = () => {
       title: string;
       url: string;
       icon?: string;
+      username?: string;
+      password?: string;
     }) => {
       const { data, error } = await supabase
         .from("system_links" as any)
@@ -148,15 +152,19 @@ export const useUpdateSystemLink = () => {
       title,
       url,
       icon,
+      username,
+      password,
     }: {
       id: string;
       title: string;
       url: string;
       icon?: string;
+      username?: string;
+      password?: string;
     }) => {
       const { data, error } = await supabase
         .from("system_links" as any)
-        .update({ title, url, icon })
+        .update({ title, url, icon, username, password })
         .eq("id", id)
         .select()
         .single();
