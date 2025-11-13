@@ -6,6 +6,7 @@ import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
 import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
 import { Settings } from '@/components/Settings';
+import { Systems } from '@/components/Systems';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -79,6 +80,8 @@ const Index = () => {
             onResponsavelBack={() => setSelectedResponsavelId(null)}
           />
         );
+      case 'utilities':
+        return <Systems />;
       case 'settings':
         return <Settings />;
       default:
