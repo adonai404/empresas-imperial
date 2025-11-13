@@ -20,13 +20,15 @@ const sections = [{
   title: "Importação",
   icon: Upload
 }, {
-  id: "utilities",
-  title: "Utilitários",
-  icon: Wrench
-}, {
   id: "settings",
   title: "Opções",
   icon: Settings
+}];
+
+const utilitiesSubSections = [{
+  id: "systems",
+  title: "Sistemas",
+  icon: Wrench
 }];
 
 export function AppSidebar({
@@ -68,6 +70,26 @@ export function AppSidebar({
                   >
                     <section.icon className="h-4 w-4" />
                     {!isCollapsed && <span>{section.title}</span>}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Utilitários</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {utilitiesSubSections.map(subSection => (
+                <SidebarMenuItem key={subSection.id}>
+                  <SidebarMenuButton 
+                    onClick={() => onSectionChange(subSection.id)} 
+                    isActive={isActive(subSection.id)} 
+                    className="w-full justify-start"
+                  >
+                    <subSection.icon className="h-4 w-4" />
+                    {!isCollapsed && <span>{subSection.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
