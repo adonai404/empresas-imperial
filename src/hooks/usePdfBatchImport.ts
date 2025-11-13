@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 import { PdfFileState, ProcessingStatus, ExtractedFiscalData, ImportSummary } from '@/types/pdfImport';
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configurar o worker do PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+// Configurar o worker do PDF.js usando unpkg como CDN alternativo
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 export const usePdfBatchImport = () => {
   const [files, setFiles] = useState<PdfFileState[]>([]);
