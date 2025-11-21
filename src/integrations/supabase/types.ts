@@ -426,6 +426,24 @@ export type Database = {
         }
         Relationships: []
       }
+      se_aplica_options: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       segments: {
         Row: {
           created_at: string | null
