@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   useOperationalTasks,
   useAddOperationalTask,
@@ -20,6 +21,8 @@ import {
   useDeleteCompetencia,
   Competencia,
 } from "@/hooks/useCompetencias";
+import { useSeAplicaOptions, useAddSeAplicaOption } from "@/hooks/useSeAplicaOptions";
+import { useResponsaveis, useAddResponsavel } from "@/hooks/useResponsaveis";
 
 export function OperationalCalendar() {
   const [selectedCompetencia, setSelectedCompetencia] = useState<string | null>(null);
@@ -36,15 +39,23 @@ export function OperationalCalendar() {
     responsaveis: "",
     order_index: 0,
   });
+  const [newSeAplica, setNewSeAplica] = useState("");
+  const [newResponsavel, setNewResponsavel] = useState("");
+  const [showNewSeAplica, setShowNewSeAplica] = useState(false);
+  const [showNewResponsavel, setShowNewResponsavel] = useState(false);
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
   const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
+  const { data: seAplicaOptions } = useSeAplicaOptions();
+  const { data: responsaveis } = useResponsaveis();
   const addCompetencia = useAddCompetencia();
   const updateCompetencia = useUpdateCompetencia();
   const deleteCompetencia = useDeleteCompetencia();
   const addTask = useAddOperationalTask();
   const updateTask = useUpdateOperationalTask();
   const deleteTask = useDeleteOperationalTask();
+  const addSeAplicaOption = useAddSeAplicaOption();
+  const addResponsavel = useAddResponsavel();
 
   const resetCompetenciaForm = () => {
     setCompetenciaFormData({ nome: "" });
@@ -60,6 +71,10 @@ export function OperationalCalendar() {
       order_index: 0,
     });
     setEditingTask(null);
+    setNewSeAplica("");
+    setNewResponsavel("");
+    setShowNewSeAplica(false);
+    setShowNewResponsavel(false);
   };
 
   const handleOpenCompetenciaDialog = (competencia?: Competencia) => {
@@ -316,23 +331,131 @@ export function OperationalCalendar() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="se_aplica">Se Aplica *</Label>
-                  <Input
-                    id="se_aplica"
-                    placeholder="Ex: SN Serviços, SN Comércio, Lucro Real"
+                  <Select
                     value={taskFormData.se_aplica}
-                    onChange={(e) => setTaskFormData({ ...taskFormData, se_aplica: e.target.value })}
-                    required
-                  />
+                    onValueChange={(value) => {
+                      if (value === "__new__") {
+                        setShowNewSeAplica(true);
+                      } else {
+                        setTaskFormData({ ...taskFormData, se_aplica: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione ou crie novo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seAplicaOptions?.map((option) => (
+                        <SelectItem key={option.id} value={option.nome}>
+                          {option.nome}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__new__">
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          Criar novo
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showNewSeAplica && (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        placeholder="Nova opção"
+                        value={newSeAplica}
+                        onChange={(e) => setNewSeAplica(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          if (newSeAplica.trim()) {
+                            await addSeAplicaOption.mutateAsync(newSeAplica.trim());
+                            setTaskFormData({ ...taskFormData, se_aplica: newSeAplica.trim() });
+                            setNewSeAplica("");
+                            setShowNewSeAplica(false);
+                          }
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowNewSeAplica(false);
+                          setNewSeAplica("");
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="responsaveis">Responsáveis *</Label>
-                  <Input
-                    id="responsaveis"
-                    placeholder="Ex: Alan / Aglison / Adonai"
+                  <Select
                     value={taskFormData.responsaveis}
-                    onChange={(e) => setTaskFormData({ ...taskFormData, responsaveis: e.target.value })}
-                    required
-                  />
+                    onValueChange={(value) => {
+                      if (value === "__new__") {
+                        setShowNewResponsavel(true);
+                      } else {
+                        setTaskFormData({ ...taskFormData, responsaveis: value });
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione ou crie novo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {responsaveis?.map((responsavel) => (
+                        <SelectItem key={responsavel.id} value={responsavel.nome}>
+                          {responsavel.nome}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="__new__">
+                        <div className="flex items-center gap-2">
+                          <Plus className="h-4 w-4" />
+                          Criar novo
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showNewResponsavel && (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        placeholder="Novo responsável"
+                        value={newResponsavel}
+                        onChange={(e) => setNewResponsavel(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          if (newResponsavel.trim()) {
+                            await addResponsavel.mutateAsync(newResponsavel.trim());
+                            setTaskFormData({ ...taskFormData, responsaveis: newResponsavel.trim() });
+                            setNewResponsavel("");
+                            setShowNewResponsavel(false);
+                          }
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowNewResponsavel(false);
+                          setNewResponsavel("");
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="order_index">Ordem</Label>
