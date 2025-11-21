@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Calendar, FolderOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Badge } from "@/components/ui/badge";
 import {
   useOperationalTasks,
   useAddOperationalTask,
@@ -36,13 +39,14 @@ export function OperationalCalendar() {
     periodo: "",
     tarefa: "",
     se_aplica: "",
-    responsaveis: "",
+    responsaveis: [] as string[],
     order_index: 0,
   });
   const [newSeAplica, setNewSeAplica] = useState("");
   const [newResponsavel, setNewResponsavel] = useState("");
   const [showNewSeAplica, setShowNewSeAplica] = useState(false);
   const [showNewResponsavel, setShowNewResponsavel] = useState(false);
+  const [isResponsaveisOpen, setIsResponsaveisOpen] = useState(false);
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
   const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
@@ -67,7 +71,7 @@ export function OperationalCalendar() {
       periodo: "",
       tarefa: "",
       se_aplica: "",
-      responsaveis: "",
+      responsaveis: [],
       order_index: 0,
     });
     setEditingTask(null);
@@ -75,6 +79,7 @@ export function OperationalCalendar() {
     setNewResponsavel("");
     setShowNewSeAplica(false);
     setShowNewResponsavel(false);
+    setIsResponsaveisOpen(false);
   };
 
   const handleOpenCompetenciaDialog = (competencia?: Competencia) => {
@@ -94,7 +99,7 @@ export function OperationalCalendar() {
         periodo: task.periodo,
         tarefa: task.tarefa,
         se_aplica: task.se_aplica,
-        responsaveis: task.responsaveis,
+        responsaveis: task.responsaveis ? task.responsaveis.split(", ") : [],
         order_index: task.order_index,
       });
     } else {
@@ -125,6 +130,7 @@ export function OperationalCalendar() {
 
     const taskData = {
       ...taskFormData,
+      responsaveis: taskFormData.responsaveis.join(", "),
       competencia_id: selectedCompetencia,
     };
     
@@ -395,33 +401,77 @@ export function OperationalCalendar() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="responsaveis">Responsáveis *</Label>
-                  <Select
-                    value={taskFormData.responsaveis}
-                    onValueChange={(value) => {
-                      if (value === "__new__") {
-                        setShowNewResponsavel(true);
-                      } else {
-                        setTaskFormData({ ...taskFormData, responsaveis: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione ou crie novo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {responsaveis?.map((responsavel) => (
-                        <SelectItem key={responsavel.id} value={responsavel.nome}>
-                          {responsavel.nome}
-                        </SelectItem>
+                  <Popover open={isResponsaveisOpen} onOpenChange={setIsResponsaveisOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                      >
+                        {taskFormData.responsaveis.length > 0
+                          ? `${taskFormData.responsaveis.length} selecionado(s)`
+                          : "Selecione responsáveis"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar responsável..." />
+                        <CommandEmpty>Nenhum responsável encontrado.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {responsaveis?.map((responsavel) => {
+                            const isSelected = taskFormData.responsaveis.includes(responsavel.nome);
+                            return (
+                              <CommandItem
+                                key={responsavel.id}
+                                onSelect={() => {
+                                  const newResponsaveis = isSelected
+                                    ? taskFormData.responsaveis.filter((r) => r !== responsavel.nome)
+                                    : [...taskFormData.responsaveis, responsavel.nome];
+                                  setTaskFormData({ ...taskFormData, responsaveis: newResponsaveis });
+                                }}
+                              >
+                                <div className="flex items-center gap-2 w-full">
+                                  <div className={`flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary border-primary' : 'border-input'}`}>
+                                    {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                                  </div>
+                                  <span>{responsavel.nome}</span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                          <CommandItem
+                            onSelect={() => {
+                              setShowNewResponsavel(true);
+                              setIsResponsaveisOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Plus className="h-4 w-4" />
+                              Criar novo responsável
+                            </div>
+                          </CommandItem>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {taskFormData.responsaveis.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {taskFormData.responsaveis.map((responsavel) => (
+                        <Badge key={responsavel} variant="secondary" className="gap-1">
+                          {responsavel}
+                          <X
+                            className="h-3 w-3 cursor-pointer"
+                            onClick={() => {
+                              setTaskFormData({
+                                ...taskFormData,
+                                responsaveis: taskFormData.responsaveis.filter((r) => r !== responsavel),
+                              });
+                            }}
+                          />
+                        </Badge>
                       ))}
-                      <SelectItem value="__new__">
-                        <div className="flex items-center gap-2">
-                          <Plus className="h-4 w-4" />
-                          Criar novo
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                    </div>
+                  )}
                   {showNewResponsavel && (
                     <div className="flex gap-2 mt-2">
                       <Input
@@ -435,9 +485,13 @@ export function OperationalCalendar() {
                         onClick={async () => {
                           if (newResponsavel.trim()) {
                             await addResponsavel.mutateAsync(newResponsavel.trim());
-                            setTaskFormData({ ...taskFormData, responsaveis: newResponsavel.trim() });
+                            setTaskFormData({ 
+                              ...taskFormData, 
+                              responsaveis: [...taskFormData.responsaveis, newResponsavel.trim()] 
+                            });
                             setNewResponsavel("");
                             setShowNewResponsavel(false);
+                            setIsResponsaveisOpen(true);
                           }
                         }}
                       >
@@ -450,6 +504,7 @@ export function OperationalCalendar() {
                         onClick={() => {
                           setShowNewResponsavel(false);
                           setNewResponsavel("");
+                          setIsResponsaveisOpen(true);
                         }}
                       >
                         Cancelar
