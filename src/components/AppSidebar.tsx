@@ -18,10 +18,6 @@ const sections = [{
   title: "Empresas",
   icon: Building2
 }, {
-  id: "import",
-  title: "Importação",
-  icon: Upload
-}, {
   id: "settings",
   title: "Opções",
   icon: Settings
@@ -30,10 +26,6 @@ const utilitiesSubSections = [{
   id: "systems",
   title: "Sistemas",
   icon: Wrench
-}, {
-  id: "pdf-import",
-  title: "Importar PDFs",
-  icon: Upload
 }, {
   id: "operational-calendar",
   title: "Calendário de Tarefas",

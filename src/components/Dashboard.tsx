@@ -49,20 +49,6 @@ export const Dashboard = ({ onNavigate }: DashboardProps) => {
       color: 'text-blue-600 dark:text-blue-400'
     },
     {
-      id: 'import',
-      title: 'Importar Dados',
-      description: 'Importe dados fiscais via planilhas Excel',
-      icon: Upload,
-      color: 'text-green-600 dark:text-green-400'
-    },
-    {
-      id: 'pdf-import',
-      title: 'Importar PDFs',
-      description: 'Importe múltiplos PDFs fiscais em lote',
-      icon: FileText,
-      color: 'text-purple-600 dark:text-purple-400'
-    },
-    {
       id: 'operational-calendar',
       title: 'Calendário de Tarefas',
       description: 'Gerencie tarefas operacionais e prazos',
