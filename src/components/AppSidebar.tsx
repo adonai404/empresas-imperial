@@ -45,7 +45,7 @@ export function AppSidebar({
   const {
     data: responsaveis
   } = useResponsaveis();
-  return <Sidebar collapsible="icon" variant="inset" className="border-r border-border w-56 data-[state=collapsed]:w-16">
+  return <Sidebar collapsible="icon">
       <SidebarHeader className="flex flex-row items-center justify-between p-4">
         {!isCollapsed && <div>
             <h2 className="text-lg font-semibold text-sidebar-foreground">Hub Fiscal </h2>
