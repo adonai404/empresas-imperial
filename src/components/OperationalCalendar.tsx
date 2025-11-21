@@ -570,29 +570,29 @@ export function OperationalCalendar() {
       ) : (
         <div className="space-y-6">
           {Object.entries(groupedTasks || {}).map(([periodo, periodTasks]) => (
-            <Card key={periodo}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  {periodo}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
+            <div key={periodo}>
+              <h2 className="text-base font-semibold mb-0 text-foreground bg-muted px-3 py-2 border border-b-0 rounded-t-md">
+                {periodo}
+              </h2>
+              <div className="border rounded-b-md overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[40%]">Tarefa</TableHead>
-                      <TableHead className="w-[20%]">Se Aplica</TableHead>
-                      <TableHead className="w-[30%]">Responsáveis</TableHead>
-                      <TableHead className="w-[10%] text-right">Ações</TableHead>
+                    <TableRow className="bg-muted hover:bg-muted border-b-2">
+                      <TableHead className="font-bold border-r h-9 px-3 text-foreground">Tarefa</TableHead>
+                      <TableHead className="font-bold border-r h-9 px-3 w-[180px] text-foreground">Se Aplica</TableHead>
+                      <TableHead className="font-bold border-r h-9 px-3 w-[200px] text-foreground">Responsáveis</TableHead>
+                      <TableHead className="font-bold h-9 px-3 w-[100px] text-center text-foreground">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {periodTasks.map((task) => (
-                      <TableRow key={task.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">{task.tarefa}</TableCell>
-                        <TableCell>{task.se_aplica}</TableCell>
-                        <TableCell>
+                    {periodTasks.map((task, idx) => (
+                      <TableRow 
+                        key={task.id}
+                        className={`${idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/50 border-b`}
+                      >
+                        <TableCell className="border-r p-2 px-3 align-top text-sm">{task.tarefa}</TableCell>
+                        <TableCell className="border-r p-2 px-3 align-top text-sm">{task.se_aplica}</TableCell>
+                        <TableCell className="border-r p-2 px-3 align-top">
                           <div className="flex flex-wrap gap-1">
                             {task.responsaveis.split(", ").map((resp, idx) => (
                               <Badge key={idx} variant="secondary" className="text-xs">
@@ -601,12 +601,12 @@ export function OperationalCalendar() {
                             ))}
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-1 justify-end">
+                        <TableCell className="p-2 px-3 align-top">
+                          <div className="flex justify-center gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7"
                               onClick={() => handleOpenTaskDialog(task)}
                             >
                               <Pencil className="h-3.5 w-3.5" />
@@ -614,7 +614,7 @@ export function OperationalCalendar() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-7 w-7"
                               onClick={() => handleDeleteTask(task)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -625,8 +625,8 @@ export function OperationalCalendar() {
                     ))}
                   </TableBody>
                 </Table>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           ))}
         </div>
       )}
