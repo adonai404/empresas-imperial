@@ -296,6 +296,39 @@ export type Database = {
           },
         ]
       }
+      operational_tasks: {
+        Row: {
+          created_at: string
+          id: string
+          order_index: number | null
+          periodo: string
+          responsaveis: string
+          se_aplica: string
+          tarefa: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          periodo: string
+          responsaveis: string
+          se_aplica: string
+          tarefa: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          periodo?: string
+          responsaveis?: string
+          se_aplica?: string
+          tarefa?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       produtor_rural_data: {
         Row: {
           company_id: string
