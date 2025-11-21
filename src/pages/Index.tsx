@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Dashboard } from '@/components/Dashboard';
 import { ExcelUpload } from '@/components/ExcelUpload';
@@ -110,7 +110,7 @@ const Index = () => {
           onResponsavelSelect={handleResponsavelSelect}
         />
         
-        <SidebarInset className="flex-1">
+        <main className="flex-1 flex flex-col">
           <header className="sticky top-0 z-40 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1 space-y-1">
@@ -133,10 +133,10 @@ const Index = () => {
             </div>
           </header>
           
-          <main className="flex-1 p-6">
+          <div className="flex-1 p-6">
             {renderContent()}
-          </main>
-        </SidebarInset>
+          </div>
+        </main>
       </div>
     </SidebarProvider>
   );
