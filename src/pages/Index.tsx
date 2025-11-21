@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
+import { Dashboard } from '@/components/Dashboard';
 import { ExcelUpload } from '@/components/ExcelUpload';
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
@@ -14,7 +15,7 @@ import { ArrowLeft } from 'lucide-react';
 
 const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>();
-  const [activeSection, setActiveSection] = useState('companies');
+  const [activeSection, setActiveSection] = useState('dashboard');
   const [isLucroRealSection, setIsLucroRealSection] = useState(false);
   const [selectedResponsavelId, setSelectedResponsavelId] = useState<string | null>(null);
   
@@ -41,6 +42,8 @@ const Index = () => {
   
   const renderContent = () => {
     switch (activeSection) {
+      case 'dashboard':
+        return <Dashboard />;
       case 'import':
         return <ExcelUpload />;
       case 'responsavel':
@@ -116,6 +119,7 @@ const Index = () => {
             <SidebarTrigger className="-ml-1" />
             <div className="flex-1 space-y-1">
               <h1 className="text-2xl font-bold tracking-tight">
+                {activeSection === 'dashboard' && 'Página Inicial'}
                 {activeSection === 'import' && 'Importação de Dados'}
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas por Responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas')}
@@ -125,6 +129,7 @@ const Index = () => {
                 {activeSection === 'operational-calendar' && 'Calendário de Tarefas Operacionais'}
               </h1>
               <p className="text-sm text-muted-foreground">
+                {activeSection === 'dashboard' && 'Visão geral do sistema e estatísticas fiscais'}
                 {activeSection === 'import' && 'Importe dados de planilhas Excel'}
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por regime tributário')}
