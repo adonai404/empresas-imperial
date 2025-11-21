@@ -111,6 +111,27 @@ export type Database = {
           },
         ]
       }
+      competencias: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       fiscal_data: {
         Row: {
           company_id: string
@@ -298,6 +319,7 @@ export type Database = {
       }
       operational_tasks: {
         Row: {
+          competencia_id: string | null
           created_at: string
           id: string
           order_index: number | null
@@ -308,6 +330,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          competencia_id?: string | null
           created_at?: string
           id?: string
           order_index?: number | null
@@ -318,6 +341,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          competencia_id?: string | null
           created_at?: string
           id?: string
           order_index?: number | null
@@ -327,7 +351,15 @@ export type Database = {
           tarefa?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "operational_tasks_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "competencias"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       produtor_rural_data: {
         Row: {
