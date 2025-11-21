@@ -320,6 +320,7 @@ export type Database = {
       operational_tasks: {
         Row: {
           competencia_id: string | null
+          completed: boolean | null
           created_at: string
           id: string
           order_index: number | null
@@ -331,6 +332,7 @@ export type Database = {
         }
         Insert: {
           competencia_id?: string | null
+          completed?: boolean | null
           created_at?: string
           id?: string
           order_index?: number | null
@@ -342,6 +344,7 @@ export type Database = {
         }
         Update: {
           competencia_id?: string | null
+          completed?: boolean | null
           created_at?: string
           id?: string
           order_index?: number | null
