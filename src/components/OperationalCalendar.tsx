@@ -47,6 +47,7 @@ export function OperationalCalendar() {
   const [showNewSeAplica, setShowNewSeAplica] = useState(false);
   const [showNewResponsavel, setShowNewResponsavel] = useState(false);
   const [isResponsaveisOpen, setIsResponsaveisOpen] = useState(false);
+  const [isSeAplicaOpen, setIsSeAplicaOpen] = useState(false);
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
   const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
@@ -80,6 +81,7 @@ export function OperationalCalendar() {
     setShowNewSeAplica(false);
     setShowNewResponsavel(false);
     setIsResponsaveisOpen(false);
+    setIsSeAplicaOpen(false);
   };
 
   const handleOpenCompetenciaDialog = (competencia?: Competencia) => {
@@ -337,39 +339,54 @@ export function OperationalCalendar() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="se_aplica">Se Aplica *</Label>
-                  <Select
-                    value={taskFormData.se_aplica}
-                    onValueChange={(value) => {
-                      if (value === "__new__") {
-                        setShowNewSeAplica(true);
-                      } else {
-                        setTaskFormData({ ...taskFormData, se_aplica: value });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione ou crie novo" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {seAplicaOptions?.map((option) => (
-                        <SelectItem key={option.id} value={option.nome}>
-                          {option.nome}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value="__new__">
-                        <div className="flex items-center gap-2">
-                          <Plus className="h-4 w-4" />
-                          Criar novo
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={isSeAplicaOpen} onOpenChange={setIsSeAplicaOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                      >
+                        {taskFormData.se_aplica || "Selecione ou crie novo"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar opção..." />
+                        <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {seAplicaOptions?.map((option) => (
+                            <CommandItem
+                              key={option.id}
+                              onSelect={() => {
+                                setTaskFormData({ ...taskFormData, se_aplica: option.nome });
+                                setIsSeAplicaOpen(false);
+                              }}
+                            >
+                              {option.nome}
+                            </CommandItem>
+                          ))}
+                          <CommandItem
+                            onSelect={() => {
+                              setShowNewSeAplica(true);
+                              setIsSeAplicaOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Plus className="h-4 w-4" />
+                              Criar nova opção
+                            </div>
+                          </CommandItem>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {showNewSeAplica && (
                     <div className="flex gap-2 mt-2">
                       <Input
                         placeholder="Nova opção"
                         value={newSeAplica}
                         onChange={(e) => setNewSeAplica(e.target.value)}
+                        autoFocus
                       />
                       <Button
                         type="button"
@@ -392,6 +409,7 @@ export function OperationalCalendar() {
                         onClick={() => {
                           setShowNewSeAplica(false);
                           setNewSeAplica("");
+                          setIsSeAplicaOpen(true);
                         }}
                       >
                         Cancelar
