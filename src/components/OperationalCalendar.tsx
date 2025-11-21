@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, FolderOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,16 +13,23 @@ import {
   useDeleteOperationalTask,
   OperationalTask,
 } from "@/hooks/useOperationalTasks";
+import {
+  useCompetencias,
+  useAddCompetencia,
+  useUpdateCompetencia,
+  useDeleteCompetencia,
+  Competencia,
+} from "@/hooks/useCompetencias";
 
 export function OperationalCalendar() {
-  const { data: tasks, isLoading } = useOperationalTasks();
-  const addTask = useAddOperationalTask();
-  const updateTask = useUpdateOperationalTask();
-  const deleteTask = useDeleteOperationalTask();
-
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [selectedCompetencia, setSelectedCompetencia] = useState<string | null>(null);
+  const [isCompetenciaDialogOpen, setIsCompetenciaDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [editingCompetencia, setEditingCompetencia] = useState<Competencia | null>(null);
   const [editingTask, setEditingTask] = useState<OperationalTask | null>(null);
-  const [formData, setFormData] = useState({
+  
+  const [competenciaFormData, setCompetenciaFormData] = useState({ nome: "" });
+  const [taskFormData, setTaskFormData] = useState({
     periodo: "",
     tarefa: "",
     se_aplica: "",
@@ -30,8 +37,22 @@ export function OperationalCalendar() {
     order_index: 0,
   });
 
-  const resetForm = () => {
-    setFormData({
+  const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
+  const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
+  const addCompetencia = useAddCompetencia();
+  const updateCompetencia = useUpdateCompetencia();
+  const deleteCompetencia = useDeleteCompetencia();
+  const addTask = useAddOperationalTask();
+  const updateTask = useUpdateOperationalTask();
+  const deleteTask = useDeleteOperationalTask();
+
+  const resetCompetenciaForm = () => {
+    setCompetenciaFormData({ nome: "" });
+    setEditingCompetencia(null);
+  };
+
+  const resetTaskForm = () => {
+    setTaskFormData({
       periodo: "",
       tarefa: "",
       se_aplica: "",
@@ -41,10 +62,20 @@ export function OperationalCalendar() {
     setEditingTask(null);
   };
 
-  const handleOpenDialog = (task?: OperationalTask) => {
+  const handleOpenCompetenciaDialog = (competencia?: Competencia) => {
+    if (competencia) {
+      setEditingCompetencia(competencia);
+      setCompetenciaFormData({ nome: competencia.nome });
+    } else {
+      resetCompetenciaForm();
+    }
+    setIsCompetenciaDialogOpen(true);
+  };
+
+  const handleOpenTaskDialog = (task?: OperationalTask) => {
     if (task) {
       setEditingTask(task);
-      setFormData({
+      setTaskFormData({
         periodo: task.periodo,
         tarefa: task.tarefa,
         se_aplica: task.se_aplica,
@@ -52,27 +83,58 @@ export function OperationalCalendar() {
         order_index: task.order_index,
       });
     } else {
-      resetForm();
+      resetTaskForm();
     }
-    setIsDialogOpen(true);
+    setIsTaskDialogOpen(true);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitCompetencia = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingTask) {
-      await updateTask.mutateAsync({ id: editingTask.id, ...formData });
+    if (editingCompetencia) {
+      await updateCompetencia.mutateAsync({ id: editingCompetencia.id, ...competenciaFormData });
     } else {
-      await addTask.mutateAsync(formData);
+      await addCompetencia.mutateAsync(competenciaFormData);
     }
     
-    setIsDialogOpen(false);
-    resetForm();
+    setIsCompetenciaDialogOpen(false);
+    resetCompetenciaForm();
   };
 
-  const handleDelete = async (id: string) => {
+  const handleSubmitTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!selectedCompetencia) {
+      return;
+    }
+
+    const taskData = {
+      ...taskFormData,
+      competencia_id: selectedCompetencia,
+    };
+    
+    if (editingTask) {
+      await updateTask.mutateAsync({ id: editingTask.id, ...taskData });
+    } else {
+      await addTask.mutateAsync(taskData);
+    }
+    
+    setIsTaskDialogOpen(false);
+    resetTaskForm();
+  };
+
+  const handleDeleteCompetencia = async (id: string) => {
+    if (confirm("Tem certeza que deseja excluir esta competência? Todas as tarefas associadas serão removidas.")) {
+      await deleteCompetencia.mutateAsync(id);
+      if (selectedCompetencia === id) {
+        setSelectedCompetencia(null);
+      }
+    }
+  };
+
+  const handleDeleteTask = async (task: OperationalTask) => {
     if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
-      await deleteTask.mutateAsync(id);
+      await deleteTask.mutateAsync({ id: task.id, competencia_id: task.competencia_id });
     }
   };
 
@@ -85,28 +147,146 @@ export function OperationalCalendar() {
     return acc;
   }, {} as Record<string, OperationalTask[]>);
 
-  if (isLoading) {
+  if (isLoadingCompetencias) {
     return <div className="flex items-center justify-center p-8">Carregando...</div>;
   }
+
+  // Se não há competência selecionada, mostrar lista de competências
+  if (!selectedCompetencia) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">Calendário de Tarefas Operacionais</h1>
+            <p className="text-muted-foreground mt-1">
+              Selecione uma competência para visualizar suas tarefas
+            </p>
+          </div>
+          <Dialog open={isCompetenciaDialogOpen} onOpenChange={setIsCompetenciaDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenCompetenciaDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Competência
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[400px]">
+              <form onSubmit={handleSubmitCompetencia}>
+                <DialogHeader>
+                  <DialogTitle>{editingCompetencia ? "Editar Competência" : "Nova Competência"}</DialogTitle>
+                  <DialogDescription>
+                    Preencha o nome da competência (ex: Janeiro/2025, 01/2025)
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="nome">Nome da Competência *</Label>
+                    <Input
+                      id="nome"
+                      placeholder="Ex: Janeiro/2025"
+                      value={competenciaFormData.nome}
+                      onChange={(e) => setCompetenciaFormData({ nome: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="button" variant="outline" onClick={() => setIsCompetenciaDialogOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button type="submit">
+                    {editingCompetencia ? "Atualizar" : "Adicionar"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {!competencias || competencias.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <FolderOpen className="h-12 w-12 text-muted-foreground mb-4" />
+              <p className="text-muted-foreground text-center">
+                Nenhuma competência cadastrada ainda.
+                <br />
+                Clique em "Nova Competência" para começar.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {competencias.map((competencia) => (
+              <Card key={competencia.id} className="hover:bg-muted/50 transition-colors cursor-pointer">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle 
+                      className="text-xl cursor-pointer flex-1"
+                      onClick={() => setSelectedCompetencia(competencia.id)}
+                    >
+                      {competencia.nome}
+                    </CardTitle>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleOpenCompetenciaDialog(competencia)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleDeleteCompetencia(competencia.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent onClick={() => setSelectedCompetencia(competencia.id)}>
+                  <Button variant="outline" className="w-full">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Ver Tarefas
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Mostrar tarefas da competência selecionada
+  const currentCompetencia = competencias?.find(c => c.id === selectedCompetencia);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Calendário de Tarefas Operacionais</h1>
+          <Button
+            variant="ghost"
+            onClick={() => setSelectedCompetencia(null)}
+            className="mb-2"
+          >
+            ← Voltar para Competências
+          </Button>
+          <h1 className="text-3xl font-bold text-foreground">{currentCompetencia?.nome}</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie as tarefas operacionais organizadas por período
+            Tarefas operacionais desta competência
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
           <DialogTrigger asChild>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenTaskDialog()}>
               <Plus className="h-4 w-4 mr-2" />
               Nova Tarefa
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmitTask}>
               <DialogHeader>
                 <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
                 <DialogDescription>
@@ -119,8 +299,8 @@ export function OperationalCalendar() {
                   <Input
                     id="periodo"
                     placeholder="Ex: Dia 01, Dia 01 a 05"
-                    value={formData.periodo}
-                    onChange={(e) => setFormData({ ...formData, periodo: e.target.value })}
+                    value={taskFormData.periodo}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, periodo: e.target.value })}
                     required
                   />
                 </div>
@@ -129,8 +309,8 @@ export function OperationalCalendar() {
                   <Textarea
                     id="tarefa"
                     placeholder="O que deve ser feito"
-                    value={formData.tarefa}
-                    onChange={(e) => setFormData({ ...formData, tarefa: e.target.value })}
+                    value={taskFormData.tarefa}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, tarefa: e.target.value })}
                     required
                   />
                 </div>
@@ -139,8 +319,8 @@ export function OperationalCalendar() {
                   <Input
                     id="se_aplica"
                     placeholder="Ex: SN Serviços, SN Comércio, Lucro Real"
-                    value={formData.se_aplica}
-                    onChange={(e) => setFormData({ ...formData, se_aplica: e.target.value })}
+                    value={taskFormData.se_aplica}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, se_aplica: e.target.value })}
                     required
                   />
                 </div>
@@ -149,8 +329,8 @@ export function OperationalCalendar() {
                   <Input
                     id="responsaveis"
                     placeholder="Ex: Alan / Aglison / Adonai"
-                    value={formData.responsaveis}
-                    onChange={(e) => setFormData({ ...formData, responsaveis: e.target.value })}
+                    value={taskFormData.responsaveis}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, responsaveis: e.target.value })}
                     required
                   />
                 </div>
@@ -159,13 +339,13 @@ export function OperationalCalendar() {
                   <Input
                     id="order_index"
                     type="number"
-                    value={formData.order_index}
-                    onChange={(e) => setFormData({ ...formData, order_index: parseInt(e.target.value) })}
+                    value={taskFormData.order_index}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, order_index: parseInt(e.target.value) })}
                   />
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
                   Cancelar
                 </Button>
                 <Button type="submit">
@@ -177,12 +357,14 @@ export function OperationalCalendar() {
         </Dialog>
       </div>
 
-      {!tasks || tasks.length === 0 ? (
+      {isLoadingTasks ? (
+        <div className="flex items-center justify-center p-8">Carregando tarefas...</div>
+      ) : !tasks || tasks.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
-              Nenhuma tarefa cadastrada ainda.
+              Nenhuma tarefa cadastrada nesta competência ainda.
               <br />
               Clique em "Nova Tarefa" para começar.
             </p>
@@ -224,14 +406,14 @@ export function OperationalCalendar() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleOpenDialog(task)}
+                            onClick={() => handleOpenTaskDialog(task)}
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(task.id)}
+                            onClick={() => handleDeleteTask(task)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
