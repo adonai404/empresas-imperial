@@ -379,6 +379,74 @@ export type Database = {
         }
         Relationships: []
       }
+      system_links: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          order_index: number | null
+          password: string | null
+          system_id: string
+          title: string
+          url: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          order_index?: number | null
+          password?: string | null
+          system_id: string
+          title: string
+          url: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          order_index?: number | null
+          password?: string | null
+          system_id?: string
+          title?: string
+          url?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_links_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      systems: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
