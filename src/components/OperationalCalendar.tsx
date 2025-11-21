@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   useOperationalTasks,
   useAddOperationalTask,
@@ -570,54 +571,60 @@ export function OperationalCalendar() {
         <div className="space-y-6">
           {Object.entries(groupedTasks || {}).map(([periodo, periodTasks]) => (
             <Card key={periodo}>
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary" />
                   {periodo}
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {periodTasks.map((task) => (
-                    <div
-                      key={task.id}
-                      className="border border-border rounded-lg p-4 space-y-3 hover:bg-muted/50 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Tarefa:</span>
-                            <p className="text-foreground font-medium">{task.tarefa}</p>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[40%]">Tarefa</TableHead>
+                      <TableHead className="w-[20%]">Se Aplica</TableHead>
+                      <TableHead className="w-[30%]">Responsáveis</TableHead>
+                      <TableHead className="w-[10%] text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {periodTasks.map((task) => (
+                      <TableRow key={task.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">{task.tarefa}</TableCell>
+                        <TableCell>{task.se_aplica}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {task.responsaveis.split(", ").map((resp, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                {resp}
+                              </Badge>
+                            ))}
                           </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Se aplica:</span>
-                            <p className="text-foreground">{task.se_aplica}</p>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleOpenTaskDialog(task)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => handleDeleteTask(task)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
-                          <div>
-                            <span className="text-sm font-medium text-muted-foreground">Responsáveis:</span>
-                            <p className="text-foreground">{task.responsaveis}</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenTaskDialog(task)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteTask(task)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           ))}
