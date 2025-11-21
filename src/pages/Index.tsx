@@ -43,7 +43,7 @@ const Index = () => {
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveSection} />;
       case 'import':
         return <ExcelUpload />;
       case 'responsavel':
