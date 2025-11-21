@@ -24,7 +24,7 @@ const sections = [{
 }];
 const utilitiesSubSections = [{
   id: "systems",
-  title: "Sistemas",
+  title: "Processos",
   icon: Wrench
 }, {
   id: "operational-calendar",
