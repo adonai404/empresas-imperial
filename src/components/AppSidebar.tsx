@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Building2, Settings, User, Wrench, Calendar } from "lucide-react";
+import { Upload, Building2, Settings, User, Wrench, Calendar, Home } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./ThemeToggle";
@@ -10,6 +10,10 @@ interface AppSidebarProps {
   onResponsavelSelect?: (responsavelId: string) => void;
 }
 const sections = [{
+  id: "dashboard",
+  title: "Página Inicial",
+  icon: Home
+}, {
   id: "companies",
   title: "Empresas",
   icon: Building2
