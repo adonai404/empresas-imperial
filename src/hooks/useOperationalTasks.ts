@@ -10,6 +10,7 @@ export interface OperationalTask {
   responsaveis: string;
   order_index: number;
   competencia_id: string | null;
+  completed: boolean;
   created_at?: string;
   updated_at?: string;
 }
