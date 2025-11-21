@@ -119,7 +119,7 @@ const Index = () => {
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas por Responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas')}
                 {activeSection === 'settings' && 'Configurações'}
-                {activeSection === 'systems' && 'Sistemas'}
+                {activeSection === 'systems' && 'Processos'}
                 {activeSection === 'operational-calendar' && 'Calendário de Tarefas Operacionais'}
               </h1>
               <p className="text-sm text-muted-foreground">
