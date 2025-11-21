@@ -8,6 +8,7 @@ import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
 import { Settings } from '@/components/Settings';
 import { Systems } from '@/components/Systems';
 import { PdfBatchUpload } from '@/components/PdfBatchUpload';
+import { OperationalCalendar } from '@/components/OperationalCalendar';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -85,6 +86,8 @@ const Index = () => {
         return <Systems />;
       case 'pdf-import':
         return <PdfBatchUpload />;
+      case 'operational-calendar':
+        return <OperationalCalendar />;
       case 'settings':
         return <Settings />;
       default:
@@ -118,6 +121,8 @@ const Index = () => {
                 {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas')}
                 {activeSection === 'settings' && 'Configurações'}
                 {activeSection === 'systems' && 'Sistemas'}
+                {activeSection === 'pdf-import' && 'Importação em Lote de PDFs'}
+                {activeSection === 'operational-calendar' && 'Calendário de Tarefas Operacionais'}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {activeSection === 'import' && 'Importe dados de planilhas Excel'}
@@ -125,6 +130,8 @@ const Index = () => {
                 {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por regime tributário')}
                 {activeSection === 'settings' && 'Gerencie senhas de acesso e configurações de segurança'}
                 {activeSection === 'systems' && 'Gerencie seus sistemas e links de acesso'}
+                {activeSection === 'pdf-import' && 'Importe múltiplos PDFs de uma vez com extração automática via IA'}
+                {activeSection === 'operational-calendar' && 'Gerencie tarefas operacionais organizadas por período'}
               </p>
             </div>
           </header>
