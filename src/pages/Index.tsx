@@ -44,8 +44,6 @@ const Index = () => {
     switch (activeSection) {
       case 'dashboard':
         return <Dashboard onNavigate={setActiveSection} />;
-      case 'import':
-        return <ExcelUpload />;
       case 'responsavel':
         // Para a seção "Por Responsável", precisamos mostrar o CompanyList com o regime "responsavel" selecionado
         if (selectedCompanyId) {
@@ -87,8 +85,6 @@ const Index = () => {
         );
       case 'systems':
         return <Systems />;
-      case 'pdf-import':
-        return <PdfBatchUpload />;
       case 'operational-calendar':
         return <OperationalCalendar />;
       case 'settings':
@@ -120,22 +116,18 @@ const Index = () => {
             <div className="flex-1 space-y-1">
               <h1 className="text-2xl font-bold tracking-tight">
                 {activeSection === 'dashboard' && 'Página Inicial'}
-                {activeSection === 'import' && 'Importação de Dados'}
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas por Responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Detalhes da Empresa' : 'Empresas')}
                 {activeSection === 'settings' && 'Configurações'}
                 {activeSection === 'systems' && 'Sistemas'}
-                {activeSection === 'pdf-import' && 'Importação em Lote de PDFs'}
                 {activeSection === 'operational-calendar' && 'Calendário de Tarefas Operacionais'}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {activeSection === 'dashboard' && 'Visão geral do sistema e estatísticas fiscais'}
-                {activeSection === 'import' && 'Importe dados de planilhas Excel'}
                 {activeSection === 'responsavel' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por responsável')}
                 {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por regime tributário')}
                 {activeSection === 'settings' && 'Gerencie senhas de acesso e configurações de segurança'}
                 {activeSection === 'systems' && 'Gerencie seus sistemas e links de acesso'}
-                {activeSection === 'pdf-import' && 'Importe múltiplos PDFs de uma vez com extração automática via IA'}
                 {activeSection === 'operational-calendar' && 'Gerencie tarefas operacionais organizadas por período'}
               </p>
             </div>
