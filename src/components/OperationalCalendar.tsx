@@ -52,9 +52,9 @@ export function OperationalCalendar() {
   const [isSeAplicaOpen, setIsSeAplicaOpen] = useState(false);
   
   // Estados dos filtros
-  const [filterResponsavel, setFilterResponsavel] = useState<string>("");
-  const [filterPeriodo, setFilterPeriodo] = useState<string>("");
-  const [filterSeAplica, setFilterSeAplica] = useState<string>("");
+  const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
+  const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
+  const [filterSeAplica, setFilterSeAplica] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
@@ -257,17 +257,17 @@ export function OperationalCalendar() {
     
     return tasks.filter(task => {
       // Filtro por responsável
-      if (filterResponsavel && !task.responsaveis.toLowerCase().includes(filterResponsavel.toLowerCase())) {
+      if (filterResponsavel !== "all" && !task.responsaveis.toLowerCase().includes(filterResponsavel.toLowerCase())) {
         return false;
       }
       
       // Filtro por período
-      if (filterPeriodo && !task.periodo.toLowerCase().includes(filterPeriodo.toLowerCase())) {
+      if (filterPeriodo !== "all" && !task.periodo.toLowerCase().includes(filterPeriodo.toLowerCase())) {
         return false;
       }
       
       // Filtro por se aplica
-      if (filterSeAplica && !task.se_aplica.toLowerCase().includes(filterSeAplica.toLowerCase())) {
+      if (filterSeAplica !== "all" && !task.se_aplica.toLowerCase().includes(filterSeAplica.toLowerCase())) {
         return false;
       }
       
@@ -314,13 +314,13 @@ export function OperationalCalendar() {
   }, [tasks]);
   
   const clearFilters = () => {
-    setFilterResponsavel("");
-    setFilterPeriodo("");
-    setFilterSeAplica("");
+    setFilterResponsavel("all");
+    setFilterPeriodo("all");
+    setFilterSeAplica("all");
     setFilterStatus("all");
   };
   
-  const hasActiveFilters = filterResponsavel || filterPeriodo || filterSeAplica || filterStatus !== "all";
+  const hasActiveFilters = filterResponsavel !== "all" || filterPeriodo !== "all" || filterSeAplica !== "all" || filterStatus !== "all";
 
   if (isLoadingCompetencias) {
     return <div className="flex items-center justify-center p-8">Carregando...</div>;
@@ -748,7 +748,7 @@ export function OperationalCalendar() {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {uniqueResponsaveis.map((resp) => (
                     <SelectItem key={resp} value={resp}>
                       {resp}
@@ -769,7 +769,7 @@ export function OperationalCalendar() {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {uniquePeriodos.map((periodo) => (
                     <SelectItem key={periodo} value={periodo}>
                       {periodo}
@@ -790,7 +790,7 @@ export function OperationalCalendar() {
                   <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {uniqueSeAplica.map((seAplica) => (
                     <SelectItem key={seAplica} value={seAplica}>
                       {seAplica}
