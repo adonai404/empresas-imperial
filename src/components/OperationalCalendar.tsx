@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -165,6 +165,86 @@ export function OperationalCalendar() {
     }
   };
 
+  const handlePrintTasks = () => {
+    if (!tasks || tasks.length === 0) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Tarefas Operacionais - ${currentCompetencia?.nome}</title>
+          <style>
+            @media print {
+              @page { margin: 1cm; }
+              body { margin: 0; }
+            }
+            body {
+              font-family: Arial, sans-serif;
+              padding: 20px;
+            }
+            h1 {
+              text-align: center;
+              font-size: 20px;
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #333;
+              padding: 8px;
+              text-align: left;
+              font-size: 12px;
+            }
+            th {
+              background-color: #f0f0f0;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+          </style>
+        </head>
+        <body>
+          <h1>Tarefas Operacionais - ${currentCompetencia?.nome}</h1>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 15%;">Período/Dia</th>
+                <th style="width: 40%;">Tarefa</th>
+                <th style="width: 20%;">Se Aplica</th>
+                <th style="width: 25%;">Responsáveis</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tasks.map(task => `
+                <tr>
+                  <td>${task.periodo}</td>
+                  <td>${task.tarefa}</td>
+                  <td>${task.se_aplica}</td>
+                  <td>${task.responsaveis}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 250);
+  };
+
   // Agrupar tarefas por período
   const groupedTasks = tasks?.reduce((acc, task) => {
     if (!acc[task.periodo]) {
@@ -305,14 +385,23 @@ export function OperationalCalendar() {
             Tarefas operacionais desta competência
           </p>
         </div>
-        <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => handleOpenTaskDialog()}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Tarefa
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px]">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handlePrintTasks}
+            disabled={!tasks || tasks.length === 0}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
+          </Button>
+          <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenTaskDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Tarefa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
             <form onSubmit={handleSubmitTask}>
               <DialogHeader>
                 <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
@@ -555,6 +644,7 @@ export function OperationalCalendar() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {isLoadingTasks ? (
