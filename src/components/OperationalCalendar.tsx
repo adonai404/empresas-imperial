@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer, Filter } from "lucide-react";
+import { useState } from "react";
+import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -50,12 +50,6 @@ export function OperationalCalendar() {
   const [showNewResponsavel, setShowNewResponsavel] = useState(false);
   const [isResponsaveisOpen, setIsResponsaveisOpen] = useState(false);
   const [isSeAplicaOpen, setIsSeAplicaOpen] = useState(false);
-  
-  // Estados dos filtros
-  const [filterResponsavel, setFilterResponsavel] = useState<string>("all");
-  const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
-  const [filterSeAplica, setFilterSeAplica] = useState<string>("all");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
   const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
@@ -172,7 +166,7 @@ export function OperationalCalendar() {
   };
 
   const handlePrintTasks = () => {
-    if (!filteredTasks || filteredTasks.length === 0) return;
+    if (!tasks || tasks.length === 0) return;
     
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -228,7 +222,7 @@ export function OperationalCalendar() {
               </tr>
             </thead>
             <tbody>
-              ${filteredTasks.map(task => `
+              ${tasks.map(task => `
                 <tr>
                   <td>${task.periodo}</td>
                   <td>${task.tarefa}</td>
@@ -251,76 +245,14 @@ export function OperationalCalendar() {
     }, 250);
   };
 
-  // Filtrar tarefas
-  const filteredTasks = useMemo(() => {
-    if (!tasks) return [];
-    
-    return tasks.filter(task => {
-      // Filtro por responsável
-      if (filterResponsavel !== "all" && !task.responsaveis.toLowerCase().includes(filterResponsavel.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por período
-      if (filterPeriodo !== "all" && !task.periodo.toLowerCase().includes(filterPeriodo.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por se aplica
-      if (filterSeAplica !== "all" && !task.se_aplica.toLowerCase().includes(filterSeAplica.toLowerCase())) {
-        return false;
-      }
-      
-      // Filtro por status
-      if (filterStatus === "completed" && !task.completed) {
-        return false;
-      }
-      if (filterStatus === "pending" && task.completed) {
-        return false;
-      }
-      
-      return true;
-    });
-  }, [tasks, filterResponsavel, filterPeriodo, filterSeAplica, filterStatus]);
-
-  // Agrupar tarefas filtradas por período
-  const groupedTasks = filteredTasks?.reduce((acc, task) => {
+  // Agrupar tarefas por período
+  const groupedTasks = tasks?.reduce((acc, task) => {
     if (!acc[task.periodo]) {
       acc[task.periodo] = [];
     }
     acc[task.periodo].push(task);
     return acc;
   }, {} as Record<string, OperationalTask[]>);
-  
-  // Extrair períodos únicos para o filtro
-  const uniquePeriodos = useMemo(() => {
-    if (!tasks) return [];
-    return Array.from(new Set(tasks.map(t => t.periodo))).sort();
-  }, [tasks]);
-  
-  // Extrair responsáveis únicos para o filtro
-  const uniqueResponsaveis = useMemo(() => {
-    if (!tasks) return [];
-    const allResponsaveis = tasks.flatMap(t => 
-      t.responsaveis.split(",").map(r => r.trim())
-    );
-    return Array.from(new Set(allResponsaveis)).sort();
-  }, [tasks]);
-  
-  // Extrair se aplica únicos para o filtro
-  const uniqueSeAplica = useMemo(() => {
-    if (!tasks) return [];
-    return Array.from(new Set(tasks.map(t => t.se_aplica))).sort();
-  }, [tasks]);
-  
-  const clearFilters = () => {
-    setFilterResponsavel("all");
-    setFilterPeriodo("all");
-    setFilterSeAplica("all");
-    setFilterStatus("all");
-  };
-  
-  const hasActiveFilters = filterResponsavel !== "all" || filterPeriodo !== "all" || filterSeAplica !== "all" || filterStatus !== "all";
 
   if (isLoadingCompetencias) {
     return <div className="flex items-center justify-center p-8">Carregando...</div>;
@@ -457,7 +389,7 @@ export function OperationalCalendar() {
           <Button
             variant="outline"
             onClick={handlePrintTasks}
-            disabled={!filteredTasks || filteredTasks.length === 0}
+            disabled={!tasks || tasks.length === 0}
           >
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
@@ -714,121 +646,6 @@ export function OperationalCalendar() {
         </Dialog>
         </div>
       </div>
-
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              <CardTitle>Filtros</CardTitle>
-            </div>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Limpar Filtros
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Filtro por Responsável */}
-            <div className="space-y-2">
-              <Label htmlFor="filter-responsavel">Responsável</Label>
-              <Select
-                value={filterResponsavel}
-                onValueChange={setFilterResponsavel}
-              >
-                <SelectTrigger id="filter-responsavel">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {uniqueResponsaveis.map((resp) => (
-                    <SelectItem key={resp} value={resp}>
-                      {resp}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filtro por Período */}
-            <div className="space-y-2">
-              <Label htmlFor="filter-periodo">Período</Label>
-              <Select
-                value={filterPeriodo}
-                onValueChange={setFilterPeriodo}
-              >
-                <SelectTrigger id="filter-periodo">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {uniquePeriodos.map((periodo) => (
-                    <SelectItem key={periodo} value={periodo}>
-                      {periodo}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filtro por Se Aplica */}
-            <div className="space-y-2">
-              <Label htmlFor="filter-se-aplica">Se Aplica</Label>
-              <Select
-                value={filterSeAplica}
-                onValueChange={setFilterSeAplica}
-              >
-                <SelectTrigger id="filter-se-aplica">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {uniqueSeAplica.map((seAplica) => (
-                    <SelectItem key={seAplica} value={seAplica}>
-                      {seAplica}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filtro por Status */}
-            <div className="space-y-2">
-              <Label htmlFor="filter-status">Status</Label>
-              <Select
-                value={filterStatus}
-                onValueChange={setFilterStatus}
-              >
-                <SelectTrigger id="filter-status">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendentes</SelectItem>
-                  <SelectItem value="completed">Concluídas</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          
-          {hasActiveFilters && (
-            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-              <Filter className="h-4 w-4" />
-              <span>
-                Mostrando {filteredTasks.length} de {tasks?.length || 0} tarefas
-              </span>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {isLoadingTasks ? (
         <div className="flex items-center justify-center p-8">Carregando tarefas...</div>
