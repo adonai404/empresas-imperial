@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,9 +8,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from '@/components/ui/command';
 import { useProjects, useAddProject, useUpdateProject, useDeleteProject, Project } from '@/hooks/useProjects';
-import { Plus, Trash2, Edit, FolderKanban, X } from 'lucide-react';
+import { useDeclaracaoOptions, useAddDeclaracaoOption } from '@/hooks/useDeclaracaoOptions';
+import { Plus, Trash2, Edit, FolderKanban, X, Check, ChevronsUpDown } from 'lucide-react';
 import { format, parseISO, isBefore, startOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const STATUS_OPTIONS = ['Concluído', 'Atrasado', 'Em andamento', 'Aberto'] as const;
 const PRIORIDADE_OPTIONS = ['Alta', 'Média', 'Baixa', 'Urgente'] as const;
@@ -69,13 +73,17 @@ const formatDate = (dateString: string | null) => {
 
 export const ProjectsPanel = () => {
   const { data: projects = [], isLoading } = useProjects();
+  const { data: declaracaoOptions = [] } = useDeclaracaoOptions();
   const addProjectMutation = useAddProject();
   const updateProjectMutation = useUpdateProject();
   const deleteProjectMutation = useDeleteProject();
+  const addDeclaracaoMutation = useAddDeclaracaoOption();
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [declaracoesOpen, setDeclaracoesOpen] = useState(false);
+  const [newDeclaracaoInput, setNewDeclaracaoInput] = useState('');
   
   // Form states
   const [nomeProjeto, setNomeProjeto] = useState('');
@@ -83,7 +91,6 @@ export const ProjectsPanel = () => {
   const [prioridade, setPrioridade] = useState<string>('Média');
   const [prazoFinal, setPrazoFinal] = useState('');
   const [declaracoes, setDeclaracoes] = useState<string[]>([]);
-  const [novaDeclaracao, setNovaDeclaracao] = useState('');
 
   // Check for overdue projects and update status
   useEffect(() => {
@@ -112,7 +119,7 @@ export const ProjectsPanel = () => {
     setPrioridade('Média');
     setPrazoFinal('');
     setDeclaracoes([]);
-    setNovaDeclaracao('');
+    setNewDeclaracaoInput('');
   };
 
   const handleAddProject = () => {
@@ -173,10 +180,22 @@ export const ProjectsPanel = () => {
     setIsEditDialogOpen(true);
   };
 
-  const addDeclaracao = () => {
-    if (novaDeclaracao.trim() && !declaracoes.includes(novaDeclaracao.trim().toUpperCase())) {
-      setDeclaracoes([...declaracoes, novaDeclaracao.trim().toUpperCase()]);
-      setNovaDeclaracao('');
+  const toggleDeclaracao = (dec: string) => {
+    if (declaracoes.includes(dec)) {
+      setDeclaracoes(declaracoes.filter(d => d !== dec));
+    } else {
+      setDeclaracoes([...declaracoes, dec]);
+    }
+  };
+
+  const handleCreateNewDeclaracao = async () => {
+    if (newDeclaracaoInput.trim()) {
+      const newDec = newDeclaracaoInput.trim().toUpperCase();
+      await addDeclaracaoMutation.mutateAsync(newDec);
+      if (!declaracoes.includes(newDec)) {
+        setDeclaracoes([...declaracoes, newDec]);
+      }
+      setNewDeclaracaoInput('');
     }
   };
 
@@ -258,29 +277,78 @@ export const ProjectsPanel = () => {
 
       <div className="space-y-2">
         <Label>Declarações</Label>
-        <div className="flex gap-2">
-          <Input
-            value={novaDeclaracao}
-            onChange={(e) => setNovaDeclaracao(e.target.value)}
-            placeholder="Ex: SPED FISCAL"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                addDeclaracao();
-              }
-            }}
-          />
-          <Button type="button" variant="outline" onClick={addDeclaracao}>
-            <Plus className="h-4 w-4" />
-          </Button>
-        </div>
+        <Popover open={declaracoesOpen} onOpenChange={setDeclaracoesOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={declaracoesOpen}
+              className="w-full justify-between"
+            >
+              {declaracoes.length > 0
+                ? `${declaracoes.length} declaração(ões) selecionada(s)`
+                : "Selecione as declarações..."}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0 bg-popover border border-border z-50" align="start">
+            <Command>
+              <CommandInput placeholder="Buscar declaração..." />
+              <CommandList>
+                <CommandEmpty>Nenhuma declaração encontrada.</CommandEmpty>
+                <CommandGroup>
+                  {declaracaoOptions.map((option) => (
+                    <CommandItem
+                      key={option.id}
+                      value={option.nome}
+                      onSelect={() => toggleDeclaracao(option.nome)}
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          declaracoes.includes(option.nome) ? "opacity-100" : "opacity-0"
+                        )}
+                      />
+                      {option.nome}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+                <CommandSeparator />
+                <CommandGroup>
+                  <div className="flex items-center gap-2 p-2">
+                    <Input
+                      value={newDeclaracaoInput}
+                      onChange={(e) => setNewDeclaracaoInput(e.target.value)}
+                      placeholder="Nova declaração..."
+                      className="h-8"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleCreateNewDeclaracao();
+                        }
+                      }}
+                    />
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      onClick={handleCreateNewDeclaracao}
+                      disabled={!newDeclaracaoInput.trim()}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
         {declaracoes.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
             {declaracoes.map((dec) => (
               <Badge 
                 key={dec} 
                 className={`${getDeclaracaoColor(dec)} cursor-pointer`}
-                onClick={() => removeDeclaracao(dec)}
+                onClick={() => toggleDeclaracao(dec)}
               >
                 {dec}
                 <X className="h-3 w-3 ml-1" />
