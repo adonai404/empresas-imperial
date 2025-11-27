@@ -13,34 +13,29 @@ import { OperationalCalendar } from '@/components/OperationalCalendar';
 import { ProjectsPanel } from '@/components/ProjectsPanel';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-
 const Index = () => {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [isLucroRealSection, setIsLucroRealSection] = useState(false);
   const [selectedResponsavelId, setSelectedResponsavelId] = useState<string | null>(null);
-  
   const handleSelectCompany = (companyId: string) => {
     setSelectedCompanyId(companyId);
   };
-  
   const handleBackToCompanies = () => {
     setSelectedCompanyId(undefined);
     setIsLucroRealSection(false);
   };
-  
+
   // Nova função para voltar apenas para a empresa selecionada, mantendo o contexto da aba
   const handleBackToPrevious = () => {
     setSelectedCompanyId(undefined);
     // Não resetamos isLucroRealSection para manter o contexto da aba
   };
-  
   const handleResponsavelSelect = (responsavelId: string) => {
     setSelectedResponsavelId(responsavelId);
     // Quando um responsável é selecionado, vamos para a seção de responsáveis
     setActiveSection('responsavel');
   };
-  
   const renderContent = () => {
     switch (activeSection) {
       case 'dashboard':
@@ -48,42 +43,18 @@ const Index = () => {
       case 'responsavel':
         // Para a seção "Por Responsável", precisamos mostrar o CompanyList com o regime "responsavel" selecionado
         if (selectedCompanyId) {
-          return (
-            <div className="space-y-4">
-              {isLucroRealSection ? (
-                <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} />
-              ) : (
-                <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToPrevious} />
-              )}
-            </div>
-          );
+          return <div className="space-y-4">
+              {isLucroRealSection ? <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} /> : <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToPrevious} />}
+            </div>;
         }
-        return <CompanyList 
-          onSelectCompany={handleSelectCompany} 
-          onLucroRealSelect={() => setIsLucroRealSection(true)} 
-          defaultRegime="responsavel"
-          selectedResponsavelId={selectedResponsavelId}
-        />;
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} defaultRegime="responsavel" selectedResponsavelId={selectedResponsavelId} />;
       case 'companies':
         if (selectedCompanyId) {
-          return (
-            <div className="space-y-4">
-              {isLucroRealSection ? (
-                <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} />
-              ) : (
-                <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToPrevious} />
-              )}
-            </div>
-          );
+          return <div className="space-y-4">
+              {isLucroRealSection ? <CompanyLucroRealDetails companyId={selectedCompanyId} onCompanyDeleted={handleBackToCompanies} onBack={handleBackToPrevious} /> : <CompanyDetails companyId={selectedCompanyId} onBack={handleBackToPrevious} />}
+            </div>;
         }
-        return (
-          <CompanyList 
-            onSelectCompany={handleSelectCompany} 
-            onLucroRealSelect={() => setIsLucroRealSection(true)} 
-            selectedResponsavelId={selectedResponsavelId}
-            onResponsavelBack={() => setSelectedResponsavelId(null)}
-          />
-        );
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} selectedResponsavelId={selectedResponsavelId} onResponsavelBack={() => setSelectedResponsavelId(null)} />;
       case 'systems':
         return <Systems />;
       case 'operational-calendar':
@@ -93,25 +64,12 @@ const Index = () => {
       case 'settings':
         return <Settings />;
       default:
-        return (
-          <CompanyList 
-            onSelectCompany={handleSelectCompany} 
-            onLucroRealSelect={() => setIsLucroRealSection(true)} 
-            selectedResponsavelId={selectedResponsavelId}
-            onResponsavelBack={() => setSelectedResponsavelId(null)}
-          />
-        );
+        return <CompanyList onSelectCompany={handleSelectCompany} onLucroRealSelect={() => setIsLucroRealSection(true)} selectedResponsavelId={selectedResponsavelId} onResponsavelBack={() => setSelectedResponsavelId(null)} />;
     }
   };
-  
-  return (
-    <SidebarProvider>
+  return <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <AppSidebar 
-          activeSection={activeSection} 
-          onSectionChange={setActiveSection} 
-          onResponsavelSelect={handleResponsavelSelect}
-        />
+        <AppSidebar activeSection={activeSection} onSectionChange={setActiveSection} onResponsavelSelect={handleResponsavelSelect} />
         
         <main className="flex-1 flex flex-col">
           <header className="sticky top-0 z-40 flex h-20 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
@@ -126,15 +84,7 @@ const Index = () => {
                 {activeSection === 'operational-calendar' && 'Calendário de Tarefas Operacionais'}
                 {activeSection === 'retificacoes' && 'Retificações'}
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {activeSection === 'dashboard' && 'Visão geral do sistema e estatísticas fiscais'}
-                {activeSection === 'responsavel' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por responsável')}
-                {activeSection === 'companies' && (selectedCompanyId ? 'Visualize todos os dados fiscais da empresa' : 'Gerencie empresas por regime tributário')}
-                {activeSection === 'settings' && 'Gerencie senhas de acesso e configurações de segurança'}
-                {activeSection === 'systems' && 'Gerencie seus sistemas e links de acesso'}
-                {activeSection === 'operational-calendar' && 'Gerencie tarefas operacionais organizadas por período'}
-                {activeSection === 'retificacoes' && 'Controle de projetos, pendências e obrigações'}
-              </p>
+              
             </div>
           </header>
           
@@ -143,8 +93,6 @@ const Index = () => {
           </div>
         </main>
       </div>
-    </SidebarProvider>
-  );
+    </SidebarProvider>;
 };
-
 export default Index;
