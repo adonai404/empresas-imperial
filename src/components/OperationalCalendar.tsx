@@ -257,15 +257,23 @@ export function OperationalCalendar() {
     return tasks.filter(task => {
       // Filtro por Responsável
       if (filterResponsavel !== "todos") {
-        const taskResponsaveis = task.responsaveis.split(", ").map(r => r.trim());
-        if (!taskResponsaveis.includes(filterResponsavel)) {
+        const taskResponsaveisStr = task.responsaveis?.toLowerCase() || "";
+        const filterResponsavelLower = filterResponsavel.toLowerCase();
+        
+        // Verifica se o responsável está presente na string (mais flexível)
+        if (!taskResponsaveisStr.includes(filterResponsavelLower)) {
           return false;
         }
       }
       
       // Filtro por Se Aplica
-      if (filterSeAplica !== "todos" && task.se_aplica !== filterSeAplica) {
-        return false;
+      if (filterSeAplica !== "todos") {
+        const taskSeAplicaLower = (task.se_aplica || "").toLowerCase();
+        const filterSeAplicaLower = filterSeAplica.toLowerCase();
+        
+        if (taskSeAplicaLower !== filterSeAplicaLower) {
+          return false;
+        }
       }
       
       // Filtro por Situação
