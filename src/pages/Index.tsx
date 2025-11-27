@@ -10,6 +10,7 @@ import { Settings } from '@/components/Settings';
 import { Systems } from '@/components/Systems';
 import { PdfBatchUpload } from '@/components/PdfBatchUpload';
 import { OperationalCalendar } from '@/components/OperationalCalendar';
+import { ProjectsPanel } from '@/components/ProjectsPanel';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 
@@ -87,6 +88,8 @@ const Index = () => {
         return <Systems />;
       case 'operational-calendar':
         return <OperationalCalendar />;
+      case 'retificacoes':
+        return <ProjectsPanel />;
       case 'settings':
         return <Settings />;
       default:
@@ -121,6 +124,7 @@ const Index = () => {
                 {activeSection === 'settings' && 'Configurações'}
                 {activeSection === 'systems' && 'Processos'}
                 {activeSection === 'operational-calendar' && 'Calendário de Tarefas Operacionais'}
+                {activeSection === 'retificacoes' && 'Retificações'}
               </h1>
               <p className="text-sm text-muted-foreground">
                 {activeSection === 'dashboard' && 'Visão geral do sistema e estatísticas fiscais'}
@@ -129,6 +133,7 @@ const Index = () => {
                 {activeSection === 'settings' && 'Gerencie senhas de acesso e configurações de segurança'}
                 {activeSection === 'systems' && 'Gerencie seus sistemas e links de acesso'}
                 {activeSection === 'operational-calendar' && 'Gerencie tarefas operacionais organizadas por período'}
+                {activeSection === 'retificacoes' && 'Controle de projetos, pendências e obrigações'}
               </p>
             </div>
           </header>

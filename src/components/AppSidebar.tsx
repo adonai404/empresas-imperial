@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Upload, Building2, Settings, User, Wrench, Calendar, Home } from "lucide-react";
+import { Upload, Building2, Settings, User, Wrench, Calendar, Home, FileEdit } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import {
   Sidebar,
@@ -47,6 +47,11 @@ const utilitiesSubSections = [
     id: "operational-calendar",
     title: "Calendário",
     icon: Calendar,
+  },
+  {
+    id: "retificacoes",
+    title: "Retificações",
+    icon: FileEdit,
   },
 ];
 export function AppSidebar({ activeSection, onSectionChange, onResponsavelSelect }: AppSidebarProps) {

@@ -11,13 +11,12 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime, useSegments, useCreateSegment, useUpdateCompanySegment, useDeleteSegment } from '@/hooks/useFiscalData';
-import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet, Tag, Wrench } from 'lucide-react';
+import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet, Tag } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { PasswordChangeAuth } from './PasswordChangeAuth';
-import { ProjectsPanel } from './ProjectsPanel';
 
 interface SettingsProps {}
 
@@ -480,7 +479,7 @@ export const Settings = ({}: SettingsProps) => {
 
       {/* Tabs para as subseções */}
       <Tabs defaultValue="security" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Segurança
@@ -492,10 +491,6 @@ export const Settings = ({}: SettingsProps) => {
           <TabsTrigger value="segments" className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
             Segmentos das Empresas
-          </TabsTrigger>
-          <TabsTrigger value="utilitarios" className="flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            Utilitários
           </TabsTrigger>
         </TabsList>
 
@@ -1324,11 +1319,6 @@ export const Settings = ({}: SettingsProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
-        </TabsContent>
-
-        {/* Subseção Utilitários */}
-        <TabsContent value="utilitarios" className="space-y-6">
-          <ProjectsPanel />
         </TabsContent>
       </Tabs>
 
