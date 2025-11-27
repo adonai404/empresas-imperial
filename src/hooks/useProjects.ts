@@ -45,10 +45,10 @@ export const useAddProject = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Projeto adicionado com sucesso");
+      toast.success("Retificação adicionada com sucesso");
     },
     onError: (error) => {
-      toast.error("Erro ao adicionar projeto: " + error.message);
+      toast.error("Erro ao adicionar retificação: " + error.message);
     },
   });
 };
@@ -70,10 +70,10 @@ export const useUpdateProject = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Projeto atualizado com sucesso");
+      toast.success("Retificação atualizada com sucesso");
     },
     onError: (error) => {
-      toast.error("Erro ao atualizar projeto: " + error.message);
+      toast.error("Erro ao atualizar retificação: " + error.message);
     },
   });
 };
@@ -92,10 +92,10 @@ export const useDeleteProject = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
-      toast.success("Projeto removido com sucesso");
+      toast.success("Retificação removida com sucesso");
     },
     onError: (error) => {
-      toast.error("Erro ao remover projeto: " + error.message);
+      toast.error("Erro ao remover retificação: " + error.message);
     },
   });
 };

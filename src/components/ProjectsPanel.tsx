@@ -207,9 +207,9 @@ export const ProjectsPanel = () => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FolderKanban className="h-5 w-5" />
-            Painel de Controle de Projetos
+        <CardTitle className="flex items-center gap-2">
+          <FolderKanban className="h-5 w-5" />
+          Painel de Retificações
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -226,12 +226,12 @@ export const ProjectsPanel = () => {
   const ProjectForm = () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="nome">Nome do Projeto</Label>
+        <Label htmlFor="nome">Nome da Retificação</Label>
         <Input
           id="nome"
           value={nomeProjeto}
           onChange={(e) => setNomeProjeto(e.target.value)}
-          placeholder="Digite o nome do projeto"
+          placeholder="Digite o nome da retificação"
         />
       </div>
 
@@ -363,23 +363,23 @@ export const ProjectsPanel = () => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <FolderKanban className="h-5 w-5" />
-          Painel de Controle de Projetos
-        </CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <FolderKanban className="h-5 w-5" />
+            Painel de Retificações
+          </CardTitle>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => { resetForm(); setIsAddDialogOpen(true); }}>
               <Plus className="h-4 w-4 mr-2" />
-              Novo Projeto
+              Nova Retificação
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Adicionar Novo Projeto</DialogTitle>
-              <DialogDescription>
-                Preencha os dados do projeto para adicionar ao painel de controle.
-              </DialogDescription>
+            <DialogTitle>Adicionar Nova Retificação</DialogTitle>
+            <DialogDescription>
+              Preencha os dados da retificação para adicionar ao painel.
+            </DialogDescription>
             </DialogHeader>
             <ProjectForm />
             <DialogFooter>
@@ -396,14 +396,14 @@ export const ProjectsPanel = () => {
       <CardContent>
         {projects.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            Nenhum projeto cadastrado. Clique em "Novo Projeto" para adicionar.
+            Nenhuma retificação cadastrada. Clique em "Nova Retificação" para adicionar.
           </div>
         ) : (
           <div className="border border-border rounded-lg overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50">
-                  <TableHead className="font-semibold">Nome do Projeto</TableHead>
+                  <TableHead className="font-semibold">Nome da Retificação</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
                   <TableHead className="font-semibold">Prioridade</TableHead>
                   <TableHead className="font-semibold">Prazo Final</TableHead>
@@ -462,7 +462,7 @@ export const ProjectsPanel = () => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Tem certeza que deseja excluir o projeto "{project.nome_projeto}"? Esta ação não pode ser desfeita.
+                                Tem certeza que deseja excluir a retificação "{project.nome_projeto}"? Esta ação não pode ser desfeita.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -490,9 +490,9 @@ export const ProjectsPanel = () => {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Projeto</DialogTitle>
+            <DialogTitle>Editar Retificação</DialogTitle>
             <DialogDescription>
-              Atualize os dados do projeto.
+              Atualize os dados da retificação.
             </DialogDescription>
           </DialogHeader>
           <ProjectForm />
