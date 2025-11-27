@@ -317,6 +317,53 @@ export type Database = {
           },
         ]
       }
+      obligation_tasks: {
+        Row: {
+          competencia_id: string | null
+          completed: boolean | null
+          created_at: string
+          id: string
+          order_index: number | null
+          periodo: string
+          responsaveis: string
+          se_aplica: string
+          tarefa: string
+          updated_at: string
+        }
+        Insert: {
+          competencia_id?: string | null
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          periodo: string
+          responsaveis: string
+          se_aplica: string
+          tarefa: string
+          updated_at?: string
+        }
+        Update: {
+          competencia_id?: string | null
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          order_index?: number | null
+          periodo?: string
+          responsaveis?: string
+          se_aplica?: string
+          tarefa?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "obligation_tasks_competencia_id_fkey"
+            columns: ["competencia_id"]
+            isOneToOne: false
+            referencedRelation: "competencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operational_tasks: {
         Row: {
           competencia_id: string | null
