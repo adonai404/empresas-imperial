@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer, ClipboardList, FileCheck } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -11,7 +11,6 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useOperationalTasks,
   useAddOperationalTask,
@@ -19,13 +18,6 @@ import {
   useDeleteOperationalTask,
   OperationalTask,
 } from "@/hooks/useOperationalTasks";
-import {
-  useObligationTasks,
-  useAddObligationTask,
-  useUpdateObligationTask,
-  useDeleteObligationTask,
-  ObligationTask,
-} from "@/hooks/useObligationTasks";
 import {
   useCompetencias,
   useAddCompetencia,
@@ -36,16 +28,12 @@ import {
 import { useSeAplicaOptions, useAddSeAplicaOption } from "@/hooks/useSeAplicaOptions";
 import { useResponsaveis, useAddResponsavel } from "@/hooks/useResponsaveis";
 
-type TaskType = "operational" | "obligation";
-
 export function OperationalCalendar() {
   const [selectedCompetencia, setSelectedCompetencia] = useState<string | null>(null);
   const [isCompetenciaDialogOpen, setIsCompetenciaDialogOpen] = useState(false);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [editingCompetencia, setEditingCompetencia] = useState<Competencia | null>(null);
-  const [editingTask, setEditingTask] = useState<OperationalTask | ObligationTask | null>(null);
-  const [currentTaskType, setCurrentTaskType] = useState<TaskType>("operational");
-  const [activeTab, setActiveTab] = useState<TaskType>("operational");
+  const [editingTask, setEditingTask] = useState<OperationalTask | null>(null);
   
   const [competenciaFormData, setCompetenciaFormData] = useState({ nome: "" });
   const [taskFormData, setTaskFormData] = useState({
@@ -64,23 +52,15 @@ export function OperationalCalendar() {
   const [isSeAplicaOpen, setIsSeAplicaOpen] = useState(false);
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
-  const { data: operationalTasks, isLoading: isLoadingOperationalTasks } = useOperationalTasks(selectedCompetencia || undefined);
-  const { data: obligationTasks, isLoading: isLoadingObligationTasks } = useObligationTasks(selectedCompetencia || undefined);
+  const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
   const { data: seAplicaOptions } = useSeAplicaOptions();
   const { data: responsaveis } = useResponsaveis();
-  
   const addCompetencia = useAddCompetencia();
   const updateCompetencia = useUpdateCompetencia();
   const deleteCompetencia = useDeleteCompetencia();
-  
-  const addOperationalTask = useAddOperationalTask();
-  const updateOperationalTask = useUpdateOperationalTask();
-  const deleteOperationalTask = useDeleteOperationalTask();
-  
-  const addObligationTask = useAddObligationTask();
-  const updateObligationTask = useUpdateObligationTask();
-  const deleteObligationTask = useDeleteObligationTask();
-  
+  const addTask = useAddOperationalTask();
+  const updateTask = useUpdateOperationalTask();
+  const deleteTask = useDeleteOperationalTask();
   const addSeAplicaOption = useAddSeAplicaOption();
   const addResponsavel = useAddResponsavel();
 
@@ -117,10 +97,7 @@ export function OperationalCalendar() {
     setIsCompetenciaDialogOpen(true);
   };
 
-  const handleOpenTaskDialog = (task?: OperationalTask | ObligationTask, type?: TaskType) => {
-    if (type) {
-      setCurrentTaskType(type);
-    }
+  const handleOpenTaskDialog = (task?: OperationalTask) => {
     if (task) {
       setEditingTask(task);
       setTaskFormData({
@@ -163,18 +140,10 @@ export function OperationalCalendar() {
       competencia_id: selectedCompetencia,
     };
     
-    if (currentTaskType === "operational") {
-      if (editingTask) {
-        await updateOperationalTask.mutateAsync({ id: editingTask.id, ...taskData });
-      } else {
-        await addOperationalTask.mutateAsync(taskData);
-      }
+    if (editingTask) {
+      await updateTask.mutateAsync({ id: editingTask.id, ...taskData });
     } else {
-      if (editingTask) {
-        await updateObligationTask.mutateAsync({ id: editingTask.id, ...taskData });
-      } else {
-        await addObligationTask.mutateAsync(taskData);
-      }
+      await addTask.mutateAsync(taskData);
     }
     
     setIsTaskDialogOpen(false);
@@ -190,17 +159,13 @@ export function OperationalCalendar() {
     }
   };
 
-  const handleDeleteTask = async (task: OperationalTask | ObligationTask, type: TaskType) => {
+  const handleDeleteTask = async (task: OperationalTask) => {
     if (confirm("Tem certeza que deseja excluir esta tarefa?")) {
-      if (type === "operational") {
-        await deleteOperationalTask.mutateAsync({ id: task.id, competencia_id: task.competencia_id });
-      } else {
-        await deleteObligationTask.mutateAsync({ id: task.id, competencia_id: task.competencia_id });
-      }
+      await deleteTask.mutateAsync({ id: task.id, competencia_id: task.competencia_id });
     }
   };
 
-  const handlePrintTasks = (tasks: (OperationalTask | ObligationTask)[] | undefined, title: string) => {
+  const handlePrintTasks = () => {
     if (!tasks || tasks.length === 0) return;
     
     const printWindow = window.open('', '_blank');
@@ -210,7 +175,7 @@ export function OperationalCalendar() {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${title} - ${currentCompetencia?.nome}</title>
+          <title>Tarefas Operacionais - ${currentCompetencia?.nome}</title>
           <style>
             @media print {
               @page { margin: 1cm; }
@@ -246,7 +211,7 @@ export function OperationalCalendar() {
           </style>
         </head>
         <body>
-          <h1>${title} - ${currentCompetencia?.nome}</h1>
+          <h1>Tarefas Operacionais - ${currentCompetencia?.nome}</h1>
           <table>
             <thead>
               <tr>
@@ -279,6 +244,15 @@ export function OperationalCalendar() {
       printWindow.close();
     }, 250);
   };
+
+  // Agrupar tarefas por período
+  const groupedTasks = tasks?.reduce((acc, task) => {
+    if (!acc[task.periodo]) {
+      acc[task.periodo] = [];
+    }
+    acc[task.periodo].push(task);
+    return acc;
+  }, {} as Record<string, OperationalTask[]>);
 
   if (isLoadingCompetencias) {
     return <div className="flex items-center justify-center p-8">Carregando...</div>;
@@ -395,358 +369,6 @@ export function OperationalCalendar() {
   // Mostrar tarefas da competência selecionada
   const currentCompetencia = competencias?.find(c => c.id === selectedCompetencia);
 
-  const renderTaskTable = (tasks: (OperationalTask | ObligationTask)[] | undefined, isLoading: boolean, type: TaskType, emptyMessage: string) => {
-    if (isLoading) {
-      return <div className="flex items-center justify-center p-8">Carregando tarefas...</div>;
-    }
-
-    if (!tasks || tasks.length === 0) {
-      return (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            {type === "operational" ? (
-              <ClipboardList className="h-12 w-12 text-muted-foreground mb-4" />
-            ) : (
-              <FileCheck className="h-12 w-12 text-muted-foreground mb-4" />
-            )}
-            <p className="text-muted-foreground text-center">
-              {emptyMessage}
-              <br />
-              Clique em "Nova {type === "operational" ? "Tarefa" : "Obrigação"}" para começar.
-            </p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="border rounded-md overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted hover:bg-muted border-b-2">
-              <TableHead className="font-bold border-r h-9 px-3 w-[150px] text-foreground">Período/Dia</TableHead>
-              <TableHead className="font-bold border-r h-9 px-3 text-foreground">Tarefa</TableHead>
-              <TableHead className="font-bold border-r h-9 px-3 w-[150px] text-foreground">Se Aplica</TableHead>
-              <TableHead className="font-bold border-r h-9 px-3 w-[180px] text-foreground">Responsáveis</TableHead>
-              <TableHead className="font-bold border-r h-9 px-3 w-[120px] text-center text-foreground">Situação</TableHead>
-              <TableHead className="font-bold h-9 px-3 w-[100px] text-center text-foreground">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tasks?.map((task, idx) => (
-              <TableRow 
-                key={task.id}
-                className={`${idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/50 border-b`}
-              >
-                <TableCell className="border-r p-2 px-3 align-top text-sm font-medium">{task.periodo}</TableCell>
-                <TableCell className="border-r p-2 px-3 align-top text-sm">{task.tarefa}</TableCell>
-                <TableCell className="border-r p-2 px-3 align-top text-sm">{task.se_aplica}</TableCell>
-                <TableCell className="border-r p-2 px-3 align-top">
-                  <div className="flex flex-wrap gap-1">
-                    {task.responsaveis.split(", ").map((resp, idx) => (
-                      <Badge key={idx} variant="secondary" className="text-xs">
-                        {resp}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell className="border-r p-2 px-3 align-top">
-                  <div className="flex justify-center">
-                    <Button
-                      variant={task.completed ? "default" : "outline"}
-                      size="sm"
-                      className="h-7 text-xs"
-                      onClick={() => {
-                        if (type === "operational") {
-                          updateOperationalTask.mutate({ id: task.id, completed: !task.completed });
-                        } else {
-                          updateObligationTask.mutate({ id: task.id, completed: !task.completed });
-                        }
-                      }}
-                    >
-                      {task.completed ? "Concluída" : "Pendente"}
-                    </Button>
-                  </div>
-                </TableCell>
-                <TableCell className="p-2 px-3 align-top">
-                  <div className="flex justify-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleOpenTaskDialog(task, type)}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => handleDeleteTask(task, type)}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  };
-
-  const renderTaskDialog = () => (
-    <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-      <DialogContent className="sm:max-w-[600px]">
-        <form onSubmit={handleSubmitTask}>
-          <DialogHeader>
-            <DialogTitle>
-              {editingTask 
-                ? `Editar ${currentTaskType === "operational" ? "Tarefa" : "Obrigação"}` 
-                : `Nova ${currentTaskType === "operational" ? "Tarefa" : "Obrigação"}`}
-            </DialogTitle>
-            <DialogDescription>
-              Preencha os campos para {editingTask ? "atualizar" : "adicionar"} uma {currentTaskType === "operational" ? "tarefa operacional" : "obrigação"}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="periodo">Período/Dia *</Label>
-              <Input
-                id="periodo"
-                placeholder="Ex: Dia 01, Dia 01 a 05"
-                value={taskFormData.periodo}
-                onChange={(e) => setTaskFormData({ ...taskFormData, periodo: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="tarefa">{currentTaskType === "operational" ? "Tarefa" : "Obrigação"} *</Label>
-              <Textarea
-                id="tarefa"
-                placeholder={currentTaskType === "operational" ? "O que deve ser feito" : "Qual obrigação deve ser entregue"}
-                value={taskFormData.tarefa}
-                onChange={(e) => setTaskFormData({ ...taskFormData, tarefa: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="se_aplica">Se Aplica *</Label>
-              <Popover open={isSeAplicaOpen} onOpenChange={setIsSeAplicaOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between"
-                  >
-                    {taskFormData.se_aplica || "Selecione ou crie novo"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar opção..." />
-                    <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-auto">
-                      {seAplicaOptions?.map((option) => (
-                        <CommandItem
-                          key={option.id}
-                          onSelect={() => {
-                            setTaskFormData({ ...taskFormData, se_aplica: option.nome });
-                            setIsSeAplicaOpen(false);
-                          }}
-                        >
-                          {option.nome}
-                        </CommandItem>
-                      ))}
-                      <CommandItem
-                        onSelect={() => {
-                          setShowNewSeAplica(true);
-                          setIsSeAplicaOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Plus className="h-4 w-4" />
-                          Criar nova opção
-                        </div>
-                      </CommandItem>
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {showNewSeAplica && (
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder="Nova opção"
-                    value={newSeAplica}
-                    onChange={(e) => setNewSeAplica(e.target.value)}
-                    autoFocus
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={async () => {
-                      if (newSeAplica.trim()) {
-                        await addSeAplicaOption.mutateAsync(newSeAplica.trim());
-                        setTaskFormData({ ...taskFormData, se_aplica: newSeAplica.trim() });
-                        setNewSeAplica("");
-                        setShowNewSeAplica(false);
-                      }
-                    }}
-                  >
-                    Adicionar
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setShowNewSeAplica(false);
-                      setNewSeAplica("");
-                      setIsSeAplicaOpen(true);
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="responsaveis">Responsáveis *</Label>
-              <Popover open={isResponsaveisOpen} onOpenChange={setIsResponsaveisOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className="w-full justify-between"
-                  >
-                    {taskFormData.responsaveis.length > 0
-                      ? `${taskFormData.responsaveis.length} selecionado(s)`
-                      : "Selecione responsáveis"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandInput placeholder="Buscar responsável..." />
-                    <CommandEmpty>Nenhum responsável encontrado.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-auto">
-                      {responsaveis?.map((responsavel) => {
-                        const isSelected = taskFormData.responsaveis.includes(responsavel.nome);
-                        return (
-                          <CommandItem
-                            key={responsavel.id}
-                            onSelect={() => {
-                              const newResponsaveis = isSelected
-                                ? taskFormData.responsaveis.filter((r) => r !== responsavel.nome)
-                                : [...taskFormData.responsaveis, responsavel.nome];
-                              setTaskFormData({ ...taskFormData, responsaveis: newResponsaveis });
-                            }}
-                          >
-                            <div className="flex items-center gap-2 w-full">
-                              <div className={`flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary border-primary' : 'border-input'}`}>
-                                {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
-                              </div>
-                              <span>{responsavel.nome}</span>
-                            </div>
-                          </CommandItem>
-                        );
-                      })}
-                      <CommandItem
-                        onSelect={() => {
-                          setShowNewResponsavel(true);
-                          setIsResponsaveisOpen(false);
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Plus className="h-4 w-4" />
-                          Criar novo responsável
-                        </div>
-                      </CommandItem>
-                    </CommandGroup>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              {taskFormData.responsaveis.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {taskFormData.responsaveis.map((responsavel) => (
-                    <Badge key={responsavel} variant="secondary" className="gap-1">
-                      {responsavel}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
-                        onClick={() => {
-                          setTaskFormData({
-                            ...taskFormData,
-                            responsaveis: taskFormData.responsaveis.filter((r) => r !== responsavel),
-                          });
-                        }}
-                      />
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {showNewResponsavel && (
-                <div className="flex gap-2 mt-2">
-                  <Input
-                    placeholder="Novo responsável"
-                    value={newResponsavel}
-                    onChange={(e) => setNewResponsavel(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    onClick={async () => {
-                      if (newResponsavel.trim()) {
-                        await addResponsavel.mutateAsync(newResponsavel.trim());
-                        setTaskFormData({ 
-                          ...taskFormData, 
-                          responsaveis: [...taskFormData.responsaveis, newResponsavel.trim()] 
-                        });
-                        setNewResponsavel("");
-                        setShowNewResponsavel(false);
-                        setIsResponsaveisOpen(true);
-                      }
-                    }}
-                  >
-                    Adicionar
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setShowNewResponsavel(false);
-                      setNewResponsavel("");
-                      setIsResponsaveisOpen(true);
-                    }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              )}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="order_index">Ordem</Label>
-              <Input
-                id="order_index"
-                type="number"
-                value={taskFormData.order_index}
-                onChange={(e) => setTaskFormData({ ...taskFormData, order_index: parseInt(e.target.value) })}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button type="submit">
-              {editingTask ? "Atualizar" : "Adicionar"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -760,61 +382,353 @@ export function OperationalCalendar() {
           </Button>
           <h1 className="text-3xl font-bold text-foreground">{currentCompetencia?.nome}</h1>
           <p className="text-muted-foreground mt-1">
-            Gerencie tarefas operacionais e obrigações desta competência
+            Tarefas operacionais desta competência
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handlePrintTasks}
+            disabled={!tasks || tasks.length === 0}
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimir
+          </Button>
+          <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => handleOpenTaskDialog()}>
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Tarefa
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px]">
+            <form onSubmit={handleSubmitTask}>
+              <DialogHeader>
+                <DialogTitle>{editingTask ? "Editar Tarefa" : "Nova Tarefa"}</DialogTitle>
+                <DialogDescription>
+                  Preencha os campos para {editingTask ? "atualizar" : "adicionar"} uma tarefa operacional
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="periodo">Período/Dia *</Label>
+                  <Input
+                    id="periodo"
+                    placeholder="Ex: Dia 01, Dia 01 a 05"
+                    value={taskFormData.periodo}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, periodo: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="tarefa">Tarefa *</Label>
+                  <Textarea
+                    id="tarefa"
+                    placeholder="O que deve ser feito"
+                    value={taskFormData.tarefa}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, tarefa: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="se_aplica">Se Aplica *</Label>
+                  <Popover open={isSeAplicaOpen} onOpenChange={setIsSeAplicaOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                      >
+                        {taskFormData.se_aplica || "Selecione ou crie novo"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar opção..." />
+                        <CommandEmpty>Nenhuma opção encontrada.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {seAplicaOptions?.map((option) => (
+                            <CommandItem
+                              key={option.id}
+                              onSelect={() => {
+                                setTaskFormData({ ...taskFormData, se_aplica: option.nome });
+                                setIsSeAplicaOpen(false);
+                              }}
+                            >
+                              {option.nome}
+                            </CommandItem>
+                          ))}
+                          <CommandItem
+                            onSelect={() => {
+                              setShowNewSeAplica(true);
+                              setIsSeAplicaOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Plus className="h-4 w-4" />
+                              Criar nova opção
+                            </div>
+                          </CommandItem>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {showNewSeAplica && (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        placeholder="Nova opção"
+                        value={newSeAplica}
+                        onChange={(e) => setNewSeAplica(e.target.value)}
+                        autoFocus
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          if (newSeAplica.trim()) {
+                            await addSeAplicaOption.mutateAsync(newSeAplica.trim());
+                            setTaskFormData({ ...taskFormData, se_aplica: newSeAplica.trim() });
+                            setNewSeAplica("");
+                            setShowNewSeAplica(false);
+                          }
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowNewSeAplica(false);
+                          setNewSeAplica("");
+                          setIsSeAplicaOpen(true);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="responsaveis">Responsáveis *</Label>
+                  <Popover open={isResponsaveisOpen} onOpenChange={setIsResponsaveisOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className="w-full justify-between"
+                      >
+                        {taskFormData.responsaveis.length > 0
+                          ? `${taskFormData.responsaveis.length} selecionado(s)`
+                          : "Selecione responsáveis"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-full p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Buscar responsável..." />
+                        <CommandEmpty>Nenhum responsável encontrado.</CommandEmpty>
+                        <CommandGroup className="max-h-64 overflow-auto">
+                          {responsaveis?.map((responsavel) => {
+                            const isSelected = taskFormData.responsaveis.includes(responsavel.nome);
+                            return (
+                              <CommandItem
+                                key={responsavel.id}
+                                onSelect={() => {
+                                  const newResponsaveis = isSelected
+                                    ? taskFormData.responsaveis.filter((r) => r !== responsavel.nome)
+                                    : [...taskFormData.responsaveis, responsavel.nome];
+                                  setTaskFormData({ ...taskFormData, responsaveis: newResponsaveis });
+                                }}
+                              >
+                                <div className="flex items-center gap-2 w-full">
+                                  <div className={`flex h-4 w-4 items-center justify-center rounded-sm border ${isSelected ? 'bg-primary border-primary' : 'border-input'}`}>
+                                    {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                                  </div>
+                                  <span>{responsavel.nome}</span>
+                                </div>
+                              </CommandItem>
+                            );
+                          })}
+                          <CommandItem
+                            onSelect={() => {
+                              setShowNewResponsavel(true);
+                              setIsResponsaveisOpen(false);
+                            }}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Plus className="h-4 w-4" />
+                              Criar novo responsável
+                            </div>
+                          </CommandItem>
+                        </CommandGroup>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                  {taskFormData.responsaveis.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {taskFormData.responsaveis.map((responsavel) => (
+                        <Badge key={responsavel} variant="secondary" className="gap-1">
+                          {responsavel}
+                          <X
+                            className="h-3 w-3 cursor-pointer"
+                            onClick={() => {
+                              setTaskFormData({
+                                ...taskFormData,
+                                responsaveis: taskFormData.responsaveis.filter((r) => r !== responsavel),
+                              });
+                            }}
+                          />
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {showNewResponsavel && (
+                    <div className="flex gap-2 mt-2">
+                      <Input
+                        placeholder="Novo responsável"
+                        value={newResponsavel}
+                        onChange={(e) => setNewResponsavel(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={async () => {
+                          if (newResponsavel.trim()) {
+                            await addResponsavel.mutateAsync(newResponsavel.trim());
+                            setTaskFormData({ 
+                              ...taskFormData, 
+                              responsaveis: [...taskFormData.responsaveis, newResponsavel.trim()] 
+                            });
+                            setNewResponsavel("");
+                            setShowNewResponsavel(false);
+                            setIsResponsaveisOpen(true);
+                          }
+                        }}
+                      >
+                        Adicionar
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setShowNewResponsavel(false);
+                          setNewResponsavel("");
+                          setIsResponsaveisOpen(true);
+                        }}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="order_index">Ordem</Label>
+                  <Input
+                    id="order_index"
+                    type="number"
+                    value={taskFormData.order_index}
+                    onChange={(e) => setTaskFormData({ ...taskFormData, order_index: parseInt(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsTaskDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button type="submit">
+                  {editingTask ? "Atualizar" : "Adicionar"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as TaskType)} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="operational" className="flex items-center gap-2">
-            <ClipboardList className="h-4 w-4" />
-            Tarefas Operacionais
-          </TabsTrigger>
-          <TabsTrigger value="obligation" className="flex items-center gap-2">
-            <FileCheck className="h-4 w-4" />
-            Obrigações
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="operational" className="mt-6">
-          <div className="flex justify-end gap-2 mb-4">
-            <Button
-              variant="outline"
-              onClick={() => handlePrintTasks(operationalTasks, "Tarefas Operacionais")}
-              disabled={!operationalTasks || operationalTasks.length === 0}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-            <Button onClick={() => handleOpenTaskDialog(undefined, "operational")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Tarefa
-            </Button>
-          </div>
-          {renderTaskTable(operationalTasks, isLoadingOperationalTasks, "operational", "Nenhuma tarefa operacional cadastrada nesta competência ainda.")}
-        </TabsContent>
-
-        <TabsContent value="obligation" className="mt-6">
-          <div className="flex justify-end gap-2 mb-4">
-            <Button
-              variant="outline"
-              onClick={() => handlePrintTasks(obligationTasks, "Obrigações a Serem Entregues")}
-              disabled={!obligationTasks || obligationTasks.length === 0}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Imprimir
-            </Button>
-            <Button onClick={() => handleOpenTaskDialog(undefined, "obligation")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Obrigação
-            </Button>
-          </div>
-          {renderTaskTable(obligationTasks, isLoadingObligationTasks, "obligation", "Nenhuma obrigação cadastrada nesta competência ainda.")}
-        </TabsContent>
-      </Tabs>
-
-      {renderTaskDialog()}
+      {isLoadingTasks ? (
+        <div className="flex items-center justify-center p-8">Carregando tarefas...</div>
+      ) : !tasks || tasks.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-center">
+              Nenhuma tarefa cadastrada nesta competência ainda.
+              <br />
+              Clique em "Nova Tarefa" para começar.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="border rounded-md overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted hover:bg-muted border-b-2">
+                <TableHead className="font-bold border-r h-9 px-3 w-[150px] text-foreground">Período/Dia</TableHead>
+                <TableHead className="font-bold border-r h-9 px-3 text-foreground">Tarefa</TableHead>
+                <TableHead className="font-bold border-r h-9 px-3 w-[150px] text-foreground">Se Aplica</TableHead>
+                <TableHead className="font-bold border-r h-9 px-3 w-[180px] text-foreground">Responsáveis</TableHead>
+                <TableHead className="font-bold border-r h-9 px-3 w-[120px] text-center text-foreground">Situação</TableHead>
+                <TableHead className="font-bold h-9 px-3 w-[100px] text-center text-foreground">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tasks?.map((task, idx) => (
+                <TableRow 
+                  key={task.id}
+                  className={`${idx % 2 === 0 ? 'bg-background' : 'bg-muted/20'} hover:bg-muted/50 border-b`}
+                >
+                  <TableCell className="border-r p-2 px-3 align-top text-sm font-medium">{task.periodo}</TableCell>
+                  <TableCell className="border-r p-2 px-3 align-top text-sm">{task.tarefa}</TableCell>
+                  <TableCell className="border-r p-2 px-3 align-top text-sm">{task.se_aplica}</TableCell>
+                  <TableCell className="border-r p-2 px-3 align-top">
+                    <div className="flex flex-wrap gap-1">
+                      {task.responsaveis.split(", ").map((resp, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {resp}
+                        </Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell className="border-r p-2 px-3 align-top">
+                    <div className="flex justify-center">
+                      <Button
+                        variant={task.completed ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => updateTask.mutate({ id: task.id, completed: !task.completed })}
+                      >
+                        {task.completed ? "Concluída" : "Pendente"}
+                      </Button>
+                    </div>
+                  </TableCell>
+                  <TableCell className="p-2 px-3 align-top">
+                    <div className="flex justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleOpenTaskDialog(task)}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => handleDeleteTask(task)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }
