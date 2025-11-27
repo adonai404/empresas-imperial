@@ -458,6 +458,42 @@ export type Database = {
           },
         ]
       }
+      projects: {
+        Row: {
+          created_at: string
+          data_conclusao: string | null
+          declaracoes: string[] | null
+          id: string
+          nome_projeto: string
+          prazo_final: string | null
+          prioridade: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_conclusao?: string | null
+          declaracoes?: string[] | null
+          id?: string
+          nome_projeto: string
+          prazo_final?: string | null
+          prioridade?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_conclusao?: string | null
+          declaracoes?: string[] | null
+          id?: string
+          nome_projeto?: string
+          prazo_final?: string | null
+          prioridade?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       responsaveis: {
         Row: {
           created_at: string | null
