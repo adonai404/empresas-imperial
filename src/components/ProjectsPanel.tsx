@@ -226,12 +226,12 @@ export const ProjectsPanel = () => {
   const ProjectForm = () => (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label htmlFor="nome">Nome da Retificação</Label>
+        <Label htmlFor="nome">Nome da Empresa</Label>
         <Input
           id="nome"
           value={nomeProjeto}
           onChange={(e) => setNomeProjeto(e.target.value)}
-          placeholder="Digite o nome da retificação"
+          placeholder="Digite o nome da empresa"
         />
       </div>
 
