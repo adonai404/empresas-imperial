@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer, Filter } from "lucide-react";
+import { useState } from "react";
+import { Plus, Pencil, Trash2, Calendar, FolderOpen, X, Check, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -50,11 +50,6 @@ export function OperationalCalendar() {
   const [showNewResponsavel, setShowNewResponsavel] = useState(false);
   const [isResponsaveisOpen, setIsResponsaveisOpen] = useState(false);
   const [isSeAplicaOpen, setIsSeAplicaOpen] = useState(false);
-  
-  // Filtros
-  const [filterResponsavel, setFilterResponsavel] = useState<string>("todos");
-  const [filterSeAplica, setFilterSeAplica] = useState<string>("todos");
-  const [filterSituacao, setFilterSituacao] = useState<string>("todos");
 
   const { data: competencias, isLoading: isLoadingCompetencias } = useCompetencias();
   const { data: tasks, isLoading: isLoadingTasks } = useOperationalTasks(selectedCompetencia || undefined);
@@ -250,46 +245,8 @@ export function OperationalCalendar() {
     }, 250);
   };
 
-  // Aplicar filtros
-  const filteredTasks = useMemo(() => {
-    if (!tasks) return [];
-    
-    return tasks.filter(task => {
-      // Filtro por Responsável
-      if (filterResponsavel !== "todos") {
-        const taskResponsaveisStr = task.responsaveis?.toLowerCase() || "";
-        const filterResponsavelLower = filterResponsavel.toLowerCase();
-        
-        // Verifica se o responsável está presente na string (mais flexível)
-        if (!taskResponsaveisStr.includes(filterResponsavelLower)) {
-          return false;
-        }
-      }
-      
-      // Filtro por Se Aplica
-      if (filterSeAplica !== "todos") {
-        const taskSeAplicaLower = (task.se_aplica || "").toLowerCase();
-        const filterSeAplicaLower = filterSeAplica.toLowerCase();
-        
-        if (taskSeAplicaLower !== filterSeAplicaLower) {
-          return false;
-        }
-      }
-      
-      // Filtro por Situação
-      if (filterSituacao !== "todos") {
-        const isCompleted = filterSituacao === "concluida";
-        if (task.completed !== isCompleted) {
-          return false;
-        }
-      }
-      
-      return true;
-    });
-  }, [tasks, filterResponsavel, filterSeAplica, filterSituacao]);
-
   // Agrupar tarefas por período
-  const groupedTasks = filteredTasks?.reduce((acc, task) => {
+  const groupedTasks = tasks?.reduce((acc, task) => {
     if (!acc[task.periodo]) {
       acc[task.periodo] = [];
     }
@@ -432,7 +389,7 @@ export function OperationalCalendar() {
           <Button
             variant="outline"
             onClick={handlePrintTasks}
-            disabled={!filteredTasks || filteredTasks.length === 0}
+            disabled={!tasks || tasks.length === 0}
           >
             <Printer className="h-4 w-4 mr-2" />
             Imprimir
@@ -690,70 +647,9 @@ export function OperationalCalendar() {
         </div>
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtros
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="filter-responsavel">Responsável</Label>
-              <Select value={filterResponsavel} onValueChange={setFilterResponsavel}>
-                <SelectTrigger id="filter-responsavel">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  {responsaveis?.map((resp) => (
-                    <SelectItem key={resp.id} value={resp.nome}>
-                      {resp.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="filter-se-aplica">Se Aplica</Label>
-              <Select value={filterSeAplica} onValueChange={setFilterSeAplica}>
-                <SelectTrigger id="filter-se-aplica">
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos</SelectItem>
-                  {seAplicaOptions?.map((option) => (
-                    <SelectItem key={option.id} value={option.nome}>
-                      {option.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="filter-situacao">Situação</Label>
-              <Select value={filterSituacao} onValueChange={setFilterSituacao}>
-                <SelectTrigger id="filter-situacao">
-                  <SelectValue placeholder="Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todas</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {isLoadingTasks ? (
         <div className="flex items-center justify-center p-8">Carregando tarefas...</div>
-      ) : !filteredTasks || filteredTasks.length === 0 ? (
+      ) : !tasks || tasks.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
