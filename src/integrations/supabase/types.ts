@@ -132,6 +132,24 @@ export type Database = {
         }
         Relationships: []
       }
+      declaracao_options: {
+        Row: {
+          created_at: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       fiscal_data: {
         Row: {
           company_id: string
