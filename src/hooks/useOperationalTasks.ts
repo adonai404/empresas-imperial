@@ -11,9 +11,19 @@ export interface OperationalTask {
   order_index: number;
   competencia_id: string | null;
   completed: boolean;
+  situacao: string;
   created_at?: string;
   updated_at?: string;
 }
+
+export const SITUACAO_OPTIONS = [
+  "Pendente",
+  "Concluído",
+  "Concluído Fora do Prazo",
+  "Atrasado",
+] as const;
+
+export type SituacaoType = typeof SITUACAO_OPTIONS[number];
 
 export const useOperationalTasks = (competenciaId?: string) => {
   return useQuery({

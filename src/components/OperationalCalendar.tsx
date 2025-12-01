@@ -17,7 +17,10 @@ import {
   useUpdateOperationalTask,
   useDeleteOperationalTask,
   OperationalTask,
+  SITUACAO_OPTIONS,
 } from "@/hooks/useOperationalTasks";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ChevronDown, CheckCircle2, Clock, AlertTriangle, CircleDot } from "lucide-react";
 import {
   useCompetencias,
   useAddCompetencia,
@@ -43,6 +46,7 @@ export function OperationalCalendar() {
     responsaveis: [] as string[],
     order_index: 0,
     completed: false,
+    situacao: "Pendente",
   });
   const [newSeAplica, setNewSeAplica] = useState("");
   const [newResponsavel, setNewResponsavel] = useState("");
@@ -77,6 +81,7 @@ export function OperationalCalendar() {
       responsaveis: [],
       order_index: 0,
       completed: false,
+      situacao: "Pendente",
     });
     setEditingTask(null);
     setNewSeAplica("");
@@ -107,6 +112,7 @@ export function OperationalCalendar() {
         responsaveis: task.responsaveis ? task.responsaveis.split(", ") : [],
         order_index: task.order_index,
         completed: task.completed,
+        situacao: task.situacao || "Pendente",
       });
     } else {
       resetTaskForm();
@@ -693,14 +699,45 @@ export function OperationalCalendar() {
                   </TableCell>
                   <TableCell className="border-r p-2 px-3 align-top">
                     <div className="flex justify-center">
-                      <Button
-                        variant={task.completed ? "default" : "outline"}
-                        size="sm"
-                        className="h-7 text-xs"
-                        onClick={() => updateTask.mutate({ id: task.id, completed: !task.completed })}
-                      >
-                        {task.completed ? "Concluída" : "Pendente"}
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className={`h-7 text-xs gap-1 ${
+                              task.situacao === "Concluído" 
+                                ? "bg-green-100 text-green-800 border-green-300 hover:bg-green-200" 
+                                : task.situacao === "Concluído Fora do Prazo"
+                                ? "bg-yellow-100 text-yellow-800 border-yellow-300 hover:bg-yellow-200"
+                                : task.situacao === "Atrasado"
+                                ? "bg-red-100 text-red-800 border-red-300 hover:bg-red-200"
+                                : "bg-muted"
+                            }`}
+                          >
+                            {task.situacao === "Concluído" && <CheckCircle2 className="h-3 w-3" />}
+                            {task.situacao === "Concluído Fora do Prazo" && <Clock className="h-3 w-3" />}
+                            {task.situacao === "Atrasado" && <AlertTriangle className="h-3 w-3" />}
+                            {task.situacao === "Pendente" && <CircleDot className="h-3 w-3" />}
+                            {task.situacao || "Pendente"}
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="center" className="bg-popover">
+                          {SITUACAO_OPTIONS.map((option) => (
+                            <DropdownMenuItem
+                              key={option}
+                              onClick={() => updateTask.mutate({ id: task.id, situacao: option })}
+                              className="cursor-pointer"
+                            >
+                              {option === "Concluído" && <CheckCircle2 className="h-4 w-4 mr-2 text-green-600" />}
+                              {option === "Concluído Fora do Prazo" && <Clock className="h-4 w-4 mr-2 text-yellow-600" />}
+                              {option === "Atrasado" && <AlertTriangle className="h-4 w-4 mr-2 text-red-600" />}
+                              {option === "Pendente" && <CircleDot className="h-4 w-4 mr-2 text-muted-foreground" />}
+                              {option}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                   <TableCell className="p-2 px-3 align-top">
