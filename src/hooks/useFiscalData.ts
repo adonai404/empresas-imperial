@@ -1416,7 +1416,9 @@ export const useImportExcel = () => {
       rbt12: number | null;
       entrada: number | null;
       saida: number | null;
+      servicos: number | null;
       imposto: number | null;
+      difal: number | null;
       sem_movimento?: boolean;
       segmento?: string;
     }>) => {
@@ -1532,7 +1534,9 @@ export const useImportExcel = () => {
           rbt12: row.rbt12 || 0,
           entrada: row.entrada || 0,
           saida: row.saida || 0,
+          servicos: row.servicos || 0,
           imposto: row.imposto || 0,
+          difal: row.difal || 0,
         };
       });
 

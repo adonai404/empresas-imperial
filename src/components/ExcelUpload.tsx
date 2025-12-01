@@ -91,15 +91,17 @@ export const ExcelUpload = () => {
         };
 
         return {
-          empresa: String(row.Empresa || row.empresa || '').trim(),
+          empresa: String(row['Nome da Empresa'] || row.Empresa || row.empresa || '').trim(),
           cnpj: String(row.CNPJ || row.cnpj || '').replace(/\D/g, ''),
           periodo: String(row.Período || row.periodo || row.Periodo || '').trim(),
           rbt12: parseNumber(row.RBT12 || row.rbt12),
-          entrada: parseNumber(row.entrada || row.Entrada),
-          saida: parseNumber(row.saída || row.saida || row.Saída || row.Saida),
-          imposto: parseNumber(row.imposto || row.Imposto),
+          entrada: parseNumber(row.Entrada || row.entrada),
+          saida: parseNumber(row.Saída || row.saída || row.saida || row.Saida),
+          servicos: parseNumber(row.Serviços || row.servicos || row.Servicos),
+          imposto: parseNumber(row.Imposto || row.imposto),
+          difal: parseNumber(row.Difal || row.difal || row.DIFAL),
           sem_movimento: parseSemMovimento(row['situação'] || row['Situação'] || row['situacao'] || row['Situacao'] || row['status'] || row['Status']),
-          segmento: String(row.segmento || row.Segmento || '').trim(),
+          segmento: String(row.Segmento || row.segmento || '').trim(),
         };
       });
 
@@ -154,26 +156,28 @@ export const ExcelUpload = () => {
   const downloadTemplate = () => {
     const simplesNacionalData = [
       { 
-        Empresa: 'Empresa Exemplo Ltda', 
-        CNPJ: '12345678000195', 
+        'Nome da Empresa': 'Empresa Exemplo Ltda', 
+        CNPJ: '12345678000195',
+        Segmento: 'Varejo',
         Período: '2024-01', 
         RBT12: 1000000, 
-        entrada: 50000, 
-        saída: 30000, 
-        imposto: 5000, 
-        situação: 'Ativa',
-        segmento: 'Varejo'
+        Entrada: 50000, 
+        Saída: 30000,
+        Serviços: 10000,
+        Imposto: 5000,
+        Difal: 500
       },
       { 
-        Empresa: 'Outra Empresa S.A.', 
-        CNPJ: '98765432000123', 
+        'Nome da Empresa': 'Outra Empresa S.A.', 
+        CNPJ: '98765432000123',
+        Segmento: 'Indústria',
         Período: '2024-01', 
         RBT12: 2000000, 
-        entrada: 80000, 
-        saída: 60000, 
-        imposto: 8000, 
-        situação: 'Ativa',
-        segmento: 'Indústria'
+        Entrada: 80000, 
+        Saída: 60000,
+        Serviços: 20000,
+        Imposto: 8000,
+        Difal: 800
       }
     ];
 
@@ -282,7 +286,7 @@ export const ExcelUpload = () => {
           <div className="text-sm text-muted-foreground space-y-3">
             <div>
               <p className="font-medium">Simples Nacional:</p>
-              <p><strong>Colunas:</strong> Empresa, CNPJ, Período, RBT12, entrada, saída, imposto, situação, segmento</p>
+              <p><strong>Colunas:</strong> Nome da Empresa, CNPJ, Segmento, Período, RBT12, Entrada, Saída, Serviços, Imposto, Difal</p>
             </div>
             <div>
               <p className="font-medium">Lucro Real:</p>
