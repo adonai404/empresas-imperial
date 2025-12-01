@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment, useResponsaveis, useCreateResponsavel, useUpdateFiscalDataResponsavel } from '@/hooks/useFiscalData';
+import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment, useResponsaveis, useCreateResponsavel, useUpdateFiscalDataResponsavel, useAddFiscalData } from '@/hooks/useFiscalData';
 import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet, User } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
@@ -118,6 +118,7 @@ export const CompanyList = ({
   const createSegmentMutation = useCreateSegment();
   const createResponsavelMutation = useCreateResponsavel();
   const updateFiscalDataResponsavelMutation = useUpdateFiscalDataResponsavel();
+  const addFiscalDataMutation = useAddFiscalData();
 
   // Aplicar regimes automaticamente quando as empresas carregarem
   React.useEffect(() => {
@@ -541,88 +542,121 @@ export const CompanyList = ({
   // Função para baixar template XLSX
   const downloadTemplate = () => {
     const templateData = [
-      ['nome', 'cnpj', 'segmento', 'regime_tributario'],
-      ['Empresa Exemplo', '12.345.678/0001-90', 'Varejo', 'simples_nacional'],
-      ['', '', '', ''],
+      {
+        'Nome da Empresa': 'Empresa Exemplo Ltda',
+        'CNPJ': '12345678000195',
+        'Segmento': 'Varejo',
+        'Período': '2024-01',
+        'RBT12': 1000000,
+        'Entrada': 50000,
+        'Saída': 30000,
+        'Serviços': 10000,
+        'Imposto': 5000,
+        'Difal': 500
+      },
+      {
+        'Nome da Empresa': 'Outra Empresa S.A.',
+        'CNPJ': '98765432000123',
+        'Segmento': 'Indústria',
+        'Período': '2024-01',
+        'RBT12': 2000000,
+        'Entrada': 80000,
+        'Saída': 60000,
+        'Serviços': 20000,
+        'Imposto': 8000,
+        'Difal': 800
+      }
     ];
 
-    const ws = XLSX.utils.aoa_to_sheet(templateData);
+    const ws = XLSX.utils.json_to_sheet(templateData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Template Empresas');
-
-    // Ajustar largura das colunas
-    ws['!cols'] = [
-      { wch: 30 }, // nome
-      { wch: 20 }, // cnpj  
-      { wch: 15 }, // segmento
-      { wch: 20 }, // regime_tributario
-    ];
-
-    XLSX.writeFile(wb, 'template_empresas.xlsx');
+    XLSX.utils.book_append_sheet(wb, ws, 'Simples Nacional');
+    
+    XLSX.writeFile(wb, 'template_importacao_simples_nacional.xlsx');
     
     toast({
       title: "Template baixado",
-      description: "O arquivo template_empresas.xlsx foi baixado com sucesso.",
+      description: "O arquivo template_importacao_simples_nacional.xlsx foi baixado com sucesso.",
     });
   };
 
   // Função para processar arquivo importado
-  const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        if (jsonData.length < 2) {
+        if (jsonData.length < 1) {
           toast({
             title: "Erro na importação",
-            description: "O arquivo deve conter pelo menos uma linha de dados além do cabeçalho.",
+            description: "O arquivo deve conter pelo menos uma linha de dados.",
             variant: "destructive",
           });
           return;
         }
 
-        const [headers, ...rows] = jsonData as any[][];
         let successCount = 0;
         let errorCount = 0;
 
-        // Processar cada linha
-        rows.forEach((row: any[], index: number) => {
-          if (row.length < 1 || !row[0]) return; // Pular linhas vazias
+        // Helper function to safely parse numbers
+        const parseNumber = (value: any): number | null => {
+          if (value === null || value === undefined || value === '') return null;
+          const parsed = parseFloat(String(value).replace(/[^\d.,-]/g, '').replace(',', '.'));
+          return isNaN(parsed) ? null : parsed;
+        };
 
+        // Process each row
+        for (const row of jsonData as any[]) {
           try {
-            const companyData = {
-              name: row[0]?.toString() || '',
-              cnpj: row[1]?.toString() || '',
-              segmento: row[2]?.toString() || '',
-              regime_tributario: row[3]?.toString() || '',
-            };
+            const empresa = String(row['Nome da Empresa'] || row.Empresa || row.empresa || row.nome || '').trim();
+            const cnpj = String(row.CNPJ || row.cnpj || '').replace(/\D/g, '');
+            const segmento = String(row.Segmento || row.segmento || '').trim();
+            const periodo = String(row.Período || row.periodo || row.Periodo || '').trim();
+            
+            if (!empresa) continue; // Pular linhas sem nome de empresa
 
-            if (companyData.name.trim()) {
-              addCompanyMutation.mutate({
-                name: companyData.name,
-                cnpj: companyData.cnpj || undefined,
-                sem_movimento: false,
-                segmento: companyData.segmento || undefined,
-                regime_tributario: companyData.regime_tributario as any || undefined,
-              });
-              successCount++;
+            // Create or find company
+            const companyResult = await addCompanyMutation.mutateAsync({
+              name: empresa,
+              cnpj: cnpj || undefined,
+              sem_movimento: false,
+              segmento: segmento || undefined,
+              regime_tributario: 'simples_nacional',
+            });
+
+            // If fiscal data columns exist, import fiscal data too
+            if (periodo) {
+              const fiscalData = {
+                company_id: companyResult.id,
+                period: periodo,
+                rbt12: parseNumber(row.RBT12 || row.rbt12) || 0,
+                entrada: parseNumber(row.Entrada || row.entrada) || 0,
+                saida: parseNumber(row.Saída || row.saída || row.saida || row.Saida) || 0,
+                servicos: parseNumber(row.Serviços || row.servicos || row.Servicos) || 0,
+                imposto: parseNumber(row.Imposto || row.imposto) || 0,
+                difal: parseNumber(row.Difal || row.difal || row.DIFAL) || 0,
+              };
+
+              await addFiscalDataMutation.mutateAsync(fiscalData);
             }
+
+            successCount++;
           } catch (error) {
             errorCount++;
-            console.error(`Erro na linha ${index + 2}:`, error);
+            console.error('Erro ao processar linha:', error);
           }
-        });
+        }
 
         toast({
           title: "Importação concluída",
-          description: `${successCount} empresas importadas com sucesso. ${errorCount > 0 ? `${errorCount} erros encontrados.` : ''}`,
+          description: `${successCount} empresas importadas com sucesso${errorCount > 0 ? `. ${errorCount} erros encontrados.` : '.'}`,
         });
 
       } catch (error) {
