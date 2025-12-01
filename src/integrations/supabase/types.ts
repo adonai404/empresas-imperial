@@ -392,6 +392,7 @@ export type Database = {
           periodo: string
           responsaveis: string
           se_aplica: string
+          situacao: string | null
           tarefa: string
           updated_at: string
         }
@@ -404,6 +405,7 @@ export type Database = {
           periodo: string
           responsaveis: string
           se_aplica: string
+          situacao?: string | null
           tarefa: string
           updated_at?: string
         }
@@ -416,6 +418,7 @@ export type Database = {
           periodo?: string
           responsaveis?: string
           se_aplica?: string
+          situacao?: string | null
           tarefa?: string
           updated_at?: string
         }
