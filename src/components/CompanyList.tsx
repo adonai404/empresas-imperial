@@ -20,6 +20,7 @@ import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
 import { useToast } from '@/hooks/use-toast';
 import { periodToDate } from '@/lib/periodUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CompanyListProps {
   onSelectCompany: (companyId: string) => void;
@@ -602,7 +603,8 @@ export const CompanyList = ({
           return;
         }
 
-        let successCount = 0;
+        let createdCount = 0;
+        let updatedCount = 0;
         let errorCount = 0;
 
         // Helper function to safely parse numbers
@@ -616,25 +618,51 @@ export const CompanyList = ({
         for (const row of jsonData as any[]) {
           try {
             const empresa = String(row['Nome da Empresa'] || row.Empresa || row.empresa || row.nome || '').trim();
-            const cnpj = String(row.CNPJ || row.cnpj || '').replace(/\D/g, '');
+            const cnpj = String(row.CNPJ || row.cnpj || '').replace(/\D/g, '').padStart(14, '0');
             const segmento = String(row.Segmento || row.segmento || '').trim();
             const periodo = String(row.Período || row.periodo || row.Periodo || '').trim();
             
             if (!empresa) continue; // Pular linhas sem nome de empresa
 
-            // Create or find company
-            const companyResult = await addCompanyMutation.mutateAsync({
-              name: empresa,
-              cnpj: cnpj || undefined,
-              sem_movimento: false,
-              segmento: segmento || undefined,
-              regime_tributario: 'simples_nacional',
-            });
+            let companyId: string;
+            let isNewCompany = false;
 
-            // If fiscal data columns exist, import fiscal data too
-            if (periodo) {
+            // Check if company already exists by CNPJ
+            if (cnpj) {
+              const { data: existingCompany } = await supabase
+                .from('companies')
+                .select('id')
+                .eq('cnpj', cnpj)
+                .maybeSingle();
+
+              if (existingCompany) {
+                companyId = existingCompany.id;
+              } else {
+                isNewCompany = true;
+              }
+            } else {
+              isNewCompany = true;
+            }
+
+            // Create company if it doesn't exist
+            if (isNewCompany) {
+              const companyResult = await addCompanyMutation.mutateAsync({
+                name: empresa,
+                cnpj: cnpj || undefined,
+                sem_movimento: false,
+                segmento: segmento || undefined,
+                regime_tributario: 'simples_nacional',
+              });
+              companyId = companyResult.id;
+              createdCount++;
+            } else {
+              updatedCount++;
+            }
+
+            // If fiscal data columns exist, import fiscal data
+            if (periodo && companyId) {
               const fiscalData = {
-                company_id: companyResult.id,
+                company_id: companyId,
                 period: periodo,
                 rbt12: parseNumber(row.RBT12 || row.rbt12) || 0,
                 entrada: parseNumber(row.Entrada || row.entrada) || 0,
@@ -647,16 +675,29 @@ export const CompanyList = ({
               await addFiscalDataMutation.mutateAsync(fiscalData);
             }
 
-            successCount++;
           } catch (error) {
             errorCount++;
             console.error('Erro ao processar linha:', error);
           }
         }
 
+        // Build success message
+        const messages = [];
+        if (createdCount > 0) {
+          messages.push(`${createdCount} ${createdCount === 1 ? 'empresa criada' : 'empresas criadas'}`);
+        }
+        if (updatedCount > 0) {
+          messages.push(`${updatedCount} ${updatedCount === 1 ? 'empresa atualizada' : 'empresas atualizadas'}`);
+        }
+        
+        const description = messages.length > 0 
+          ? `${messages.join(', ')}${errorCount > 0 ? `. ${errorCount} ${errorCount === 1 ? 'erro encontrado' : 'erros encontrados'}.` : '.'}`
+          : `Nenhuma empresa foi processada${errorCount > 0 ? `. ${errorCount} ${errorCount === 1 ? 'erro encontrado' : 'erros encontrados'}.` : '.'}`;
+
         toast({
           title: "Importação concluída",
-          description: `${successCount} empresas importadas com sucesso${errorCount > 0 ? `. ${errorCount} erros encontrados.` : '.'}`,
+          description,
+          variant: errorCount > 0 && createdCount === 0 && updatedCount === 0 ? "destructive" : "default",
         });
 
       } catch (error) {
