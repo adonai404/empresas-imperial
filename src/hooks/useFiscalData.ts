@@ -88,6 +88,16 @@ export interface CompanyWithLatestData extends Company {
     difal: number;
     period: string;
   };
+  all_fiscal_data?: Array<{
+    rbt12: number;
+    entrada: number;
+    saida: number;
+    servicos: number;
+    imposto: number;
+    difal: number;
+    period: string;
+  }>;
+  acumulado_saida?: number;
 }
 
 export const useCompanies = () => {
@@ -135,6 +145,22 @@ export const useCompaniesWithLatestFiscalData = () => {
           });
           const latestData = sortedFiscalData[0];
           
+          // Calcular acumulado total de saídas
+          const acumuladoSaida = company.fiscal_data.reduce((acc: number, fd: any) => {
+            return acc + (fd.saida || 0);
+          }, 0);
+          
+          // Formatar todos os dados fiscais
+          const allFiscalData = sortedFiscalData.map((fd: any) => ({
+            rbt12: fd.rbt12 || 0,
+            entrada: fd.entrada || 0,
+            saida: fd.saida || 0,
+            servicos: fd.servicos || 0,
+            imposto: fd.imposto || 0,
+            difal: fd.difal || 0,
+            period: fd.period || 'N/A'
+          }));
+          
           return {
             ...company,
             responsavel_id: responsavelId,
@@ -146,12 +172,15 @@ export const useCompaniesWithLatestFiscalData = () => {
               imposto: latestData.imposto || 0,
               difal: latestData.difal || 0,
               period: latestData.period || 'N/A'
-            }
+            },
+            all_fiscal_data: allFiscalData,
+            acumulado_saida: acumuladoSaida
           };
         }
         return {
           ...company,
-          responsavel_id: responsavelId
+          responsavel_id: responsavelId,
+          acumulado_saida: 0
         };
       }) || [];
       
