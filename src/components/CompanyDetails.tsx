@@ -719,7 +719,7 @@ const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
                   <TableHead className="text-right">Serviços</TableHead>
                   <TableHead className="text-right">Imposto</TableHead>
                   <TableHead className="text-right">Difal</TableHead>
-                  <TableHead className="w-24">Ações</TableHead>
+                  {!isBulkEditMode && <TableHead className="w-24">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -804,8 +804,8 @@ const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
                         formatCurrency(item.difal || 0)
                       )}
                     </TableCell>
-                    <TableCell>
-                      {!isBulkEditMode && (
+                    {!isBulkEditMode && (
+                      <TableCell>
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
@@ -847,13 +847,13 @@ const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
                             </AlertDialogContent>
                           </AlertDialog>
                         </div>
-                      )}
-                    </TableCell>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {sortedAndFilteredData.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={isBulkEditMode ? 7 : 8} className="text-center py-8 text-muted-foreground">
                       <Calculator className="h-12 w-12 mx-auto mb-4" />
                       <p>Nenhum dado fiscal encontrado</p>
                     </TableCell>
@@ -861,14 +861,14 @@ const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
                 )}
                 {sortedAndFilteredData.length > 0 && (
                   <TableRow className="bg-muted/50 font-semibold border-t-2 border-border">
-                    <TableCell colSpan={2} className="text-right font-bold">TOTAL:</TableCell>
+                    <TableCell className="text-right font-bold">TOTAL:</TableCell>
                     <TableCell className="text-right text-foreground">{formatCurrency(totals.rbt12)}</TableCell>
                     <TableCell className="text-right text-green-600 dark:text-green-400">{formatCurrency(totals.entrada)}</TableCell>
                     <TableCell className="text-right text-red-600 dark:text-red-400">{formatCurrency(totals.saida)}</TableCell>
                     <TableCell className="text-right text-blue-600 dark:text-blue-400">{formatCurrency(totals.servicos)}</TableCell>
                     <TableCell className="text-right text-orange-600 dark:text-orange-400">{formatCurrency(totals.imposto)}</TableCell>
                     <TableCell className="text-right text-purple-600 dark:text-purple-400">{formatCurrency(totals.difal)}</TableCell>
-                    <TableCell></TableCell>
+                    {!isBulkEditMode && <TableCell></TableCell>}
                   </TableRow>
                 )}
               </TableBody>
