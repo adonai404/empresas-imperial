@@ -108,6 +108,10 @@ export const CompanyList = ({
   const [selectedResponsavelCompany, setSelectedResponsavelCompany] = useState<any>(null);
   const [newResponsavelName, setNewResponsavelName] = useState('');
   
+  // Estados para modal de detalhes de impostos
+  const [impostoModalOpen, setImpostoModalOpen] = useState(false);
+  const [selectedImpostoCompany, setSelectedImpostoCompany] = useState<any>(null);
+  
   // Efeito para lidar com a seleção de responsável
   useEffect(() => {
     if (selectedResponsavelId) {
@@ -442,6 +446,42 @@ export const CompanyList = ({
     });
     
     return fiscalDataFiltered.reduce((acc: number, fd: any) => acc + (fd.saida || 0), 0);
+  };
+
+  // Função para obter impostos filtrados por período
+  const getImpostosFiltrados = (company: any) => {
+    if (!company.all_fiscal_data || company.all_fiscal_data.length === 0) {
+      return [];
+    }
+    
+    const startDate = filters.periodoInicio !== 'todos' ? periodToDate(filters.periodoInicio) : null;
+    const endDate = filters.periodoFim !== 'todos' ? periodToDate(filters.periodoFim) : null;
+    
+    return company.all_fiscal_data.filter((fd: any) => {
+      const fdDate = periodToDate(fd.period);
+      if (!fdDate) return false;
+      
+      if (startDate && endDate) {
+        return fdDate >= startDate && fdDate <= endDate;
+      } else if (startDate) {
+        return fdDate >= startDate;
+      } else if (endDate) {
+        return fdDate <= endDate;
+      }
+      return true;
+    }).sort((a: any, b: any) => {
+      const dateA = periodToDate(a.period) || new Date(0);
+      const dateB = periodToDate(b.period) || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  };
+
+  // Função para abrir modal de impostos
+  const handleImpostoClick = (company: any, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasPassword(company)) return;
+    setSelectedImpostoCompany(company);
+    setImpostoModalOpen(true);
   };
 
 
@@ -1695,8 +1735,12 @@ export const CompanyList = ({
                       }
                     </span>
                   </TableCell>
-                  <TableCell className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-medium w-20 hidden xl:table-cell">
-                    <span className="truncate block text-xs">
+                  <TableCell 
+                    className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-medium w-20 hidden xl:table-cell cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={(e) => handleImpostoClick(company, e)}
+                    title="Clique para ver detalhes dos impostos por período"
+                  >
+                    <span className="truncate block text-xs underline decoration-dashed underline-offset-2">
                       {hasPassword(company) ? (
                         <span className="text-muted-foreground">***</span>
                       ) : company.latest_fiscal_data?.imposto ? 
@@ -2314,6 +2358,86 @@ export const CompanyList = ({
               setResponsavelModalOpen(false);
               setSelectedResponsavelCompany(null);
               setNewResponsavelName('');
+            }}
+          >
+            Fechar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    {/* Modal de Detalhes de Impostos */}
+    <Dialog open={impostoModalOpen} onOpenChange={setImpostoModalOpen}>
+      <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5 text-orange-500" />
+            Detalhes dos Impostos
+          </DialogTitle>
+          <DialogDescription>
+            Impostos por período para <strong>{selectedImpostoCompany?.name}</strong>
+            {(filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') && (
+              <span className="block mt-1 text-xs">
+                Filtro: {filters.periodoInicio !== 'todos' ? filters.periodoInicio : 'Início'} até {filters.periodoFim !== 'todos' ? filters.periodoFim : 'Fim'}
+              </span>
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="font-semibold">Período</TableHead>
+                <TableHead className="font-semibold text-right">Saída</TableHead>
+                <TableHead className="font-semibold text-right">Imposto</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {selectedImpostoCompany && getImpostosFiltrados(selectedImpostoCompany).map((fd: any, index: number) => (
+                <TableRow key={index} className="hover:bg-accent/50">
+                  <TableCell className="font-medium">{fd.period}</TableCell>
+                  <TableCell className="text-right text-red-600 dark:text-red-400">
+                    {(fd.saida || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right text-orange-600 dark:text-orange-400 font-medium">
+                    {(fd.imposto || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {selectedImpostoCompany && getImpostosFiltrados(selectedImpostoCompany).length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                    Nenhum dado encontrado para o período selecionado
+                  </TableCell>
+                </TableRow>
+              )}
+              {/* Linha de Total */}
+              {selectedImpostoCompany && getImpostosFiltrados(selectedImpostoCompany).length > 0 && (
+                <TableRow className="bg-muted/50 border-t-2 font-bold">
+                  <TableCell className="font-bold">TOTAL</TableCell>
+                  <TableCell className="text-right text-red-600 dark:text-red-400 font-bold">
+                    {getImpostosFiltrados(selectedImpostoCompany)
+                      .reduce((acc: number, fd: any) => acc + (fd.saida || 0), 0)
+                      .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })}
+                  </TableCell>
+                  <TableCell className="text-right text-orange-600 dark:text-orange-400 font-bold">
+                    {getImpostosFiltrados(selectedImpostoCompany)
+                      .reduce((acc: number, fd: any) => acc + (fd.imposto || 0), 0)
+                      .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 })}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setImpostoModalOpen(false);
+              setSelectedImpostoCompany(null);
             }}
           >
             Fechar
