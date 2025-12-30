@@ -52,6 +52,8 @@ interface FilterState {
   periodo: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
+  regimeFiltro: string;
+  segmentoFiltro: string;
 }
 
 export const CompanyList = ({ 
@@ -69,7 +71,9 @@ export const CompanyList = ({
     rbt12Max: '',
     periodo: 'todos',
     sortBy: 'name',
-    sortOrder: 'asc'
+    sortOrder: 'asc',
+    regimeFiltro: 'todos',
+    segmentoFiltro: 'todos'
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -175,7 +179,16 @@ export const CompanyList = ({
     const matchesPeriodo = filters.periodo === 'todos' || 
       (company.latest_fiscal_data?.period === filters.periodo);
     
-    return matchesSearch && matchesStatus && matchesRbt12Min && matchesRbt12Max && matchesPeriodo;
+    // Filtro de regime (para aba "todas")
+    const matchesRegime = filters.regimeFiltro === 'todos' || 
+      company.regime_tributario === filters.regimeFiltro;
+    
+    // Filtro de segmento (para aba "todas")
+    const matchesSegmento = filters.segmentoFiltro === 'todos' || 
+      (filters.segmentoFiltro === 'sem_segmento' && !company.segmento) ||
+      company.segmento === filters.segmentoFiltro;
+    
+    return matchesSearch && matchesStatus && matchesRbt12Min && matchesRbt12Max && matchesPeriodo && matchesRegime && matchesSegmento;
   }).sort((a, b) => {
     let aValue: any, bValue: any;
     
@@ -340,7 +353,9 @@ export const CompanyList = ({
       rbt12Max: '',
       periodo: 'todos',
       sortBy: 'name',
-      sortOrder: 'asc'
+      sortOrder: 'asc',
+      regimeFiltro: 'todos',
+      segmentoFiltro: 'todos'
     });
   };
 
@@ -350,7 +365,14 @@ export const CompanyList = ({
     if (filters.status !== 'todas') count++;
     if (filters.rbt12Min !== '' || filters.rbt12Max !== '') count++;
     if (filters.periodo !== 'todos') count++;
+    if (filters.regimeFiltro !== 'todos') count++;
+    if (filters.segmentoFiltro !== 'todos') count++;
     return count;
+  };
+
+  const getSegmentos = () => {
+    const segmentos = companies?.map(c => c.segmento).filter(Boolean) || [];
+    return [...new Set(segmentos)].sort() as string[];
   };
 
   const getPeriodos = () => {
@@ -1193,6 +1215,24 @@ export const CompanyList = ({
                   />
                 </Badge>
               )}
+              {filters.regimeFiltro !== 'todos' && (
+                <Badge variant="secondary" className="gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
+                  Regime: {filters.regimeFiltro === 'lucro_real' ? 'Normal' : 'Simples Nacional'}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => updateFilter('regimeFiltro', 'todos')}
+                  />
+                </Badge>
+              )}
+              {filters.segmentoFiltro !== 'todos' && (
+                <Badge variant="secondary" className="gap-1">
+                  Segmento: {filters.segmentoFiltro === 'sem_segmento' ? 'Sem Segmento' : filters.segmentoFiltro}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => updateFilter('segmentoFiltro', 'todos')}
+                  />
+                </Badge>
+              )}
             </div>
           )}
         </div>
@@ -1206,9 +1246,101 @@ export const CompanyList = ({
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
                 {selectedRegime === 'todas' && (
-                  <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">Regime</TableHead>
+                  <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden md:table-cell">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`h-auto p-0 font-semibold hover:bg-transparent ${filters.regimeFiltro !== 'todos' ? 'text-primary' : ''}`}
+                        >
+                          Regime
+                          <Filter className={`h-3 w-3 ml-1 ${filters.regimeFiltro !== 'todos' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2" align="start">
+                        <div className="space-y-1">
+                          <Button
+                            variant={filters.regimeFiltro === 'todos' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('regimeFiltro', 'todos')}
+                          >
+                            Todos os Regimes
+                          </Button>
+                          <Button
+                            variant={filters.regimeFiltro === 'lucro_real' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('regimeFiltro', 'lucro_real')}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                            Normal
+                          </Button>
+                          <Button
+                            variant={filters.regimeFiltro === 'simples_nacional' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('regimeFiltro', 'simples_nacional')}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-purple-500 mr-2" />
+                            Simples Nacional
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </TableHead>
                 )}
-                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-28 hidden lg:table-cell">
+                  {selectedRegime === 'todas' ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`h-auto p-0 font-semibold hover:bg-transparent ${filters.segmentoFiltro !== 'todos' ? 'text-primary' : ''}`}
+                        >
+                          Segmento
+                          <Filter className={`h-3 w-3 ml-1 ${filters.segmentoFiltro !== 'todos' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-2 max-h-64 overflow-y-auto" align="start">
+                        <div className="space-y-1">
+                          <Button
+                            variant={filters.segmentoFiltro === 'todos' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('segmentoFiltro', 'todos')}
+                          >
+                            Todos os Segmentos
+                          </Button>
+                          <Button
+                            variant={filters.segmentoFiltro === 'sem_segmento' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('segmentoFiltro', 'sem_segmento')}
+                          >
+                            Sem Segmento
+                          </Button>
+                          <Separator className="my-1" />
+                          {getSegmentos().map((segmento) => (
+                            <Button
+                              key={segmento}
+                              variant={filters.segmentoFiltro === segmento ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className="w-full justify-start text-xs"
+                              onClick={() => updateFilter('segmentoFiltro', segmento)}
+                            >
+                              {segmento}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    'Segmento'
+                  )}
+                </TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
