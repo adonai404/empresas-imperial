@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCompaniesWithLatestFiscalData, useDeleteCompany, useAddCompany, useUpdateCompanyStatus, useUpdateCompany, useAutoAssignRegimes, useSegments, useCreateSegment, useResponsaveis, useCreateResponsavel, useUpdateFiscalDataResponsavel, useAddFiscalData } from '@/hooks/useFiscalData';
 import { Search, Building2, FileText, Plus, Trash2, Edit3, CheckCircle, AlertCircle, PauseCircle, Filter, X, ArrowUpDown, Calendar, DollarSign, Lock, MoreHorizontal, Eye, Edit, AlertTriangle, Settings, UserCheck, Tag, ArrowLeft, Download, Upload, FileSpreadsheet, User } from 'lucide-react';
+import { PeriodDatePicker } from '@/components/ui/period-date-picker';
 import { Badge } from '@/components/ui/badge';
 import { CompanyOperationAuth } from './CompanyOperationAuth';
 import { CompanyPasswordAuth } from './CompanyPasswordAuth';
@@ -1319,31 +1320,21 @@ export const CompanyList = ({
                       
                       <div>
                         <Label className="text-sm font-medium">Período Inicial</Label>
-                        <Select value={filters.periodoInicio} onValueChange={(value) => updateFilter('periodoInicio', value)}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecionar período inicial" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Sem limite</SelectItem>
-                            {getPeriodos().map(periodo => (
-                              <SelectItem key={periodo} value={periodo}>{periodo}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <PeriodDatePicker
+                          value={filters.periodoInicio}
+                          onChange={(value) => updateFilter('periodoInicio', value)}
+                          placeholder="Sem limite"
+                          className="mt-1 w-full"
+                        />
                       </div>
                       <div>
                         <Label className="text-sm font-medium">Período Final</Label>
-                        <Select value={filters.periodoFim} onValueChange={(value) => updateFilter('periodoFim', value)}>
-                          <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecionar período final" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="todos">Sem limite</SelectItem>
-                            {getPeriodos().map(periodo => (
-                              <SelectItem key={periodo} value={periodo}>{periodo}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <PeriodDatePicker
+                          value={filters.periodoFim}
+                          onChange={(value) => updateFilter('periodoFim', value)}
+                          placeholder="Sem limite"
+                          className="mt-1 w-full"
+                        />
                       </div>
                     </div>
                   </div>
@@ -1555,31 +1546,21 @@ export const CompanyList = ({
                           <div className="space-y-2">
                             <div>
                               <Label className="text-xs text-muted-foreground">Período Inicial</Label>
-                              <Select value={filters.periodoInicio} onValueChange={(value) => updateFilter('periodoInicio', value)}>
-                                <SelectTrigger className="mt-1 h-8">
-                                  <SelectValue placeholder="Início" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="todos">Sem limite</SelectItem>
-                                  {getPeriodos().map((p) => (
-                                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <PeriodDatePicker
+                                value={filters.periodoInicio}
+                                onChange={(value) => updateFilter('periodoInicio', value)}
+                                placeholder="Início"
+                                className="mt-1 h-8 w-full text-xs"
+                              />
                             </div>
                             <div>
                               <Label className="text-xs text-muted-foreground">Período Final</Label>
-                              <Select value={filters.periodoFim} onValueChange={(value) => updateFilter('periodoFim', value)}>
-                                <SelectTrigger className="mt-1 h-8">
-                                  <SelectValue placeholder="Fim" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="todos">Sem limite</SelectItem>
-                                  {getPeriodos().map((p) => (
-                                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <PeriodDatePicker
+                                value={filters.periodoFim}
+                                onChange={(value) => updateFilter('periodoFim', value)}
+                                placeholder="Fim"
+                                className="mt-1 h-8 w-full text-xs"
+                              />
                             </div>
                           </div>
                           {(filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') && (
