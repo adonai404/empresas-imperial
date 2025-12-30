@@ -189,6 +189,55 @@ export const CompanyLucroRealDetails = ({
       return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
     }
   }) || [];
+
+  // Calcular totais baseado nos dados filtrados
+  const totals = React.useMemo(() => {
+    if (!filteredAndSortedData || filteredAndSortedData.length === 0) {
+      return {
+        entradas: 0,
+        saidas: 0,
+        servicos: 0,
+        pis: 0,
+        cofins: 0,
+        icms: 0,
+        irpj_primeiro_trimestre: 0,
+        csll_primeiro_trimestre: 0,
+        irpj_segundo_trimestre: 0,
+        csll_segundo_trimestre: 0,
+        tvi: 0
+      };
+    }
+    
+    return filteredAndSortedData.reduce(
+      (acc, curr) => ({
+        entradas: acc.entradas + (curr.entradas || 0),
+        saidas: acc.saidas + (curr.saidas || 0),
+        servicos: acc.servicos + (curr.servicos || 0),
+        pis: acc.pis + (curr.pis || 0),
+        cofins: acc.cofins + (curr.cofins || 0),
+        icms: acc.icms + (curr.icms || 0),
+        irpj_primeiro_trimestre: acc.irpj_primeiro_trimestre + (curr.irpj_primeiro_trimestre || 0),
+        csll_primeiro_trimestre: acc.csll_primeiro_trimestre + (curr.csll_primeiro_trimestre || 0),
+        irpj_segundo_trimestre: acc.irpj_segundo_trimestre + (curr.irpj_segundo_trimestre || 0),
+        csll_segundo_trimestre: acc.csll_segundo_trimestre + (curr.csll_segundo_trimestre || 0),
+        tvi: acc.tvi + (curr.tvi || 0)
+      }),
+      {
+        entradas: 0,
+        saidas: 0,
+        servicos: 0,
+        pis: 0,
+        cofins: 0,
+        icms: 0,
+        irpj_primeiro_trimestre: 0,
+        csll_primeiro_trimestre: 0,
+        irpj_segundo_trimestre: 0,
+        csll_segundo_trimestre: 0,
+        tvi: 0
+      }
+    );
+  }, [filteredAndSortedData]);
+
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newData.period.trim()) {
@@ -789,11 +838,50 @@ export const CompanyLucroRealDetails = ({
                     </TableCell>
                   </TableRow>)}
                 {filteredAndSortedData?.length === 0 && <TableRow>
-                    <TableCell colSpan={12} className="text-center py-8 text-muted-foreground border-b border-border">
+                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground border-b border-border">
                       <FileText className="h-12 w-12 mx-auto mb-4" />
                       <p>Nenhum dado Normal encontrado</p>
                     </TableCell>
                   </TableRow>}
+                {filteredAndSortedData && filteredAndSortedData.length > 0 && (
+                  <TableRow className="bg-muted/50 font-semibold border-t-2 border-border">
+                    <TableCell colSpan={2} className="text-right font-bold border-r border-border">TOTAL:</TableCell>
+                    <TableCell className="text-right text-green-600 dark:text-green-400 border-r border-border hidden md:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.entradas)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-red-600 dark:text-red-400 border-r border-border hidden md:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.saidas)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-blue-600 dark:text-blue-400 border-r border-border hidden md:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.servicos)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden lg:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.pis)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden lg:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.cofins)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.icms)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.irpj_primeiro_trimestre)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.csll_primeiro_trimestre)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.irpj_segundo_trimestre)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.csll_segundo_trimestre)}</span>
+                    </TableCell>
+                    <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
+                      <span className="truncate block text-xs">{formatCurrency(totals.tvi)}</span>
+                    </TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>

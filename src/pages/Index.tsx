@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/AppSidebar';
 import { Dashboard } from '@/components/Dashboard';
-import { ExcelUpload } from '@/components/ExcelUpload';
+
 import { CompanyList } from '@/components/CompanyList';
 import { CompanyDetails } from '@/components/CompanyDetails';
 import { CompanyLucroRealDetails } from '@/components/CompanyLucroRealDetails';
