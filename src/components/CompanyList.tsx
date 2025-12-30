@@ -1657,10 +1657,14 @@ export const CompanyList = ({
                   <TableCell className="border-r border-border text-center text-muted-foreground font-mono text-sm w-8">
                     {index + 1}
                   </TableCell>
-                  <TableCell className="border-r border-border font-medium text-foreground min-w-0 flex-1">
+                  <TableCell 
+                    className="border-r border-border font-medium text-foreground min-w-0 flex-1 cursor-pointer hover:bg-accent/50 transition-colors"
+                    onClick={(e) => handleImpostoClick(company, e)}
+                    title="Clique para ver detalhes fiscais por período"
+                  >
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-primary flex-shrink-0" />
-                      <span className="truncate">{company.name}</span>
+                      <span className="truncate underline decoration-dashed underline-offset-2">{company.name}</span>
                       {hasPassword(company) && (
                         <div className="flex items-center gap-1">
                           <Lock className="h-3 w-3 text-muted-foreground flex-shrink-0" />
@@ -1735,12 +1739,8 @@ export const CompanyList = ({
                       }
                     </span>
                   </TableCell>
-                  <TableCell 
-                    className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-medium w-20 hidden xl:table-cell cursor-pointer hover:bg-accent/50 transition-colors"
-                    onClick={(e) => handleImpostoClick(company, e)}
-                    title="Clique para ver detalhes dos impostos por período"
-                  >
-                    <span className="truncate block text-xs underline decoration-dashed underline-offset-2">
+                  <TableCell className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-medium w-20 hidden xl:table-cell">
+                    <span className="truncate block text-xs">
                       {hasPassword(company) ? (
                         <span className="text-muted-foreground">***</span>
                       ) : company.latest_fiscal_data?.imposto ? 
