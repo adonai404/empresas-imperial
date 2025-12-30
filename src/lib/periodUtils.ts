@@ -23,12 +23,15 @@ export function normalizeAndSortPeriods(periods: string[]): string[] {
 }
 
 /**
- * Converte um período no formato MM/AAAA para um objeto Date
- * @param period - Período no formato MM/AAAA
+ * Converte um período no formato MM/AAAA ou MM-AAAA para um objeto Date
+ * @param period - Período no formato MM/AAAA ou MM-AAAA
  * @returns Objeto Date correspondente ao primeiro dia do mês/ano
  */
 export function periodToDate(period: string): Date | null {
-  const match = period.match(/^(\d{2})\/(\d{4})$/);
+  if (!period) return null;
+  
+  // Aceita ambos os formatos: MM/AAAA ou MM-AAAA
+  const match = period.match(/^(\d{1,2})[\/\-](\d{4})$/);
   if (!match) return null;
   
   const [, month, year] = match;
