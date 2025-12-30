@@ -438,12 +438,12 @@ export const CompanyList = ({
       return `${month.padStart(2, '0')}/${year}`;
     }).filter((p): p is string => p !== null);
     
-    // Remover duplicatas e ordenar por data (mais recente primeiro)
+    // Remover duplicatas e ordenar por data em ordem de calendário (crescente: mais antigo primeiro)
     const uniquePeriodos = [...new Set(normalizedPeriodos)];
     return uniquePeriodos.sort((a, b) => {
       const [ma, ya] = a.split('/').map(Number);
       const [mb, yb] = b.split('/').map(Number);
-      return yb - ya || mb - ma; // ordem decrescente
+      return ya - yb || ma - mb; // ordem crescente (calendário)
     });
   };
 
