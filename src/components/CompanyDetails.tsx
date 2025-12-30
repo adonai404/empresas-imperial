@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useCompanyWithData, useAddFiscalData, useImportCompanyExcel, useUpdateFiscalData, useDeleteFiscalData } from '@/hooks/useFiscalData';
-import { Download, ArrowUpDown, Building2, Calculator, Plus, Upload, FileDown, X, Edit3, Trash2, FileSpreadsheet, ArrowLeft } from 'lucide-react';
+import { Download, ArrowUpDown, Building2, Calculator, Plus, Upload, FileDown, X, Edit3, Trash2, FileSpreadsheet, ArrowLeft, Check, Save } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useForm } from 'react-hook-form';
 import * as XLSX from 'xlsx';
@@ -50,9 +50,11 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
   const [filterPeriod, setFilterPeriod] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingFiscalData, setEditingFiscalData] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [isBulkEditMode, setIsBulkEditMode] = useState(false);
+  const [bulkEditData, setBulkEditData] = useState<Record<string, any>>({});
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -246,6 +248,62 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
 
   const handleDeleteFiscalData = (fiscalDataId: string) => {
     deleteFiscalDataMutation.mutate(fiscalDataId);
+  };
+
+  // Bulk edit functions
+  const startBulkEdit = () => {
+    const initialData: Record<string, any> = {};
+    sortedAndFilteredData.forEach(item => {
+      initialData[item.id] = {
+        rbt12: item.rbt12?.toString() || '0',
+        entrada: item.entrada?.toString() || '0',
+        saida: item.saida?.toString() || '0',
+        servicos: item.servicos?.toString() || '0',
+        imposto: item.imposto?.toString() || '0',
+        difal: item.difal?.toString() || '0',
+      };
+    });
+    setBulkEditData(initialData);
+    setIsBulkEditMode(true);
+  };
+
+  const cancelBulkEdit = () => {
+    setIsBulkEditMode(false);
+    setBulkEditData({});
+  };
+
+  const handleBulkFieldChange = (itemId: string, field: string, value: string) => {
+    setBulkEditData(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        [field]: value,
+      }
+    }));
+  };
+
+  const saveBulkEdit = async () => {
+    const updates = Object.entries(bulkEditData).map(([id, data]) => {
+      const originalItem = sortedAndFilteredData.find(item => item.id === id);
+      return updateFiscalDataMutation.mutateAsync({
+        id,
+        period: originalItem?.period || '',
+        rbt12: parseFloat(data.rbt12) || 0,
+        entrada: parseFloat(data.entrada) || 0,
+        saida: parseFloat(data.saida) || 0,
+        servicos: parseFloat(data.servicos) || 0,
+        imposto: parseFloat(data.imposto) || 0,
+        difal: parseFloat(data.difal) || 0,
+      });
+    });
+
+    try {
+      await Promise.all(updates);
+      setIsBulkEditMode(false);
+      setBulkEditData({});
+    } catch (error) {
+      console.error('Error saving bulk edit:', error);
+    }
   };
 
   const downloadTemplate = () => {
@@ -505,9 +563,41 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                 </DialogContent>
               </Dialog>
 
+              {!isBulkEditMode ? (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={startBulkEdit}
+                  disabled={sortedAndFilteredData.length === 0}
+                  title="Editar todos os dados da tabela"
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Editar Tabela
+                </Button>
+              ) : (
+                <>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={cancelBulkEdit}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancelar
+                  </Button>
+                  <Button 
+                    size="sm"
+                    onClick={saveBulkEdit}
+                    disabled={updateFiscalDataMutation.isPending}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {updateFiscalDataMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </>
+              )}
+
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm">
+                  <Button size="sm" disabled={isBulkEditMode}>
                     <Plus className="h-4 w-4 mr-2" />
                     Adicionar Dados
                   </Button>
@@ -636,64 +726,128 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                 {sortedAndFilteredData.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.period}</TableCell>
-                    <TableCell className="text-right">{formatCurrency(item.rbt12 || 0)}</TableCell>
+                    <TableCell className="text-right">
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8 w-28 text-right"
+                          value={bulkEditData[item.id]?.rbt12 || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'rbt12', e.target.value)}
+                        />
+                      ) : (
+                        formatCurrency(item.rbt12 || 0)
+                      )}
+                    </TableCell>
                     <TableCell className="text-right text-green-600 dark:text-green-400">
-                      {formatCurrency(item.entrada || 0)}
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8 w-28 text-right"
+                          value={bulkEditData[item.id]?.entrada || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'entrada', e.target.value)}
+                        />
+                      ) : (
+                        formatCurrency(item.entrada || 0)
+                      )}
                     </TableCell>
                     <TableCell className="text-right text-red-600 dark:text-red-400">
-                      {formatCurrency(item.saida || 0)}
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8 w-28 text-right"
+                          value={bulkEditData[item.id]?.saida || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'saida', e.target.value)}
+                        />
+                      ) : (
+                        formatCurrency(item.saida || 0)
+                      )}
                     </TableCell>
                     <TableCell className="text-right text-blue-600 dark:text-blue-400">
-                      {formatCurrency(item.servicos || 0)}
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8 w-28 text-right"
+                          value={bulkEditData[item.id]?.servicos || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'servicos', e.target.value)}
+                        />
+                      ) : (
+                        formatCurrency(item.servicos || 0)
+                      )}
                     </TableCell>
                     <TableCell className="text-right text-orange-600 dark:text-orange-400">
-                      {formatCurrency(item.imposto || 0)}
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8 w-28 text-right"
+                          value={bulkEditData[item.id]?.imposto || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'imposto', e.target.value)}
+                        />
+                      ) : (
+                        formatCurrency(item.imposto || 0)
+                      )}
                     </TableCell>
                     <TableCell className="text-right text-purple-600 dark:text-purple-400">
-                      {formatCurrency(item.difal || 0)}
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          className="h-8 w-28 text-right"
+                          value={bulkEditData[item.id]?.difal || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'difal', e.target.value)}
+                        />
+                      ) : (
+                        formatCurrency(item.difal || 0)
+                      )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
-                          onClick={() => openEditDialog(item)}
-                          title="Editar dados fiscais"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
-                              title="Excluir dados fiscais"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja excluir os dados fiscais do período "{item.period}"?
-                                Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteFiscalData(item.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      {!isBulkEditMode && (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-muted-foreground hover:text-foreground h-8 w-8 p-0"
+                            onClick={() => openEditDialog(item)}
+                            title="Editar dados fiscais"
+                          >
+                            <Edit3 className="h-3 w-3" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                                title="Excluir dados fiscais"
                               >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir os dados fiscais do período "{item.period}"?
+                                  Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDeleteFiscalData(item.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
