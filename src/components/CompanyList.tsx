@@ -54,6 +54,7 @@ interface FilterState {
   sortOrder: 'asc' | 'desc';
   regimeFiltro: string;
   segmentoFiltro: string;
+  responsavelFiltro: string;
 }
 
 export const CompanyList = ({ 
@@ -73,7 +74,8 @@ export const CompanyList = ({
     sortBy: 'name',
     sortOrder: 'asc',
     regimeFiltro: 'todos',
-    segmentoFiltro: 'todos'
+    segmentoFiltro: 'todos',
+    responsavelFiltro: 'todos'
   });
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -188,7 +190,13 @@ export const CompanyList = ({
       (filters.segmentoFiltro === 'sem_segmento' && !company.segmento) ||
       company.segmento === filters.segmentoFiltro;
     
-    return matchesSearch && matchesStatus && matchesRbt12Min && matchesRbt12Max && matchesPeriodo && matchesRegime && matchesSegmento;
+    // Filtro de responsável (para aba "todas")
+    const companyResponsavel = (company as any).responsavel_id || null;
+    const matchesResponsavel = filters.responsavelFiltro === 'todos' || 
+      (filters.responsavelFiltro === 'sem_responsavel' && !companyResponsavel) ||
+      companyResponsavel === filters.responsavelFiltro;
+    
+    return matchesSearch && matchesStatus && matchesRbt12Min && matchesRbt12Max && matchesPeriodo && matchesRegime && matchesSegmento && matchesResponsavel;
   }).sort((a, b) => {
     let aValue: any, bValue: any;
     
@@ -355,7 +363,8 @@ export const CompanyList = ({
       sortBy: 'name',
       sortOrder: 'asc',
       regimeFiltro: 'todos',
-      segmentoFiltro: 'todos'
+      segmentoFiltro: 'todos',
+      responsavelFiltro: 'todos'
     });
   };
 
@@ -367,6 +376,7 @@ export const CompanyList = ({
     if (filters.periodo !== 'todos') count++;
     if (filters.regimeFiltro !== 'todos') count++;
     if (filters.segmentoFiltro !== 'todos') count++;
+    if (filters.responsavelFiltro !== 'todos') count++;
     return count;
   };
 
@@ -1233,6 +1243,15 @@ export const CompanyList = ({
                   />
                 </Badge>
               )}
+              {filters.responsavelFiltro !== 'todos' && (
+                <Badge variant="secondary" className="gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400">
+                  Responsável: {filters.responsavelFiltro === 'sem_responsavel' ? 'Sem Responsável' : responsaveis.find(r => r.id === filters.responsavelFiltro)?.nome || filters.responsavelFiltro}
+                  <X 
+                    className="h-3 w-3 cursor-pointer" 
+                    onClick={() => updateFilter('responsavelFiltro', 'todos')}
+                  />
+                </Badge>
+              )}
             </div>
           )}
         </div>
@@ -1341,13 +1360,150 @@ export const CompanyList = ({
                     'Segmento'
                   )}
                 </TableHead>
-                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">
+                  {selectedRegime === 'todas' ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`h-auto p-0 font-semibold hover:bg-transparent ${filters.periodo !== 'todos' ? 'text-primary' : ''}`}
+                        >
+                          Período
+                          <Filter className={`h-3 w-3 ml-1 ${filters.periodo !== 'todos' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2 max-h-64 overflow-y-auto" align="start">
+                        <div className="space-y-1">
+                          <Button
+                            variant={filters.periodo === 'todos' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('periodo', 'todos')}
+                          >
+                            Todos os Períodos
+                          </Button>
+                          <Separator className="my-1" />
+                          {getPeriodos().map((periodo) => (
+                            <Button
+                              key={periodo}
+                              variant={filters.periodo === periodo ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className="w-full justify-start text-xs"
+                              onClick={() => updateFilter('periodo', periodo)}
+                            >
+                              {periodo}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    'Período'
+                  )}
+                </TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Entrada</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden lg:table-cell">Saída</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">Imposto</TableHead>
-                <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Responsável</TableHead>
-                <TableHead className="border-r border-border font-semibold text-foreground w-24">Situação</TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-28 hidden lg:table-cell">
+                  {selectedRegime === 'todas' ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`h-auto p-0 font-semibold hover:bg-transparent ${filters.responsavelFiltro !== 'todos' ? 'text-primary' : ''}`}
+                        >
+                          Responsável
+                          <Filter className={`h-3 w-3 ml-1 ${filters.responsavelFiltro !== 'todos' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56 p-2 max-h-64 overflow-y-auto" align="start">
+                        <div className="space-y-1">
+                          <Button
+                            variant={filters.responsavelFiltro === 'todos' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('responsavelFiltro', 'todos')}
+                          >
+                            Todos os Responsáveis
+                          </Button>
+                          <Button
+                            variant={filters.responsavelFiltro === 'sem_responsavel' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('responsavelFiltro', 'sem_responsavel')}
+                          >
+                            Sem Responsável
+                          </Button>
+                          <Separator className="my-1" />
+                          {responsaveis.map((resp) => (
+                            <Button
+                              key={resp.id}
+                              variant={filters.responsavelFiltro === resp.id ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className="w-full justify-start text-xs"
+                              onClick={() => updateFilter('responsavelFiltro', resp.id)}
+                            >
+                              {resp.nome}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    'Responsável'
+                  )}
+                </TableHead>
+                <TableHead className="border-r border-border font-semibold text-foreground w-24">
+                  {selectedRegime === 'todas' ? (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className={`h-auto p-0 font-semibold hover:bg-transparent ${filters.status !== 'todas' ? 'text-primary' : ''}`}
+                        >
+                          Situação
+                          <Filter className={`h-3 w-3 ml-1 ${filters.status !== 'todas' ? 'text-primary' : 'text-muted-foreground'}`} />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48 p-2" align="start">
+                        <div className="space-y-1">
+                          <Button
+                            variant={filters.status === 'todas' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('status', 'todas')}
+                          >
+                            Todas as Situações
+                          </Button>
+                          <Button
+                            variant={filters.status === 'ativa' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('status', 'ativa')}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-green-500 mr-2" />
+                            Ativas
+                          </Button>
+                          <Button
+                            variant={filters.status === 'sem_movimento' ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => updateFilter('status', 'sem_movimento')}
+                          >
+                            <span className="w-2 h-2 rounded-full bg-orange-500 mr-2" />
+                            Sem Movimento
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  ) : (
+                    'Situação'
+                  )}
+                </TableHead>
                 <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
               </TableRow>
             </TableHeader>
