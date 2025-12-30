@@ -49,7 +49,8 @@ interface FilterState {
   status: string;
   rbt12Min: string;
   rbt12Max: string;
-  periodo: string;
+  periodoInicio: string;
+  periodoFim: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   regimeFiltro: string;
@@ -70,7 +71,8 @@ export const CompanyList = ({
     status: 'todas',
     rbt12Min: '',
     rbt12Max: '',
-    periodo: 'todos',
+    periodoInicio: 'todos',
+    periodoFim: 'todos',
     sortBy: 'name',
     sortOrder: 'asc',
     regimeFiltro: 'todos',
@@ -177,9 +179,28 @@ export const CompanyList = ({
     const matchesRbt12Min = filters.rbt12Min === '' || rbt12 >= parseFloat(filters.rbt12Min);
     const matchesRbt12Max = filters.rbt12Max === '' || rbt12 <= parseFloat(filters.rbt12Max);
     
-    // Filtro de período
-    const matchesPeriodo = filters.periodo === 'todos' || 
-      (company.latest_fiscal_data?.period === filters.periodo);
+    // Filtro de período (intervalo)
+    const companyPeriod = company.latest_fiscal_data?.period;
+    let matchesPeriodo = true;
+    if (filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') {
+      if (companyPeriod) {
+        const companyDate = periodToDate(companyPeriod);
+        const startDate = filters.periodoInicio !== 'todos' ? periodToDate(filters.periodoInicio) : null;
+        const endDate = filters.periodoFim !== 'todos' ? periodToDate(filters.periodoFim) : null;
+        
+        if (companyDate) {
+          if (startDate && endDate) {
+            matchesPeriodo = companyDate >= startDate && companyDate <= endDate;
+          } else if (startDate) {
+            matchesPeriodo = companyDate >= startDate;
+          } else if (endDate) {
+            matchesPeriodo = companyDate <= endDate;
+          }
+        }
+      } else {
+        matchesPeriodo = false;
+      }
+    }
     
     // Filtro de regime (para aba "todas")
     const matchesRegime = filters.regimeFiltro === 'todos' || 
@@ -359,7 +380,8 @@ export const CompanyList = ({
       status: 'todas',
       rbt12Min: '',
       rbt12Max: '',
-      periodo: 'todos',
+      periodoInicio: 'todos',
+      periodoFim: 'todos',
       sortBy: 'name',
       sortOrder: 'asc',
       regimeFiltro: 'todos',
@@ -373,7 +395,7 @@ export const CompanyList = ({
     if (filters.search !== '') count++;
     if (filters.status !== 'todas') count++;
     if (filters.rbt12Min !== '' || filters.rbt12Max !== '') count++;
-    if (filters.periodo !== 'todos') count++;
+    if (filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') count++;
     if (filters.regimeFiltro !== 'todos') count++;
     if (filters.segmentoFiltro !== 'todos') count++;
     if (filters.responsavelFiltro !== 'todos') count++;
@@ -397,14 +419,27 @@ export const CompanyList = ({
     }
     
     // Se não há filtro de período, retornar o acumulado total
-    if (filters.periodo === 'todos') {
+    if (filters.periodoInicio === 'todos' && filters.periodoFim === 'todos') {
       return company.acumulado_saida || 0;
     }
     
-    // Se há filtro de período, calcular apenas para o período específico
-    const fiscalDataFiltered = company.all_fiscal_data.filter(
-      (fd: any) => fd.period === filters.periodo
-    );
+    // Se há filtro de período, calcular apenas para os períodos dentro do intervalo
+    const startDate = filters.periodoInicio !== 'todos' ? periodToDate(filters.periodoInicio) : null;
+    const endDate = filters.periodoFim !== 'todos' ? periodToDate(filters.periodoFim) : null;
+    
+    const fiscalDataFiltered = company.all_fiscal_data.filter((fd: any) => {
+      const fdDate = periodToDate(fd.period);
+      if (!fdDate) return false;
+      
+      if (startDate && endDate) {
+        return fdDate >= startDate && fdDate <= endDate;
+      } else if (startDate) {
+        return fdDate >= startDate;
+      } else if (endDate) {
+        return fdDate <= endDate;
+      }
+      return true;
+    });
     
     return fiscalDataFiltered.reduce((acc: number, fd: any) => acc + (fd.saida || 0), 0);
   };
@@ -1178,13 +1213,27 @@ export const CompanyList = ({
                       </div>
                       
                       <div>
-                        <Label className="text-sm font-medium">Período</Label>
-                        <Select value={filters.periodo} onValueChange={(value) => updateFilter('periodo', value)}>
+                        <Label className="text-sm font-medium">Período Inicial</Label>
+                        <Select value={filters.periodoInicio} onValueChange={(value) => updateFilter('periodoInicio', value)}>
                           <SelectTrigger className="mt-1">
-                            <SelectValue placeholder="Selecionar período" />
+                            <SelectValue placeholder="Selecionar período inicial" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="todos">Todos os períodos</SelectItem>
+                            <SelectItem value="todos">Sem limite</SelectItem>
+                            {getPeriodos().map(periodo => (
+                              <SelectItem key={periodo} value={periodo}>{periodo}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium">Período Final</Label>
+                        <Select value={filters.periodoFim} onValueChange={(value) => updateFilter('periodoFim', value)}>
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Selecionar período final" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Sem limite</SelectItem>
                             {getPeriodos().map(periodo => (
                               <SelectItem key={periodo} value={periodo}>{periodo}</SelectItem>
                             ))}
@@ -1235,12 +1284,15 @@ export const CompanyList = ({
                   />
                 </Badge>
               )}
-              {filters.periodo !== 'todos' && (
+              {(filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') && (
                 <Badge variant="secondary" className="gap-1">
-                  Período: {filters.periodo}
+                  Período: {filters.periodoInicio !== 'todos' ? filters.periodoInicio : 'Início'} até {filters.periodoFim !== 'todos' ? filters.periodoFim : 'Fim'}
                   <X 
                     className="h-3 w-3 cursor-pointer" 
-                    onClick={() => updateFilter('periodo', 'todos')}
+                    onClick={() => {
+                      updateFilter('periodoInicio', 'todos');
+                      updateFilter('periodoFim', 'todos');
+                    }}
                   />
                 </Badge>
               )}
@@ -1386,34 +1438,58 @@ export const CompanyList = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className={`h-auto p-0 font-semibold hover:bg-transparent ${filters.periodo !== 'todos' ? 'text-primary' : ''}`}
+                          className={`h-auto p-0 font-semibold hover:bg-transparent ${(filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') ? 'text-primary' : ''}`}
                         >
                           Período
-                          <Filter className={`h-3 w-3 ml-1 ${filters.periodo !== 'todos' ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <Filter className={`h-3 w-3 ml-1 ${(filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') ? 'text-primary' : 'text-muted-foreground'}`} />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-48 p-2 max-h-64 overflow-y-auto" align="start">
-                        <div className="space-y-1">
-                          <Button
-                            variant={filters.periodo === 'todos' ? 'secondary' : 'ghost'}
-                            size="sm"
-                            className="w-full justify-start text-xs"
-                            onClick={() => updateFilter('periodo', 'todos')}
-                          >
-                            Todos os Períodos
-                          </Button>
-                          <Separator className="my-1" />
-                          {getPeriodos().map((periodo) => (
+                      <PopoverContent className="w-64 p-3" align="start">
+                        <div className="space-y-3">
+                          <div className="text-sm font-medium mb-2">Selecione o intervalo de períodos</div>
+                          <div className="space-y-2">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Período Inicial</Label>
+                              <Select value={filters.periodoInicio} onValueChange={(value) => updateFilter('periodoInicio', value)}>
+                                <SelectTrigger className="mt-1 h-8">
+                                  <SelectValue placeholder="Início" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="todos">Sem limite</SelectItem>
+                                  {getPeriodos().map((p) => (
+                                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Período Final</Label>
+                              <Select value={filters.periodoFim} onValueChange={(value) => updateFilter('periodoFim', value)}>
+                                <SelectTrigger className="mt-1 h-8">
+                                  <SelectValue placeholder="Fim" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="todos">Sem limite</SelectItem>
+                                  {getPeriodos().map((p) => (
+                                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                          {(filters.periodoInicio !== 'todos' || filters.periodoFim !== 'todos') && (
                             <Button
-                              key={periodo}
-                              variant={filters.periodo === periodo ? 'secondary' : 'ghost'}
+                              variant="ghost"
                               size="sm"
-                              className="w-full justify-start text-xs"
-                              onClick={() => updateFilter('periodo', periodo)}
+                              className="w-full text-xs mt-2"
+                              onClick={() => {
+                                updateFilter('periodoInicio', 'todos');
+                                updateFilter('periodoFim', 'todos');
+                              }}
                             >
-                              {periodo}
+                              Limpar período
                             </Button>
-                          ))}
+                          )}
                         </div>
                       </PopoverContent>
                     </Popover>
