@@ -150,7 +150,9 @@ export const CompanyList = ({
   };
 
   // Primeiro filtrar por regime se selecionado
-  const regimeFilteredCompanies = selectedRegime ? getRegimeCompanies(selectedRegime) : companies || [];
+  const regimeFilteredCompanies = selectedRegime && selectedRegime !== 'todas' 
+    ? getRegimeCompanies(selectedRegime) 
+    : companies || [];
   
   const filteredAndSortedCompanies = regimeFilteredCompanies.filter(company => {
     // Filtro de busca
@@ -523,10 +525,34 @@ export const CompanyList = ({
   // Funções para gerenciar regimes
   const getRegimeLabel = (regime: string) => {
     const labels = {
+      'todas': 'Todas as Empresas',
       'lucro_real': 'Normais',
       'simples_nacional': 'Simples Nacional'
     };
     return labels[regime as keyof typeof labels] || regime;
+  };
+
+  // Função para obter badge de regime com cor
+  const getRegimeBadge = (regime_tributario: string | null) => {
+    if (regime_tributario === 'lucro_real') {
+      return (
+        <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 text-xs">
+          Normal
+        </Badge>
+      );
+    }
+    if (regime_tributario === 'simples_nacional') {
+      return (
+        <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800 text-xs">
+          Simples
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="secondary" className="text-xs">
+        N/A
+      </Badge>
+    );
   };
 
   const handleRegimeSelection = (regime: string) => {
@@ -750,20 +776,23 @@ export const CompanyList = ({
         </div>
 
         {/* Cards de seleção de regime */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
+            { id: 'todas', label: 'Todas as Empresas', description: 'Visualizar todas as empresas', icon: Building2, color: 'cyan' },
             { id: 'lucro_real', label: 'Normais', description: 'Empresas do regime Normal', icon: FileText, color: 'green' },
             { id: 'simples_nacional', label: 'Simples Nacional', description: 'Empresas do regime Simples Nacional', icon: FileText, color: 'purple' },
             { id: 'responsavel', label: 'Por Responsável', description: 'Empresas agrupadas por responsável', icon: User, color: 'blue' }
           ].map((regime) => {
             const IconComponent = regime.icon;
-            const companyCount = regime.id === 'responsavel' ? 0 : getRegimeCompanies(regime.id);
+            const companyCount = regime.id === 'responsavel' ? 0 : 
+              regime.id === 'todas' ? (companies?.length || 0) : getRegimeCompanies(regime.id).length;
             
             // Get color classes dynamically
             const bgColorClass = `p-3 rounded-lg ${
               regime.color === 'green' ? 'bg-green-100 dark:bg-green-900/20' :
               regime.color === 'purple' ? 'bg-purple-100 dark:bg-purple-900/20' :
               regime.color === 'orange' ? 'bg-orange-100 dark:bg-orange-900/20' :
+              regime.color === 'cyan' ? 'bg-cyan-100 dark:bg-cyan-900/20' :
               'bg-blue-100 dark:bg-blue-900/20'
             }`;
             
@@ -771,6 +800,7 @@ export const CompanyList = ({
               regime.color === 'green' ? 'text-green-600 dark:text-green-400' :
               regime.color === 'purple' ? 'text-purple-600 dark:text-purple-400' :
               regime.color === 'orange' ? 'text-orange-600 dark:text-orange-400' :
+              regime.color === 'cyan' ? 'text-cyan-600 dark:text-cyan-400' :
               'text-blue-600 dark:text-blue-400'
             }`;
             
@@ -787,7 +817,7 @@ export const CompanyList = ({
                     </div>
                     {regime.id !== 'responsavel' && (
                       <Badge variant="secondary" className="text-sm">
-                        {Array.isArray(companyCount) ? companyCount.length : 0} empresa{(Array.isArray(companyCount) ? companyCount.length : 0) !== 1 ? 's' : ''}
+                        {companyCount} empresa{companyCount !== 1 ? 's' : ''}
                       </Badge>
                     )}
                   </div>
@@ -810,7 +840,11 @@ export const CompanyList = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-cyan-600">{companies?.length || 0}</p>
+                <p className="text-sm text-muted-foreground">Total de Empresas</p>
+              </div>
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">{getRegimeCompanies('lucro_real').length}</p>
                 <p className="text-sm text-muted-foreground">Normais</p>
@@ -1171,6 +1205,9 @@ export const CompanyList = ({
                 <TableHead className="border-r border-border font-semibold text-foreground w-8 text-center">#</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground min-w-0 flex-1">Nome da Empresa</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">CNPJ</TableHead>
+                {selectedRegime === 'todas' && (
+                  <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">Regime</TableHead>
+                )}
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden lg:table-cell">Segmento</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden sm:table-cell">Período</TableHead>
                 <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden md:table-cell">RBT12</TableHead>
@@ -1211,6 +1248,11 @@ export const CompanyList = ({
                       }
                     </span>
                   </TableCell>
+                  {selectedRegime === 'todas' && (
+                    <TableCell className="border-r border-border text-foreground w-20 hidden md:table-cell">
+                      {getRegimeBadge(company.regime_tributario)}
+                    </TableCell>
+                  )}
                   <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
                     <span className="truncate block text-xs">
                       {company.segmento || 'N/A'}
@@ -1339,7 +1381,7 @@ export const CompanyList = ({
               ))}
               {filteredAndSortedCompanies?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground border-b border-border">
+                  <TableCell colSpan={selectedRegime === 'todas' ? 13 : 12} className="text-center py-8 text-muted-foreground border-b border-border">
                     <FileText className="h-12 w-12 mx-auto mb-4" />
                     <p>Nenhuma empresa encontrada</p>
                   </TableCell>
