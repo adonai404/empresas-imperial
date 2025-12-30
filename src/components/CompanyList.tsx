@@ -1791,6 +1791,81 @@ export const CompanyList = ({
                   </TableCell>
                 </TableRow>
               )}
+              {/* Linha de Totais */}
+              {filteredAndSortedCompanies && filteredAndSortedCompanies.length > 0 && (
+                <TableRow className="bg-muted/50 border-t-2 border-border font-bold">
+                  <TableCell className="border-r border-border text-center text-muted-foreground font-mono text-sm w-8">
+                    
+                  </TableCell>
+                  <TableCell className="border-r border-border font-semibold text-foreground min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span>TOTAIS</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {filteredAndSortedCompanies.length} empresas
+                      </Badge>
+                      <Badge variant="outline" className="text-xs">
+                        {new Set(filteredAndSortedCompanies.map(c => c.segmento).filter(Boolean)).size} segmentos
+                      </Badge>
+                    </div>
+                  </TableCell>
+                  <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
+                    
+                  </TableCell>
+                  {selectedRegime === 'todas' && (
+                    <TableCell className="border-r border-border text-foreground w-20 hidden md:table-cell">
+                      
+                    </TableCell>
+                  )}
+                  <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
+                    
+                  </TableCell>
+                  <TableCell className="border-r border-border text-foreground w-24 hidden sm:table-cell">
+                    
+                  </TableCell>
+                  <TableCell className="border-r border-border text-foreground w-20 hidden md:table-cell">
+                    
+                  </TableCell>
+                  <TableCell className="border-r border-border text-right text-green-600 dark:text-green-400 font-bold w-20 hidden lg:table-cell">
+                    <span className="text-xs">
+                      {filteredAndSortedCompanies
+                        .reduce((acc, c) => acc + (c.latest_fiscal_data?.entrada || 0), 0)
+                        .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="border-r border-border text-right text-red-600 dark:text-red-400 font-bold w-20 hidden lg:table-cell">
+                    <span className="text-xs">
+                      {filteredAndSortedCompanies
+                        .reduce((acc, c) => acc + (c.latest_fiscal_data?.saida || 0), 0)
+                        .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-bold w-20 hidden xl:table-cell">
+                    <span className="text-xs">
+                      {filteredAndSortedCompanies
+                        .reduce((acc, c) => acc + (c.latest_fiscal_data?.imposto || 0), 0)
+                        .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="border-r border-border text-foreground w-24 hidden lg:table-cell">
+                    
+                  </TableCell>
+                  <TableCell className="border-r border-border text-center w-24">
+                    
+                  </TableCell>
+                  {selectedRegime === 'todas' && (
+                    <TableCell className="border-r border-border text-right text-cyan-600 dark:text-cyan-400 font-bold w-24 hidden xl:table-cell">
+                      <span className="text-xs">
+                        {filteredAndSortedCompanies
+                          .reduce((acc, c) => acc + getAcumuladoDinamico(c), 0)
+                          .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </span>
+                    </TableCell>
+                  )}
+                  <TableCell className="text-center w-12">
+                    
+                  </TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
