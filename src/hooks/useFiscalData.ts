@@ -121,10 +121,20 @@ export const useCompaniesWithLatestFiscalData = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('companies')
-        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at, responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id)')
+        .select('*, fiscal_data(rbt12, entrada, saida, servicos, imposto, difal, period, created_at, responsavel_id), company_passwords!left(id, password_hash, created_at, updated_at), lucro_real_data(responsavel_id, period, entradas, saidas, servicos, pis, cofins, icms)')
         .order('name');
       
       if (error) throw error;
+      
+      // Função auxiliar para normalizar período para formato MM/YYYY
+      const normalizePeriod = (period: string): string => {
+        if (!period) return 'N/A';
+        // Aceita MM/YYYY, MM-YYYY, M/YYYY, M-YYYY
+        const match = period.match(/^(\d{1,2})[\/\-](\d{4})$/);
+        if (!match) return period;
+        const [, month, year] = match;
+        return `${month.padStart(2, '0')}/${year}`;
+      };
       
       // Process to get only the latest fiscal data for each company
       const companiesWithLatestData: CompanyWithLatestData[] = (data as any)?.map((company: any) => {
@@ -136,6 +146,7 @@ export const useCompaniesWithLatestFiscalData = () => {
           responsavelId = company.fiscal_data[0]?.responsavel_id;
         }
         
+        // Para empresas Simples Nacional (fiscal_data)
         if (company.fiscal_data && company.fiscal_data.length > 0) {
           // Sort by fiscal period to get the most recent
           const sortedFiscalData = company.fiscal_data.sort((a: any, b: any) => {
@@ -150,7 +161,7 @@ export const useCompaniesWithLatestFiscalData = () => {
             return acc + (fd.saida || 0);
           }, 0);
           
-          // Formatar todos os dados fiscais
+          // Formatar todos os dados fiscais com período normalizado
           const allFiscalData = sortedFiscalData.map((fd: any) => ({
             rbt12: fd.rbt12 || 0,
             entrada: fd.entrada || 0,
@@ -158,7 +169,7 @@ export const useCompaniesWithLatestFiscalData = () => {
             servicos: fd.servicos || 0,
             imposto: fd.imposto || 0,
             difal: fd.difal || 0,
-            period: fd.period || 'N/A'
+            period: normalizePeriod(fd.period)
           }));
           
           return {
@@ -171,12 +182,61 @@ export const useCompaniesWithLatestFiscalData = () => {
               servicos: latestData.servicos || 0,
               imposto: latestData.imposto || 0,
               difal: latestData.difal || 0,
-              period: latestData.period || 'N/A'
+              period: normalizePeriod(latestData.period)
             },
             all_fiscal_data: allFiscalData,
             acumulado_saida: acumuladoSaida
           };
         }
+        
+        // Para empresas Lucro Real (lucro_real_data)
+        if (company.lucro_real_data && company.lucro_real_data.length > 0) {
+          // Sort by fiscal period to get the most recent
+          const sortedLucroRealData = company.lucro_real_data.sort((a: any, b: any) => {
+            const dateA = periodToDate(a.period) || new Date(0);
+            const dateB = periodToDate(b.period) || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+          });
+          const latestData = sortedLucroRealData[0];
+          
+          // Calcular acumulado total de saídas
+          const acumuladoSaida = company.lucro_real_data.reduce((acc: number, fd: any) => {
+            return acc + (fd.saidas || 0);
+          }, 0);
+          
+          // Calcular total de impostos (PIS + COFINS + ICMS)
+          const totalImposto = company.lucro_real_data.reduce((acc: number, fd: any) => {
+            return acc + (fd.pis || 0) + (fd.cofins || 0) + (fd.icms || 0);
+          }, 0);
+          
+          // Formatar todos os dados fiscais com período normalizado
+          const allFiscalData = sortedLucroRealData.map((fd: any) => ({
+            rbt12: 0, // Lucro Real não tem RBT12
+            entrada: fd.entradas || 0,
+            saida: fd.saidas || 0,
+            servicos: fd.servicos || 0,
+            imposto: (fd.pis || 0) + (fd.cofins || 0) + (fd.icms || 0),
+            difal: 0,
+            period: normalizePeriod(fd.period)
+          }));
+          
+          return {
+            ...company,
+            responsavel_id: responsavelId,
+            latest_fiscal_data: {
+              rbt12: 0,
+              entrada: latestData.entradas || 0,
+              saida: latestData.saidas || 0,
+              servicos: latestData.servicos || 0,
+              imposto: (latestData.pis || 0) + (latestData.cofins || 0) + (latestData.icms || 0),
+              difal: 0,
+              period: normalizePeriod(latestData.period)
+            },
+            all_fiscal_data: allFiscalData,
+            acumulado_saida: acumuladoSaida
+          };
+        }
+        
         return {
           ...company,
           responsavel_id: responsavelId,
