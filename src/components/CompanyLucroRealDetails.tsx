@@ -32,20 +32,6 @@ interface AddLucroRealForm {
   csll_segundo_trimestre: string;
   tvi: string;
 }
-interface EditLucroRealForm {
-  period: string;
-  entradas: string;
-  saidas: string;
-  servicos: string;
-  pis: string;
-  cofins: string;
-  icms: string;
-  irpj_primeiro_trimestre: string;
-  csll_primeiro_trimestre: string;
-  irpj_segundo_trimestre: string;
-  csll_segundo_trimestre: string;
-  tvi: string;
-}
 export const CompanyLucroRealDetails = ({
   companyId,
   onCompanyDeleted,
@@ -55,14 +41,16 @@ export const CompanyLucroRealDetails = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [filterPeriod, setFilterPeriod] = useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingData, setEditingData] = useState<any>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isDeleteCompanyDialogOpen, setIsDeleteCompanyDialogOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState<{ id: string; name: string; currentStatus: boolean } | null>(null);
+  
+  // Bulk edit mode states
+  const [isBulkEditMode, setIsBulkEditMode] = useState(false);
+  const [bulkEditData, setBulkEditData] = useState<Record<string, any>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     data: company,
@@ -79,20 +67,6 @@ export const CompanyLucroRealDetails = ({
   const importMutation = useImportLucroRealExcel();
   const updateStatusMutation = useUpdateCompanyStatus();
   const [newData, setNewData] = useState<AddLucroRealForm>({
-    period: '',
-    entradas: '',
-    saidas: '',
-    servicos: '',
-    pis: '',
-    cofins: '',
-    icms: '',
-    irpj_primeiro_trimestre: '',
-    csll_primeiro_trimestre: '',
-    irpj_segundo_trimestre: '',
-    csll_segundo_trimestre: '',
-    tvi: ''
-  });
-  const [editData, setEditData] = useState<EditLucroRealForm>({
     period: '',
     entradas: '',
     saidas: '',
@@ -280,52 +254,72 @@ export const CompanyLucroRealDetails = ({
       console.error('Error adding lucro real data:', error);
     }
   };
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingData || !editData.period.trim()) {
-      alert('Período é obrigatório');
-      return;
-    }
-    const dataToSubmit = {
-      id: editingData.id,
-      period: editData.period.trim(),
-      entradas: editData.entradas ? parseFloat(editData.entradas) : undefined,
-      saidas: editData.saidas ? parseFloat(editData.saidas) : undefined,
-      servicos: editData.servicos ? parseFloat(editData.servicos) : undefined,
-      pis: editData.pis ? parseFloat(editData.pis) : undefined,
-      cofins: editData.cofins ? parseFloat(editData.cofins) : undefined,
-      icms: editData.icms ? parseFloat(editData.icms) : undefined,
-      irpj_primeiro_trimestre: editData.irpj_primeiro_trimestre ? parseFloat(editData.irpj_primeiro_trimestre) : undefined,
-      csll_primeiro_trimestre: editData.csll_primeiro_trimestre ? parseFloat(editData.csll_primeiro_trimestre) : undefined,
-      irpj_segundo_trimestre: editData.irpj_segundo_trimestre ? parseFloat(editData.irpj_segundo_trimestre) : undefined,
-      csll_segundo_trimestre: editData.csll_segundo_trimestre ? parseFloat(editData.csll_segundo_trimestre) : undefined,
-      tvi: editData.tvi ? parseFloat(editData.tvi) : undefined
-    };
-    try {
-      await updateMutation.mutateAsync(dataToSubmit);
-      setIsEditDialogOpen(false);
-      setEditingData(null);
-    } catch (error) {
-      console.error('Error updating lucro real data:', error);
-    }
-  };
-  const handleEdit = (item: any) => {
-    setEditingData(item);
-    setEditData({
-      period: item.period || '',
-      entradas: item.entradas?.toString() || '',
-      saidas: item.saidas?.toString() || '',
-      servicos: item.servicos?.toString() || '',
-      pis: item.pis?.toString() || '',
-      cofins: item.cofins?.toString() || '',
-      icms: item.icms?.toString() || '',
-      irpj_primeiro_trimestre: item.irpj_primeiro_trimestre?.toString() || '',
-      csll_primeiro_trimestre: item.csll_primeiro_trimestre?.toString() || '',
-      irpj_segundo_trimestre: item.irpj_segundo_trimestre?.toString() || '',
-      csll_segundo_trimestre: item.csll_segundo_trimestre?.toString() || '',
-      tvi: item.tvi?.toString() || ''
+  // Bulk edit functions
+  const startBulkEdit = () => {
+    if (!filteredAndSortedData) return;
+    const editData: Record<string, any> = {};
+    filteredAndSortedData.forEach(item => {
+      editData[item.id] = {
+        entradas: item.entradas?.toString() || '',
+        saidas: item.saidas?.toString() || '',
+        servicos: item.servicos?.toString() || '',
+        pis: item.pis?.toString() || '',
+        cofins: item.cofins?.toString() || '',
+        icms: item.icms?.toString() || '',
+        irpj_primeiro_trimestre: item.irpj_primeiro_trimestre?.toString() || '',
+        csll_primeiro_trimestre: item.csll_primeiro_trimestre?.toString() || '',
+        irpj_segundo_trimestre: item.irpj_segundo_trimestre?.toString() || '',
+        csll_segundo_trimestre: item.csll_segundo_trimestre?.toString() || '',
+        tvi: item.tvi?.toString() || ''
+      };
     });
-    setIsEditDialogOpen(true);
+    setBulkEditData(editData);
+    setIsBulkEditMode(true);
+  };
+
+  const cancelBulkEdit = () => {
+    setIsBulkEditMode(false);
+    setBulkEditData({});
+  };
+
+  const handleBulkFieldChange = (id: string, field: string, value: string) => {
+    setBulkEditData(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        [field]: value
+      }
+    }));
+  };
+
+  const saveBulkEdit = async () => {
+    try {
+      for (const [id, data] of Object.entries(bulkEditData)) {
+        const originalItem = filteredAndSortedData?.find(item => item.id === id);
+        if (!originalItem) continue;
+
+        const dataToSubmit = {
+          id,
+          period: originalItem.period,
+          entradas: data.entradas ? parseFloat(data.entradas) : undefined,
+          saidas: data.saidas ? parseFloat(data.saidas) : undefined,
+          servicos: data.servicos ? parseFloat(data.servicos) : undefined,
+          pis: data.pis ? parseFloat(data.pis) : undefined,
+          cofins: data.cofins ? parseFloat(data.cofins) : undefined,
+          icms: data.icms ? parseFloat(data.icms) : undefined,
+          irpj_primeiro_trimestre: data.irpj_primeiro_trimestre ? parseFloat(data.irpj_primeiro_trimestre) : undefined,
+          csll_primeiro_trimestre: data.csll_primeiro_trimestre ? parseFloat(data.csll_primeiro_trimestre) : undefined,
+          irpj_segundo_trimestre: data.irpj_segundo_trimestre ? parseFloat(data.irpj_segundo_trimestre) : undefined,
+          csll_segundo_trimestre: data.csll_segundo_trimestre ? parseFloat(data.csll_segundo_trimestre) : undefined,
+          tvi: data.tvi ? parseFloat(data.tvi) : undefined
+        };
+        await updateMutation.mutateAsync(dataToSubmit);
+      }
+      setIsBulkEditMode(false);
+      setBulkEditData({});
+    } catch (error) {
+      console.error('Error saving bulk edit:', error);
+    }
   };
   const handleDelete = async (id: string) => {
     if (confirm('Tem certeza que deseja excluir este registro?')) {
@@ -713,6 +707,21 @@ export const CompanyLucroRealDetails = ({
           <div className="flex items-center justify-between">
             <CardTitle>Dados Fiscais Normais</CardTitle>
             <div className="flex items-center gap-2">
+              {isBulkEditMode ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={cancelBulkEdit}>
+                    Cancelar
+                  </Button>
+                  <Button size="sm" onClick={saveBulkEdit} disabled={updateMutation.isPending}>
+                    {updateMutation.isPending ? 'Salvando...' : 'Salvar Alterações'}
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" onClick={startBulkEdit} disabled={!filteredAndSortedData || filteredAndSortedData.length === 0}>
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Editar Tabela
+                </Button>
+              )}
               <Input placeholder="Filtrar por período..." value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)} className="w-48" />
               <Select value={sortField} onValueChange={(value: any) => setSortField(value)}>
                 <SelectTrigger className="w-48">
@@ -757,7 +766,7 @@ export const CompanyLucroRealDetails = ({
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">IRPJ 2º</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">CSLL 2º</TableHead>
                   <TableHead className="border-r border-border font-semibold text-foreground w-20 hidden xl:table-cell">TVI</TableHead>
-                  <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
+                  {!isBulkEditMode && <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -772,70 +781,157 @@ export const CompanyLucroRealDetails = ({
                       </div>
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-green-600 dark:text-green-400 font-medium w-20 hidden md:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.entradas)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.entradas || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'entradas', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.entradas)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-red-600 dark:text-red-400 font-medium w-20 hidden md:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.saidas)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.saidas || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'saidas', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.saidas)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-blue-600 dark:text-blue-400 font-medium w-20 hidden md:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.servicos)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.servicos || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'servicos', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.servicos)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden lg:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.pis)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.pis || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'pis', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.pis)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden lg:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.cofins)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.cofins || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'cofins', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.cofins)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.icms)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.icms || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'icms', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.icms)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.irpj_primeiro_trimestre)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.irpj_primeiro_trimestre || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'irpj_primeiro_trimestre', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.irpj_primeiro_trimestre)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.csll_primeiro_trimestre)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.csll_primeiro_trimestre || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'csll_primeiro_trimestre', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.csll_primeiro_trimestre)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.irpj_segundo_trimestre)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.irpj_segundo_trimestre || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'irpj_segundo_trimestre', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.irpj_segundo_trimestre)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.csll_segundo_trimestre)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.csll_segundo_trimestre || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'csll_segundo_trimestre', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.csll_segundo_trimestre)}</span>
+                      )}
                     </TableCell>
                     <TableCell className="border-r border-border text-right text-foreground w-20 hidden xl:table-cell">
-                      <span className="truncate block text-xs">
-                        {formatCurrency(item.tvi)}
-                      </span>
+                      {isBulkEditMode ? (
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={bulkEditData[item.id]?.tvi || ''}
+                          onChange={(e) => handleBulkFieldChange(item.id, 'tvi', e.target.value)}
+                          className="h-7 text-xs w-full"
+                        />
+                      ) : (
+                        <span className="truncate block text-xs">{formatCurrency(item.tvi)}</span>
+                      )}
                     </TableCell>
-                    <TableCell className="text-center w-12">
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground h-8 w-8 p-0" onClick={() => handleEdit(item)} title="Editar dados">
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0" onClick={() => handleDelete(item.id)} title="Excluir dados">
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {!isBulkEditMode && (
+                      <TableCell className="text-center w-12">
+                        <div className="flex gap-1">
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 w-8 p-0" onClick={() => handleDelete(item.id)} title="Excluir dados">
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>)}
                 {filteredAndSortedData?.length === 0 && <TableRow>
                     <TableCell colSpan={14} className="text-center py-8 text-muted-foreground border-b border-border">
@@ -888,129 +984,6 @@ export const CompanyLucroRealDetails = ({
         </CardContent>
       </Card>
 
-      {/* Modal de Edição */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Editar Dados Normais</DialogTitle>
-            <DialogDescription>
-              Altere os dados fiscais para o período selecionado.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleEditSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-period">Competência *</Label>
-                <Input id="edit-period" value={editData.period} onChange={e => setEditData(prev => ({
-                ...prev,
-                period: e.target.value
-              }))} placeholder="Ex: 2024-01" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-entradas">Entradas</Label>
-                <Input id="edit-entradas" type="number" step="0.01" value={editData.entradas} onChange={e => setEditData(prev => ({
-                ...prev,
-                entradas: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-              <div>
-                <Label htmlFor="edit-saidas">Saídas</Label>
-                <Input id="edit-saidas" type="number" step="0.01" value={editData.saidas} onChange={e => setEditData(prev => ({
-                ...prev,
-                saidas: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <Label htmlFor="edit-servicos">Serviços</Label>
-                <Input id="edit-servicos" type="number" step="0.01" value={editData.servicos} onChange={e => setEditData(prev => ({
-                ...prev,
-                servicos: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-              <div>
-                <Label htmlFor="edit-pis">PIS</Label>
-                <Input id="edit-pis" type="number" step="0.01" value={editData.pis} onChange={e => setEditData(prev => ({
-                ...prev,
-                pis: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-              <div>
-                <Label htmlFor="edit-cofins">COFINS</Label>
-                <Input id="edit-cofins" type="number" step="0.01" value={editData.cofins} onChange={e => setEditData(prev => ({
-                ...prev,
-                cofins: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-              <div>
-                <Label htmlFor="edit-icms">ICMS</Label>
-                <Input id="edit-icms" type="number" step="0.01" value={editData.icms} onChange={e => setEditData(prev => ({
-                ...prev,
-                icms: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-irpj1">IRPJ 1º Trimestre</Label>
-                <Input id="edit-irpj1" type="number" step="0.01" value={editData.irpj_primeiro_trimestre} onChange={e => setEditData(prev => ({
-                ...prev,
-                irpj_primeiro_trimestre: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-              <div>
-                <Label htmlFor="edit-csll1">CSLL 1º Trimestre</Label>
-                <Input id="edit-csll1" type="number" step="0.01" value={editData.csll_primeiro_trimestre} onChange={e => setEditData(prev => ({
-                ...prev,
-                csll_primeiro_trimestre: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="edit-irpj2">IRPJ 2º Trimestre</Label>
-                <Input id="edit-irpj2" type="number" step="0.01" value={editData.irpj_segundo_trimestre} onChange={e => setEditData(prev => ({
-                ...prev,
-                irpj_segundo_trimestre: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-              <div>
-                <Label htmlFor="edit-csll2">CSLL 2º Trimestre</Label>
-                <Input id="edit-csll2" type="number" step="0.01" value={editData.csll_segundo_trimestre} onChange={e => setEditData(prev => ({
-                ...prev,
-                csll_segundo_trimestre: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <Label htmlFor="edit-tvi">TVI</Label>
-                <Input id="edit-tvi" type="number" step="0.01" value={editData.tvi} onChange={e => setEditData(prev => ({
-                ...prev,
-                tvi: e.target.value
-              }))} placeholder="0.00" />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Salvando...' : 'Salvar'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Modal de confirmação de exclusão da empresa */}
       <AlertDialog open={isDeleteCompanyDialogOpen} onOpenChange={setIsDeleteCompanyDialogOpen}>
