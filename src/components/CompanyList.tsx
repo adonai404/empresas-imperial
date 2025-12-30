@@ -412,8 +412,39 @@ export const CompanyList = ({
   };
 
   const getPeriodos = () => {
-    const periodos = companies?.map(c => c.latest_fiscal_data?.period).filter(Boolean) || [];
-    return [...new Set(periodos)].sort();
+    // Coletar todos os períodos de todas as empresas (incluindo all_fiscal_data)
+    const allPeriodos: string[] = [];
+    
+    companies?.forEach(c => {
+      // Período mais recente
+      if (c.latest_fiscal_data?.period && c.latest_fiscal_data.period !== 'N/A') {
+        allPeriodos.push(c.latest_fiscal_data.period);
+      }
+      // Todos os períodos históricos
+      if (c.all_fiscal_data) {
+        c.all_fiscal_data.forEach(fd => {
+          if (fd.period && fd.period !== 'N/A') {
+            allPeriodos.push(fd.period);
+          }
+        });
+      }
+    });
+    
+    // Normalizar períodos para formato MM/YYYY e remover duplicatas
+    const normalizedPeriodos = allPeriodos.map(p => {
+      const match = p.match(/^(\d{1,2})[\/\-](\d{4})$/);
+      if (!match) return null;
+      const [, month, year] = match;
+      return `${month.padStart(2, '0')}/${year}`;
+    }).filter((p): p is string => p !== null);
+    
+    // Remover duplicatas e ordenar por data (mais recente primeiro)
+    const uniquePeriodos = [...new Set(normalizedPeriodos)];
+    return uniquePeriodos.sort((a, b) => {
+      const [ma, ya] = a.split('/').map(Number);
+      const [mb, yb] = b.split('/').map(Number);
+      return yb - ya || mb - ma; // ordem decrescente
+    });
   };
 
   // Função para calcular acumulado dinâmico baseado no filtro de período
