@@ -447,22 +447,22 @@ export const CompanyList = ({
     });
   };
 
-  // Função para calcular acumulado dinâmico baseado no filtro de período
-  const getAcumuladoDinamico = (company: any) => {
+  // Função para filtrar dados fiscais pelo período selecionado
+  const getFiscalDataFiltrado = (company: any) => {
     if (!company.all_fiscal_data || company.all_fiscal_data.length === 0) {
-      return 0;
+      return [];
     }
     
-    // Se não há filtro de período, retornar o acumulado total
+    // Se não há filtro de período, retornar todos os dados
     if (filters.periodoInicio === 'todos' && filters.periodoFim === 'todos') {
-      return company.acumulado_saida || 0;
+      return company.all_fiscal_data;
     }
     
     // Se há filtro de período, calcular apenas para os períodos dentro do intervalo
     const startDate = filters.periodoInicio !== 'todos' ? periodToDate(filters.periodoInicio) : null;
     const endDate = filters.periodoFim !== 'todos' ? periodToDate(filters.periodoFim) : null;
     
-    const fiscalDataFiltered = company.all_fiscal_data.filter((fd: any) => {
+    return company.all_fiscal_data.filter((fd: any) => {
       const fdDate = periodToDate(fd.period);
       if (!fdDate) return false;
       
@@ -475,8 +475,42 @@ export const CompanyList = ({
       }
       return true;
     });
-    
+  };
+
+  // Função para calcular acumulado dinâmico de SAÍDA baseado no filtro de período
+  const getAcumuladoDinamico = (company: any) => {
+    const fiscalDataFiltered = getFiscalDataFiltrado(company);
+    if (fiscalDataFiltered.length === 0) {
+      return filters.periodoInicio === 'todos' && filters.periodoFim === 'todos' 
+        ? (company.acumulado_saida || 0) 
+        : 0;
+    }
     return fiscalDataFiltered.reduce((acc: number, fd: any) => acc + (fd.saida || 0), 0);
+  };
+
+  // Função para calcular acumulado dinâmico de ENTRADA baseado no filtro de período
+  const getEntradaAcumulada = (company: any) => {
+    const fiscalDataFiltered = getFiscalDataFiltrado(company);
+    if (fiscalDataFiltered.length === 0) {
+      // Se não há filtro, retornar o acumulado total
+      if (filters.periodoInicio === 'todos' && filters.periodoFim === 'todos') {
+        return company.all_fiscal_data?.reduce((acc: number, fd: any) => acc + (fd.entrada || 0), 0) || 0;
+      }
+      return 0;
+    }
+    return fiscalDataFiltered.reduce((acc: number, fd: any) => acc + (fd.entrada || 0), 0);
+  };
+
+  // Função para calcular acumulado dinâmico de IMPOSTO baseado no filtro de período
+  const getImpostoAcumulado = (company: any) => {
+    const fiscalDataFiltered = getFiscalDataFiltrado(company);
+    if (fiscalDataFiltered.length === 0) {
+      if (filters.periodoInicio === 'todos' && filters.periodoFim === 'todos') {
+        return company.all_fiscal_data?.reduce((acc: number, fd: any) => acc + (fd.imposto || 0), 0) || 0;
+      }
+      return 0;
+    }
+    return fiscalDataFiltered.reduce((acc: number, fd: any) => acc + (fd.imposto || 0), 0);
   };
 
   // Função para obter impostos filtrados por período
@@ -1742,13 +1776,13 @@ export const CompanyList = ({
                     <span className="truncate block text-xs">
                       {hasPassword(company) ? (
                         <span className="text-muted-foreground">***</span>
-                      ) : company.latest_fiscal_data?.entrada ? 
-                        company.latest_fiscal_data.entrada.toLocaleString('pt-BR', { 
+                      ) : getEntradaAcumulada(company) ? 
+                        getEntradaAcumulada(company).toLocaleString('pt-BR', { 
                           style: 'currency', 
                           currency: 'BRL',
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0
-                        }) : 'N/A'
+                        }) : 'R$ 0'
                       }
                     </span>
                   </TableCell>
@@ -1756,13 +1790,13 @@ export const CompanyList = ({
                     <span className="truncate block text-xs">
                       {hasPassword(company) ? (
                         <span className="text-muted-foreground">***</span>
-                      ) : company.latest_fiscal_data?.saida ? 
-                        company.latest_fiscal_data.saida.toLocaleString('pt-BR', { 
+                      ) : getAcumuladoDinamico(company) ? 
+                        getAcumuladoDinamico(company).toLocaleString('pt-BR', { 
                           style: 'currency', 
                           currency: 'BRL',
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0
-                        }) : 'N/A'
+                        }) : 'R$ 0'
                       }
                     </span>
                   </TableCell>
@@ -1774,13 +1808,13 @@ export const CompanyList = ({
                     <span className="truncate block text-xs underline decoration-dashed underline-offset-2">
                       {hasPassword(company) ? (
                         <span className="text-muted-foreground">***</span>
-                      ) : company.latest_fiscal_data?.imposto ? 
-                        company.latest_fiscal_data.imposto.toLocaleString('pt-BR', { 
+                      ) : getImpostoAcumulado(company) ? 
+                        getImpostoAcumulado(company).toLocaleString('pt-BR', { 
                           style: 'currency', 
                           currency: 'BRL',
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0
-                        }) : 'N/A'
+                        }) : 'R$ 0'
                       }
                     </span>
                   </TableCell>
@@ -1903,21 +1937,21 @@ export const CompanyList = ({
                   <TableCell className="border-r border-border text-right text-green-600 dark:text-green-400 font-bold w-20 hidden lg:table-cell">
                     <span className="text-xs">
                       {filteredAndSortedCompanies
-                        .reduce((acc, c) => acc + (c.latest_fiscal_data?.entrada || 0), 0)
+                        .reduce((acc, c) => acc + getEntradaAcumulada(c), 0)
                         .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-right text-red-600 dark:text-red-400 font-bold w-20 hidden lg:table-cell">
                     <span className="text-xs">
                       {filteredAndSortedCompanies
-                        .reduce((acc, c) => acc + (c.latest_fiscal_data?.saida || 0), 0)
+                        .reduce((acc, c) => acc + getAcumuladoDinamico(c), 0)
                         .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                   </TableCell>
                   <TableCell className="border-r border-border text-right text-orange-600 dark:text-orange-400 font-bold w-20 hidden xl:table-cell">
                     <span className="text-xs">
                       {filteredAndSortedCompanies
-                        .reduce((acc, c) => acc + (c.latest_fiscal_data?.imposto || 0), 0)
+                        .reduce((acc, c) => acc + getImpostoAcumulado(c), 0)
                         .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                     </span>
                   </TableCell>
