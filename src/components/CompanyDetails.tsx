@@ -705,6 +705,18 @@ export const CompanyDetails = ({ companyId, onBack }: CompanyDetailsProps) => {
                     </TableCell>
                   </TableRow>
                 )}
+                {sortedAndFilteredData.length > 0 && (
+                  <TableRow className="bg-muted/50 font-semibold border-t-2 border-border">
+                    <TableCell colSpan={2} className="text-right font-bold">TOTAL:</TableCell>
+                    <TableCell className="text-right text-foreground">{formatCurrency(totals.rbt12)}</TableCell>
+                    <TableCell className="text-right text-green-600 dark:text-green-400">{formatCurrency(totals.entrada)}</TableCell>
+                    <TableCell className="text-right text-red-600 dark:text-red-400">{formatCurrency(totals.saida)}</TableCell>
+                    <TableCell className="text-right text-blue-600 dark:text-blue-400">{formatCurrency(totals.servicos)}</TableCell>
+                    <TableCell className="text-right text-orange-600 dark:text-orange-400">{formatCurrency(totals.imposto)}</TableCell>
+                    <TableCell className="text-right text-purple-600 dark:text-purple-400">{formatCurrency(totals.difal)}</TableCell>
+                    <TableCell></TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
