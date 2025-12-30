@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -388,6 +388,25 @@ export const CompanyList = ({
   const getPeriodos = () => {
     const periodos = companies?.map(c => c.latest_fiscal_data?.period).filter(Boolean) || [];
     return [...new Set(periodos)].sort();
+  };
+
+  // Função para calcular acumulado dinâmico baseado no filtro de período
+  const getAcumuladoDinamico = (company: any) => {
+    if (!company.all_fiscal_data || company.all_fiscal_data.length === 0) {
+      return 0;
+    }
+    
+    // Se não há filtro de período, retornar o acumulado total
+    if (filters.periodo === 'todos') {
+      return company.acumulado_saida || 0;
+    }
+    
+    // Se há filtro de período, calcular apenas para o período específico
+    const fiscalDataFiltered = company.all_fiscal_data.filter(
+      (fd: any) => fd.period === filters.periodo
+    );
+    
+    return fiscalDataFiltered.reduce((acc: number, fd: any) => acc + (fd.saida || 0), 0);
   };
 
 
@@ -1504,6 +1523,11 @@ export const CompanyList = ({
                     'Situação'
                   )}
                 </TableHead>
+                {selectedRegime === 'todas' && (
+                  <TableHead className="border-r border-border font-semibold text-foreground w-24 hidden xl:table-cell text-right">
+                    Acumulado
+                  </TableHead>
+                )}
                 <TableHead className="w-12 font-semibold text-foreground">Ações</TableHead>
               </TableRow>
             </TableHeader>
@@ -1637,6 +1661,22 @@ export const CompanyList = ({
                       {getStatusDisplay(company.sem_movimento || false)}
                     </div>
                   </TableCell>
+                  {selectedRegime === 'todas' && (
+                    <TableCell className="border-r border-border text-right text-cyan-600 dark:text-cyan-400 font-semibold w-24 hidden xl:table-cell">
+                      <span className="truncate block text-xs">
+                        {hasPassword(company) ? (
+                          <span className="text-muted-foreground">***</span>
+                        ) : getAcumuladoDinamico(company) ? 
+                          getAcumuladoDinamico(company).toLocaleString('pt-BR', { 
+                            style: 'currency', 
+                            currency: 'BRL',
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0
+                          }) : 'R$ 0'
+                        }
+                      </span>
+                    </TableCell>
+                  )}
                   <TableCell className="text-center w-12">
                     <div className="flex gap-1">
                       <Button
@@ -1669,7 +1709,7 @@ export const CompanyList = ({
               ))}
               {filteredAndSortedCompanies?.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={selectedRegime === 'todas' ? 13 : 12} className="text-center py-8 text-muted-foreground border-b border-border">
+                  <TableCell colSpan={selectedRegime === 'todas' ? 14 : 12} className="text-center py-8 text-muted-foreground border-b border-border">
                     <FileText className="h-12 w-12 mx-auto mb-4" />
                     <p>Nenhuma empresa encontrada</p>
                   </TableCell>
