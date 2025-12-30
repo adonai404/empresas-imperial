@@ -934,7 +934,7 @@ export const CompanyLucroRealDetails = ({
                     )}
                   </TableRow>)}
                 {filteredAndSortedData?.length === 0 && <TableRow>
-                    <TableCell colSpan={14} className="text-center py-8 text-muted-foreground border-b border-border">
+                    <TableCell colSpan={isBulkEditMode ? 13 : 14} className="text-center py-8 text-muted-foreground border-b border-border">
                       <FileText className="h-12 w-12 mx-auto mb-4" />
                       <p>Nenhum dado Normal encontrado</p>
                     </TableCell>
@@ -975,7 +975,7 @@ export const CompanyLucroRealDetails = ({
                     <TableCell className="text-right text-foreground border-r border-border hidden xl:table-cell">
                       <span className="truncate block text-xs">{formatCurrency(totals.tvi)}</span>
                     </TableCell>
-                    <TableCell></TableCell>
+                    {!isBulkEditMode && <TableCell></TableCell>}
                   </TableRow>
                 )}
               </TableBody>
