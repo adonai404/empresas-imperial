@@ -40,7 +40,7 @@ const sections = [
 const utilitiesSubSections = [
   {
     id: "systems",
-    title: "Processos",
+    title: "Sistemas",
     icon: Wrench,
   },
   {
