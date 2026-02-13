@@ -11,7 +11,8 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCompaniesWithLatestFiscalData, useSetCompanyPassword, useRemoveCompanyPassword, useCnpjRegimes, useSaveCnpjRegime, useRemoveCnpjRegime, useSegments, useCreateSegment, useUpdateCompanySegment, useDeleteSegment } from '@/hooks/useFiscalData';
-import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet, Tag } from 'lucide-react';
+import { Settings as SettingsIcon, Lock, Key, Building2, Trash2, Shield, Search, Filter, Eye, EyeOff, AlertTriangle, Users, Database, Plus, X, FileText, Download, Upload, FileSpreadsheet, Tag, FileDown } from 'lucide-react';
+import { supabase } from '@/lib/supabase-client';
 import { useForm } from 'react-hook-form';
 import { toast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
@@ -63,6 +64,7 @@ export const Settings = ({}: SettingsProps) => {
   const [isCreateSegmentDialogOpen, setIsCreateSegmentDialogOpen] = useState(false);
   const [deleteSegmentConfirm, setDeleteSegmentConfirm] = useState<{ id: string; name: string } | null>(null);
   const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
   
   const { data: companies, isLoading } = useCompaniesWithLatestFiscalData();
   const { data: cnpjRegimes = [] } = useCnpjRegimes();
@@ -422,6 +424,178 @@ export const Settings = ({}: SettingsProps) => {
     });
   };
 
+  // Função para exportar todos os dados
+  const handleExportAllData = async () => {
+    setIsExporting(true);
+    try {
+      // Buscar todas as empresas
+      const { data: allCompanies, error: compError } = await supabase
+        .from('companies')
+        .select('id, name, cnpj, regime_tributario, segmento, responsavel_id')
+        .order('name', { ascending: true });
+
+      if (compError) throw compError;
+
+      // Buscar responsáveis
+      const { data: responsaveisData } = await supabase
+        .from('responsaveis')
+        .select('id, nome');
+
+      const responsaveisMap: Record<string, string> = {};
+      (responsaveisData || []).forEach((r: any) => { responsaveisMap[r.id] = r.nome; });
+
+      // Buscar todos os dados fiscais (Simples Nacional)
+      const { data: allFiscalData, error: fiscalError } = await supabase
+        .from('fiscal_data')
+        .select('*');
+      if (fiscalError) throw fiscalError;
+
+      // Buscar dados de Lucro Real
+      const { data: allLucroRealData, error: lrError } = await supabase
+        .from('lucro_real_data')
+        .select('*');
+      if (lrError) throw lrError;
+
+      // Buscar dados de Lucro Presumido
+      const { data: allLucroPresumidoData, error: lpError } = await supabase
+        .from('lucro_presumido_data')
+        .select('*');
+      if (lpError) throw lpError;
+
+      // Buscar dados de Produtor Rural
+      const { data: allProdutorRuralData, error: prError } = await supabase
+        .from('produtor_rural_data')
+        .select('*');
+      if (prError) throw prError;
+
+      const wb = XLSX.utils.book_new();
+
+      // --- Aba Simples Nacional ---
+      const simplesRows: any[] = [];
+      (allFiscalData || []).forEach((fd: any) => {
+        const company = (allCompanies || []).find((c: any) => c.id === fd.company_id);
+        if (!company) return;
+        simplesRows.push({
+          'Empresa': company.name,
+          'CNPJ': company.cnpj || '',
+          'Regime': company.regime_tributario || '',
+          'Segmento': company.segmento || '',
+          'Responsável': fd.responsavel_id ? (responsaveisMap[fd.responsavel_id] || '') : '',
+          'Período': fd.period,
+          'RBT12': fd.rbt12 || 0,
+          'Entrada': fd.entrada || 0,
+          'Saída': fd.saida || 0,
+          'Serviços': fd.servicos || 0,
+          'Imposto': fd.imposto || 0,
+          'Difal': fd.difal || 0,
+        });
+      });
+      simplesRows.sort((a, b) => a.Empresa.localeCompare(b.Empresa) || a.Período.localeCompare(b.Período));
+      if (simplesRows.length > 0) {
+        const ws1 = XLSX.utils.json_to_sheet(simplesRows);
+        XLSX.utils.book_append_sheet(wb, ws1, 'Simples Nacional');
+      }
+
+      // --- Aba Lucro Real ---
+      const lrRows: any[] = [];
+      (allLucroRealData || []).forEach((lr: any) => {
+        const company = (allCompanies || []).find((c: any) => c.id === lr.company_id);
+        if (!company) return;
+        lrRows.push({
+          'Empresa': company.name,
+          'CNPJ': company.cnpj || '',
+          'Segmento': company.segmento || '',
+          'Responsável': lr.responsavel_id ? (responsaveisMap[lr.responsavel_id] || '') : '',
+          'Período': lr.period,
+          'Entradas': lr.entradas || 0,
+          'Saídas': lr.saidas || 0,
+          'Serviços': lr.servicos || 0,
+          'PIS': lr.pis || 0,
+          'COFINS': lr.cofins || 0,
+          'ICMS': lr.icms || 0,
+          'IRPJ 1º Trim.': lr.irpj_primeiro_trimestre || 0,
+          'CSLL 1º Trim.': lr.csll_primeiro_trimestre || 0,
+          'IRPJ 2º Trim.': lr.irpj_segundo_trimestre || 0,
+          'CSLL 2º Trim.': lr.csll_segundo_trimestre || 0,
+          'TVI': lr.tvi || 0,
+        });
+      });
+      lrRows.sort((a, b) => a.Empresa.localeCompare(b.Empresa) || a.Período.localeCompare(b.Período));
+      if (lrRows.length > 0) {
+        const ws2 = XLSX.utils.json_to_sheet(lrRows);
+        XLSX.utils.book_append_sheet(wb, ws2, 'Lucro Real');
+      }
+
+      // --- Aba Lucro Presumido ---
+      const lpRows: any[] = [];
+      (allLucroPresumidoData || []).forEach((lp: any) => {
+        const company = (allCompanies || []).find((c: any) => c.id === lp.company_id);
+        if (!company) return;
+        lpRows.push({
+          'Empresa': company.name,
+          'CNPJ': company.cnpj || '',
+          'Segmento': company.segmento || '',
+          'Período': lp.period,
+          'Receita Bruta': lp.receita_bruta || 0,
+          'Base de Cálculo': lp.base_calculo || 0,
+          'IRPJ': lp.irpj || 0,
+          'CSLL': lp.csll || 0,
+          'PIS': lp.pis || 0,
+          'COFINS': lp.cofins || 0,
+        });
+      });
+      lpRows.sort((a, b) => a.Empresa.localeCompare(b.Empresa) || a.Período.localeCompare(b.Período));
+      if (lpRows.length > 0) {
+        const ws3 = XLSX.utils.json_to_sheet(lpRows);
+        XLSX.utils.book_append_sheet(wb, ws3, 'Lucro Presumido');
+      }
+
+      // --- Aba Produtor Rural ---
+      const prRows: any[] = [];
+      (allProdutorRuralData || []).forEach((pr: any) => {
+        const company = (allCompanies || []).find((c: any) => c.id === pr.company_id);
+        if (!company) return;
+        prRows.push({
+          'Empresa': company.name,
+          'CNPJ': company.cnpj || '',
+          'Segmento': company.segmento || '',
+          'Período': pr.period,
+          'Receita Bruta': pr.receita_bruta || 0,
+          'Despesas': pr.despesas || 0,
+          'Resultado': pr.resultado || 0,
+          'Funrural': pr.funrural || 0,
+          'Senar': pr.senar || 0,
+        });
+      });
+      prRows.sort((a, b) => a.Empresa.localeCompare(b.Empresa) || a.Período.localeCompare(b.Período));
+      if (prRows.length > 0) {
+        const ws4 = XLSX.utils.json_to_sheet(prRows);
+        XLSX.utils.book_append_sheet(wb, ws4, 'Produtor Rural');
+      }
+
+      // Se nenhuma aba foi criada, criar uma vazia
+      if (wb.SheetNames.length === 0) {
+        const wsEmpty = XLSX.utils.json_to_sheet([{ 'Mensagem': 'Nenhum dado fiscal encontrado.' }]);
+        XLSX.utils.book_append_sheet(wb, wsEmpty, 'Sem Dados');
+      }
+
+      XLSX.writeFile(wb, 'dados_completos_empresas.xlsx');
+
+      toast({
+        title: "Exportação concluída",
+        description: `Planilha gerada com ${simplesRows.length + lrRows.length + lpRows.length + prRows.length} registros.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erro na exportação",
+        description: error.message || "Não foi possível exportar os dados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
 
   const hasPassword = (company: any) => {
     return company.company_passwords && company.company_passwords.id !== null;
@@ -479,7 +653,7 @@ export const Settings = ({}: SettingsProps) => {
 
       {/* Tabs para as subseções */}
       <Tabs defaultValue="security" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="security" className="flex items-center gap-2">
             <Shield className="h-4 w-4" />
             Segurança
@@ -491,6 +665,10 @@ export const Settings = ({}: SettingsProps) => {
           <TabsTrigger value="segments" className="flex items-center gap-2">
             <Tag className="h-4 w-4" />
             Segmentos das Empresas
+          </TabsTrigger>
+          <TabsTrigger value="export" className="flex items-center gap-2">
+            <FileDown className="h-4 w-4" />
+            Exportar Dados
           </TabsTrigger>
         </TabsList>
 
@@ -1319,6 +1497,45 @@ export const Settings = ({}: SettingsProps) => {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        </TabsContent>
+
+        {/* Subseção Exportar Dados */}
+        <TabsContent value="export" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileDown className="h-5 w-5 text-primary" />
+                Exportar Dados Completos
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                Baixe uma planilha completa com todas as empresas, seus movimentos (entrada, saída, serviços) e impostos pagos, organizados por competência.
+              </p>
+              <div className="flex flex-col gap-4">
+                <div className="p-4 border rounded-lg bg-muted/50 space-y-2">
+                  <h4 className="font-medium">O que será exportado:</h4>
+                  <ul className="text-sm text-muted-foreground list-disc pl-5 space-y-1">
+                    <li>Nome da empresa, CNPJ, Regime Tributário e Segmento</li>
+                    <li>Responsável de cada competência</li>
+                    <li>Período (competência)</li>
+                    <li>RBT12, Entrada, Saída, Serviços, Imposto e Difal (Simples Nacional)</li>
+                    <li>Entradas, Saídas, Serviços, PIS, COFINS, ICMS, IRPJ, CSLL, TVI (Lucro Real)</li>
+                    <li>Receita Bruta, Base de Cálculo, IRPJ, CSLL, PIS, COFINS (Lucro Presumido)</li>
+                  </ul>
+                </div>
+                <Button
+                  onClick={handleExportAllData}
+                  disabled={isExporting}
+                  className="w-fit"
+                  size="lg"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  {isExporting ? 'Exportando...' : 'Baixar Planilha Completa (XLSX)'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
